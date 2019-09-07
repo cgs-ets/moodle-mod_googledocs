@@ -15,22 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Defines the version and other meta-info about the plugin
+ * Google Docs Module Version Details
  *
- * Setting the $plugin->version to 0 prevents the plugin from being installed.
- * See https://docs.moodle.org/dev/version.php for more info.
- *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com> <your@email.address>
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'mod_googledrive';
-$plugin->version = 2016100100;
-$plugin->release = 'v0.1';
-$plugin->requires = 2016052301;
-$plugin->maturity = MATURITY_ALPHA;
-//$plugin->cron = 0;
-//$plugin->dependencies = array();
+$plugin->version   = 2019042600;
+$plugin->requires  = 2016052300; // Moodle 3.1
+$plugin->maturity  = MATURITY_ALPHA;
+$plugin->release   = 'Version for Moodle 3.1 onwards';
+$plugin->component = 'mod_googledocs';

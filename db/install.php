@@ -20,8 +20,8 @@
  * This file replaces the legacy STATEMENTS section in db/install.xml,
  * lib.php/modulename_install() post installation hook and partially defaults.php.
  *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com> 
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -30,7 +30,7 @@
  *
  * @see upgrade_plugins_modules()
  */
-function xmldb_googledrive_install() {
+function xmldb_googledocs_install() {
 }
 
 /**
@@ -38,5 +38,5 @@ function xmldb_googledrive_install() {
  *
  * @see upgrade_plugins_modules()
  */
-function xmldb_googledrive_install_recovery() {
+function xmldb_googledocs_install_recovery() {
 }

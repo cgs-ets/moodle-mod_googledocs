@@ -15,27 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Internal library of functions for module googledrive
+ * Internal library of functions for module googledocs
  *
- * All the googledrive specific functions, needed to implement the module
+ * All the googledocs specific functions, needed to implement the module
  * logic, should go here. Never include this file from your lib.php!
  *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com>
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
-
-/*
- * Does something really useful with the passed things
- *
- * @param array $things
- * @return object
- *function googledrive_do_something_useful(array $things) {
- *    return new stdClass();
- *}
- */
 
 /**
  * This methods does weak url validation, we are looking for major problems only,
@@ -44,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  * @param $url
  * @return bool true is seems valid, false if definitely not valid URL
  */
-function googledrive_appears_valid_url($url) {
+function googledocs_appears_valid_url($url) {
     if (preg_match('/^(\/|https?:|ftp:)/i', $url)) {
         // note: this is not exact validation, we look for severely malformed URLs only
         return (bool)preg_match('/^[a-z]+:\/\/([^:@\s]+:[^@\s]+@)?[a-z0-9_\.\-]+(:[0-9]+)?(\/[^#]*)?(#.*)?$/i', $url);

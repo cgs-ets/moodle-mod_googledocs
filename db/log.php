@@ -18,17 +18,13 @@
 /**
  * Definition of log events
  *
- * @package    mod_googledrive
+ * @package    mod_googledocs
  * @category   log
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com> 
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $logs = array(
-    array('module'=>'googledrive', 'action'=>'view', 'mtable'=>'googledrive', 'field'=>'name'),
-    array('module'=>'googledrive', 'action'=>'view all', 'mtable'=>'googledrive', 'field'=>'name'),
-    array('module'=>'googledrive', 'action'=>'update', 'mtable'=>'googledrive', 'field'=>'name'),
-    array('module'=>'googledrive', 'action'=>'add', 'mtable'=>'googledrive', 'field'=>'name'),
 );

@@ -19,14 +19,14 @@
  *
  * @see uninstall_plugin()
  *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com>
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
  * Custom uninstallation procedure
  */
-function xmldb_googledrive_uninstall() {
+function xmldb_googledocs_uninstall() {
     return true;
 }

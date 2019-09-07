@@ -15,31 +15,28 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The main googledrive configuration form
+ * The main googledocs configuration form
  *
  * It uses the standard core Moodle formslib. For more info about them, please
  * visit: http://docs.moodle.org/en/Development:lib/formslib.php
  *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com>
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once($CFG->dirroot.'/mod/googledrive/locallib.php');
-
-use mod_googledrive\googledrive;
 
 /**
  * Module instance settings form
  *
- * @package    mod_googledrive
- * @copyright  2016 Nadav Kavalerchik <nadavkav@gmail.com>
+ * @package    mod_googledocs
+ * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_googledrive_mod_form extends moodleform_mod {
+class mod_googledocs_mod_form extends moodleform_mod {
 
     /**
      * Defines forms elements
@@ -49,79 +46,81 @@ class mod_googledrive_mod_form extends moodleform_mod {
 
         $mform = $this->_form;
 
-        //$config = get_config('googledrive');
-
         // Adding the "general" fieldset, where all the common settings are showed.
         $mform->addElement('header', 'general', get_string('general', 'form'));
 
-        //require_once($CFG->libdir . '/google/lib.php');
-        $gdrive = new googledrive(null);
-        if (!$gdrive->check_google_login()) {
-            $googleauthlink = $gdrive->display_login_button();
-            $mform->addElement('static', 'needauthentication', '', get_string('needauthentication', 'googledrive'). '<br/>'. $googleauthlink);
-            //$mform->addElement('html', $googleauthlink);
+        require_once($CFG->libdir . '/google/lib.php');
+        $client = get_google_client();
+        // if (!$client->is_logged_in()) {
+        //     $googleauthlink = $client->display_login_button();
+        //     $mform->addElement('static', '', '', $googleauthlink);
+        //     // $mform->addElement('static', 'needauthentication', '', get_string('needauthentication', 'googledocs'). '<br/>'. $googleauthlink);
+        // }
+
+        $radioarray = array();
+        $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
+        $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
+        $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
+        $mform->setDefault('use_document', 'new');
+        // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
+
+        $mform->addElement('text', 'doc_name', get_string('document_name', 'googledocs'), array('size' => '64'));
+        $mform->setType('doc_name', PARAM_TEXT);
+        // $mform->addRule('doc_name', null, 'required', null, 'client');
+        $mform->addRule('doc_name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->hideif('doc_name', 'use_document', 'eq', 'existing');
+        // $mform->addHelpButton('doc_name', 'doc_name_help', 'googledocs');
+
+        $types = google_filetypes();
+        $typesarray = array();
+        foreach($types as $key => $type) {
+            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
+            $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
+            $typesarray[] = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
         }
+        $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
+        $mform->setDefault('document_type', $types['doc']['mimetype']);
+        $mform->hideif('document_type', 'use_document', 'eq', 'existing');
+        // $mform->addHelpButton('document_type', 'document_type_help', 'googledocs');
 
-        // Adding the standard "name" field.
-        $mform->addElement('text', 'name', get_string('googledrivename', 'googledrive'), array('size' => '64'));
-        if (!empty($CFG->formatstringstriptags)) {
-            $mform->setType('name', PARAM_TEXT);
-        } else {
-            $mform->setType('name', PARAM_CLEANHTML);
-        }
-        $mform->addRule('name', null, 'required', null, 'client');
-        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-        $mform->addHelpButton('name', 'googledrivename', 'googledrive');
-
-        // Adding the standard "intro" and "introformat" fields.
-        //$this->standard_intro_elements();
-        $mform->addElement('textarea', 'intro', get_string('googledriveintro', 'googledrive'), array('size' => '64'));
-        $mform->setType('intro', PARAM_TEXT);
-        $mform->addElement('hidden', 'introformat', FORMAT_PLAIN);
-        $mform->setType('introformat', PARAM_INT);
-
-        $rawmimetypes = gdrive_filetypes();
-        foreach($rawmimetypes as $key => $rawmimetype) {
-            $listmimetyles[$key] = $rawmimetype['name'];
-        }
-        $mform->addElement('select', 'gdrivetype', get_string('filetypes', 'googledrive'), $listmimetyles);
-        $mform->setDefault('gdrivetype', GDRIVEFILETYPE_DOCUMENT);
-        $mform->addHelpButton('gdrivetype', 'filetypes_moreinfo', 'googledrive');
-
-        $rawfilepermissions = gdrive_filepermissions();
-        foreach($rawfilepermissions  as $key => $rawfilepermission) {
-            $listfilepermissions[$key] = $rawfilepermission['name'];
-        }
-        $mform->addElement('select', 'gdrivepermissions', get_string('gdrivepermissions', 'googledrive'), $listfilepermissions);
-        $mform->setDefault('gdrivepermissions', GDRIVEFILEPERMISSION_AUTHER_STUDENTS_RC);
-        $mform->addHelpButton('gdrivepermissions', 'gdrivepermissions_moreinfo', 'googledrive');
-
-        $mform->addElement('static', 'nextisagooglefileurl', '', get_string('nextisagooglefileurl', 'googledrive'));
-        //$mform->addElement('hidden', 'externalurl');
-        //$mform->addElement('url', 'externalurl', get_string('externalurl', 'url'), array('size'=>'60'), array('usefilepicker'=>true));
-        $mform->addElement('text', 'gdriveurl', get_string('gdriveurl', 'googledrive'), array('size'=>'60'));
-        $mform->setType('gdriveurl', PARAM_RAW_TRIMMED);
+        $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size'=>'64'));
+        $mform->setType('google_doc_url', PARAM_RAW_TRIMMED);
+        $mform->addRule('google_doc_url', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->hideif('google_doc_url', 'use_document', 'eq', 'new');
         //$mform->addRule('externalurl', null, 'required', null, 'client');
 
-        $mform->addElement('hidden', 'display');
-        $mform->setType('display', PARAM_INT);
-        $mform->setDefault('display', 0);
-        $mform->addElement('hidden', 'displayoptions');
-        $mform->setType('displayoptions', PARAM_TEXT);
-        $mform->setDefault('displayoptions', '');
-        $mform->addElement('hidden', 'course');
-        $mform->setType('course', PARAM_INT);
-        $mform->setDefault('course', $COURSE->id);
+        $permissions = array(
+            'edit' => get_string('edit', 'googledocs'),
+            'comment' => get_string('comment', 'googledocs'),
+            'view' => get_string('view', 'googledocs'),
+        );
+        $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
+        $mform->setDefault('permissions', 'edit');
+        // $mform->addHelpButton('permissions', 'permissions_help', 'googledocs');
 
-        // Adding the rest of googledrive settings, spreading all them into this fieldset
-        // ... or adding more fieldsets ('header' elements) if needed for better logic.
-        //$mform->addElement('static', 'label1', 'googledrivesetting1', 'Your googledrive fields go here. Replace me!');
+        $radioarray = array();
+        $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('each_gets_own', 'googledocs'), 'each_gets_own');
+        $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('all_share', 'googledocs'), 'all_share');
+        $mform->addGroup($radioarray, 'distribution_choice', get_string('distribution', 'googledocs'), array(' '), false);
+        $mform->setDefault('distribution', 'each_gets_own');
+        // $mform->addHelpButton('distribution_choice', 'distribution_choice_help', 'googledocs');
 
-        //$mform->addElement('header', 'googledrivefieldset', get_string('googledrivefieldset', 'googledrive'));
-        //$mform->addElement('static', 'label2', 'googledrivesetting2', 'Your googledrive fields go here. Replace me!');
+        // $rawfilepermissions = gdrive_filepermissions();
+        // foreach($rawfilepermissions  as $key => $rawfilepermission) {
+        //     $listfilepermissions[$key] = $rawfilepermission['name'];
+        // }
+        // $mform->addElement('select', 'gdrivepermissions', get_string('gdrivepermissions', 'googledocs'), $listfilepermissions);
+        // $mform->setDefault('gdrivepermissions', GDRIVEFILEPERMISSION_AUTHER_STUDENTS_RC);
 
-        // Add standard grading elements.
-        //$this->standard_grading_coursemodule_elements();
+        // $mform->addElement('hidden', 'display');
+        // $mform->setType('display', PARAM_INT);
+        // $mform->setDefault('display', 0);
+        // $mform->addElement('hidden', 'displayoptions');
+        // $mform->setType('displayoptions', PARAM_TEXT);
+        // $mform->setDefault('displayoptions', '');
+        // $mform->addElement('hidden', 'course');
+        // $mform->setType('course', PARAM_INT);
+        // $mform->setDefault('course', $COURSE->id);
 
         // Add standard elements, common to all modules.
         $this->standard_coursemodule_elements();
@@ -147,7 +146,7 @@ class mod_googledrive_mod_form extends moodleform_mod {
 
             } else if (preg_match('|^[a-z]+://|i', $url) or preg_match('|^https?:|i', $url) or preg_match('|^ftp:|i', $url)) {
                 // normal URL
-                if (!googledrive_appears_valid_url($url)) {
+                if (!googledocs_appears_valid_url($url)) {
                     $errors['gdriveurl'] = get_string('invalidurl', 'url');
                 }
 
@@ -158,7 +157,7 @@ class mod_googledrive_mod_form extends moodleform_mod {
             } else {
                 // invalid URI, we try to fix it by adding 'http://' prefix,
                 // relative links are NOT allowed because we display the link on different pages!
-                if (!googledrive_appears_valid_url('http://'.$url)) {
+                if (!googledocs_appears_valid_url('http://'.$url)) {
                     $errors['gdriveurl'] = get_string('invalidurl', 'url');
                 }
             }
