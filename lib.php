@@ -31,34 +31,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-/**
- * Google Drive file types.
- *
- * @return array google drive file types.
- * http://stackoverflow.com/questions/11412497/what-are-the-google-apps-mime-types-in-google-docs-and-google-drive#11415443
- */
-function google_filetypes() {
-    $types = array (
-        'doc' => array(
-            'name'     => get_string('google_doc', 'mod_googledocs'),
-            'mimetype' => 'application/vnd.google-apps.document',
-            'icon'     => 'docs.svg',
-        ),
-        'sheet' => array(
-            'name'     => get_string('google_sheet', 'mod_googledocs'),
-            'mimetype' => 'application/vnd.google-apps.spreadsheet',
-            'icon'     => 'sheets.svg',
-        ),
-        'slides' => array(
-            'name'     => get_string('google_slides', 'mod_googledocs'),
-            'mimetype' => 'application/vnd.google-apps.presentation',
-            'icon'     => 'slides.svg',
-        ),
-    );
-
-    return $types;
-}
-
 /* Moodle core API */
 
 /**
@@ -102,14 +74,14 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
     $googledocs->timecreated = time();
 
-    $client = get_google_client();
+    // $client = get_google_client();
 
-    // $gdrive = new googledocs(null);
-    // if (!$gdrive->check_google_login()) {
-        //$googleauthlink = $gdrive->display_login_button();
-        //$mform->addElement('html',$googleauthlink);
-    //     debugging('Error - not authenticated with Google!');
-    // }
+    $gdrive = new googledocs();
+    if (!$gdrive->check_google_login()) {
+        $googleauthlink = $gdrive->display_login_button();
+        $mform->addElement('html',$googleauthlink);
+        debugging('Error - not authenticated with Google!');
+    }
     $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
     $context = context_course::instance($googledocs->course);
     //$users = get_enrolled_users($context);

@@ -28,25 +28,33 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['modulename'] = 'Google Doc';
-$string['modulenameplural'] = 'Google Docs';
-$string['modulename_help'] = 'Share Google Docs with students.';
-$string['pluginname'] = 'Google Doc';
-$string['filetypes'] = 'File type';
-$string['google_doc'] = 'Google Doc';
-$string['google_sheet'] = 'Google Sheet';
-$string['google_slides'] = 'Google Slides';
+$string['all_share'] = 'All share single copy';
+$string['authenticated'] = 'Google drive access authenticated.';
+$string['close'] = 'Close now';
+$string['comment'] = 'Comment';
 $string['create_new'] = 'Create blank';
-$string['use_existing'] = 'Use existing';
-$string['use_document'] = 'Use document';
+$string['distribution'] = 'Distribution';
 $string['document_name'] = 'Document name';
 $string['document_type'] = 'Document type';
-$string['google_doc_url'] = 'Existing Doc URL';
-$string['permissions'] = 'Permissions';
-$string['edit'] = 'Edit';
-$string['comment'] = 'Comment';
-$string['view'] = 'View';
-$string['distribution'] = 'Distribution';
 $string['each_gets_own'] = 'Each gets their own copy';
-$string['all_share'] = 'All share single copy';
-
+$string['edit'] = 'Edit';
+$string['filetypes'] = 'File type';
+$string['google_doc'] = 'Google Doc';
+$string['google_doc_url'] = 'Existing Doc URL';
+$string['google_sheet'] = 'Google Sheet';
+$string['google_slides'] = 'Google Slides';
+$string['modulename'] = 'Google Doc';
+$string['modulename_help'] = 'Share Google Docs with students.';
+$string['modulenameplural'] = 'Google Docs';
+$string['oauth2link'] = 'This plugin requires a Google OAuth service to be set up. See the <a href="{$a}" title="'.
+                        'Link to OAuth 2 services configuration">OAuth 2 services</a> configuration page.';
+$string['oauth2services'] = 'OAuth 2 service';
+$string['oauth2servicesdesc'] = 'Choose the Google OAuth2 service the Google Docs activity will use.';
+$string['permissions'] = 'Permissions';
+$string['pluginname'] = 'Google Docs';
+$string['urlempty'] = 'If sharing an existing doc, you must enter a documents URL.';
+$string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
+$string['use_document'] = 'Use document';
+$string['use_existing'] = 'Use existing';
+$string['view'] = 'View';
+$string['windowillclose'] = 'This window will close in 5 seconds.';
