@@ -1,0 +1,33 @@
+/* 
+    Created on : 16 Jun 2020, 8:50:23 am
+    Author     : Veronica Bermegui.
+*/
+
+table.flexible.overviewTable {
+    margin: 20px 0;
+    width: 100%;
+    table-layout: fixed;
+}
+.spinner-border.processing {
+    width: 120px;
+    height: 120px;
+    border: 16px solid #f3f3f3;
+    border-top: 16px solid #3498db;
+    /*margin-top: 311px;*/
+}
+
+.d-flex.justify-content-center.overlay {
+    background-color: rgba(204, 204, 204, 0.57);
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+}
+
+.process_message {
+    font-weight: bold;
+    margin-top: 25px; 
+    text-align: center;
+}

@@ -27,23 +27,29 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+
 require_once(__DIR__ . '/locallib.php');
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
+require_once($CFG->dirroot.'/course/lib.php');
 
 /**
  * Module instance settings form
  *
  * @package    mod_googledocs
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
+ * @copyright  2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_googledocs_mod_form extends moodleform_mod {
+
 
     /**
      * Defines forms elements.
      */
     public function definition() {
-        global $CFG, $COURSE;
+        global $CFG, $PAGE;
+       // Add the javascript required to enhance this mform.
+       $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
 
         // Start the instance config form.
         $mform = $this->_form;
@@ -67,21 +73,17 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         } else {
 
-            // Add the form contents.
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
             $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
             $mform->setDefault('use_document', 'new');
             // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
-
-            $mform->addElement('text', 'doc_name', get_string('document_name', 'googledocs'), array('size' => '64'));
-            $mform->setType('doc_name', PARAM_TEXT);
-            // $mform->addRule('doc_name', null, 'required', null, 'client');
-            $mform->addRule('doc_name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-            $mform->hideif('doc_name', 'use_document', 'eq', 'existing');
-            // $mform->addHelpButton('doc_name', 'doc_name_help', 'googledocs');
-
+            $mform->addElement('text', 'name', get_string('document_name', 'googledocs'), array('size' => '64'));
+            $mform->setType('name', PARAM_TEXT);
+            $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+            $mform->hideif('name', 'use_document', 'eq', 'existing');
+            //$mform->addHelpButton('name', 'name_help', 'googledocs');
             $types = google_filetypes();
             $typesarray = array();
             foreach($types as $key => $type) {
@@ -126,16 +128,34 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Validates forms elements.
      */
     function validation($data, $files) {
-        $errors = parent::validation($data, $files);
-
         // Validating doc URL if sharing an existing doc.
         if ($data['use_document'] == 'existing') {
+            $data['name'] = '_';
+
             if(empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
             } else if (!googledocs_appears_valid_url($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
             }
         }
+        //When creating from an existing file there is no file name to provide.
+        //If this sentence is executed first,the validation fails.
+        $errors = parent::validation($data, $files);
+
         return $errors;
     }
+
+    protected function apply_admin_locked_flags(): void {
+        global $PAGE;
+         // Add the javascript required to enhance this mform.
+        $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+        parent::apply_admin_locked_flags();
+
+
+
+    }
+
+
+
+
 }

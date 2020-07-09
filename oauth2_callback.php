@@ -36,7 +36,7 @@ require_login();
 
 // Output start of page.
 header('Cache-Control: no-cache, must-revalidate');
-header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+header('Expires: Wed, 31 Dec 2025 00:00:00 GMT');
 $PAGE->set_url(
     '/mod/googledocs/oauth2_callback.php',
     array(
@@ -46,11 +46,11 @@ $PAGE->set_url(
     )
 );
 $PAGE->set_context(null);
-$strauthenticated = get_string('authenticated', 'googledocs');
-$PAGE->set_title($strauthenticated);
+$strauthorised = get_string('authorised', 'googledocs');
+$PAGE->set_title($strauthorised);
 $PAGE->set_pagelayout('popup');
 echo $OUTPUT->header();
-echo $OUTPUT->heading($strauthenticated, 2);
+echo $OUTPUT->heading($strauthorised, 2);
 
 /// Wait as long as it takes for this script to finish
 core_php_time_limit::raise();

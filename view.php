@@ -22,13 +22,15 @@
  *
  * @package    mod_googledocs
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
+ *             2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
  */
-
-// Replace googledocs with the name of your module and remove this line.
 
 require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once(dirname(__FILE__).'/lib.php');
+require_once($CFG->dirroot . '/mod/assign/locallib.php');
+require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course_module ID, or
 $n  = optional_param('n', 0, PARAM_INT);  // ... googledocs instance ID - it should be named as the first character of the module.
@@ -47,37 +49,16 @@ if ($id) {
 
 require_login($course, true, $cm);
 
-$event = \mod_googledocs\event\course_module_viewed::create(array(
-    'objectid' => $PAGE->cm->instance,
-    'context' => $PAGE->context,
-));
-$event->add_record_snapshot('course', $PAGE->course);
-$event->add_record_snapshot($PAGE->cm->modname, $googledocs);
-$event->trigger();
-
-// Print the page header.
-
-$PAGE->set_url('/mod/googledocs/view.php', array('id' => $cm->id));
-$PAGE->set_title(format_string($googledocs->name));
+$url = new moodle_url('/mod/assign/view.php', array('id' => $cm->id));
+$PAGE->set_url($url);
 $PAGE->set_heading(format_string($course->fullname));
+$PAGE->set_title(format_string($googledocs->name));
 
-/*
- * Other things you may want to set - remove if not needed.
- * $PAGE->set_cacheable(false);
- * $PAGE->set_focuscontrol('some-html-id');
- * $PAGE->add_body_class('googledocs-'.$somevar);
- */
 
 // Output starts here.
 echo $OUTPUT->header();
 
-// Conditions to show the intro can change to look for own settings or whatever.
-if ($googledocs->intro) {
-    echo $OUTPUT->box(format_module_intro('googledocs', $googledocs, $cm->id), 'generalbox mod_introbox', 'googledocsintro');
-}
+users_files_renderer($googledocs->id);
 
-// Replace the following lines with you own code.
-//echo $OUTPUT->heading('Yay! It works!');
-echo html_writer::nonempty_tag('IFRAME', '.', array('src' => $googledocs->gdriveurl, 'width'=>'100%', 'height' => '800'));
 // Finish the page.
 echo $OUTPUT->footer();

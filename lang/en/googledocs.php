@@ -29,11 +29,17 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['all_share'] = 'All share single copy';
-$string['authenticated'] = 'Google drive access authenticated.';
+$string['authorised'] = 'Google drive access authorised.';
 $string['close'] = 'Close now';
 $string['comment'] = 'Comment';
+$string['googledocs:addinstance'] = 'Add a new googledocs';
 $string['create_new'] = 'Create blank';
+$string['create_new_folder'] = 'Create new folder';
+$string['use_existing_folder'] = 'Use existing folder';
 $string['distribution'] = 'Distribution';
+$string['folder_name'] = 'Folder Name';
+$string['dir_name_help'] = 'The folder you create will be inside CGS/{$a}';
+$string['dir_name_help_help'] = '{$a}';
 $string['document_name'] = 'Document name';
 $string['document_type'] = 'Document type';
 $string['each_gets_own'] = 'Each gets their own copy';
@@ -41,6 +47,7 @@ $string['edit'] = 'Edit';
 $string['filetypes'] = 'File type';
 $string['google_doc'] = 'Google Doc';
 $string['google_doc_url'] = 'Existing Doc URL';
+$string['google_dir_url'] = 'Existing Folder URL';
 $string['google_sheet'] = 'Google Sheet';
 $string['google_slides'] = 'Google Slides';
 $string['modulename'] = 'Google Doc';
@@ -53,8 +60,14 @@ $string['oauth2servicesdesc'] = 'Choose the Google OAuth2 service the Google Doc
 $string['permissions'] = 'Permissions';
 $string['pluginname'] = 'Google Docs';
 $string['urlempty'] = 'If sharing an existing doc, you must enter a documents URL.';
+$string['dirurlempty'] = 'If sharing an existing folder, you must enter a folders URL';
 $string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
+$string['dirurlinvalid'] = 'The folder URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
 $string['use_document'] = 'Use document';
+$string['use_folder'] = 'Use Folder';
 $string['use_existing'] = 'Use existing';
 $string['view'] = 'View';
 $string['windowillclose'] = 'This window will close in 5 seconds.';
+$string['pluginadministration'] = '';
+$string['sharedurl'] = 'File Shared Link';
+

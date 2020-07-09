@@ -26,10 +26,12 @@
  *
  * @package    mod_googledocs
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
+ *             2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
+require_once($CFG->dirroot.'/mod/googledocs/locallib.php');
 
 /* Moodle core API */
 
@@ -45,7 +47,7 @@ function googledocs_supports($feature) {
 
     switch($feature) {
         case FEATURE_MOD_INTRO:
-            return true;
+            return false; //true;
         case FEATURE_SHOW_DESCRIPTION:
             return false;
         case FEATURE_GRADE_HAS_GRADE:
@@ -59,7 +61,6 @@ function googledocs_supports($feature) {
 
 /**
  * Saves a new instance of the googledocs into the database
- *
  * Given an object containing all the necessary data,
  * (defined by the form in mod_form.php) this function
  * will create a new instance and return the id number
@@ -70,40 +71,99 @@ function googledocs_supports($feature) {
  * @return int The id of the newly inserted googledocs record
  */
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
-    global $DB, $USER;
+    global $DB, $USER, $COURSE;
 
-    $googledocs->timecreated = time();
+    try{
 
-    // $client = get_google_client();
+        $googledocs->timecreated = time();
+        $context = context_course::instance($googledocs->course);
+        $gdrive =  new googledrive($context->id);
 
-    $gdrive = new googledocs();
-    if (!$gdrive->check_google_login()) {
-        $googleauthlink = $gdrive->display_login_button();
-        $mform->addElement('html',$googleauthlink);
-        debugging('Error - not authenticated with Google!');
+        if (!$gdrive->check_google_login()) {
+            $googleauthlink = $gdrive->display_login_button();
+            $mform->addElement('html',$googleauthlink);
+            throw new Exception('Error - not authenticated with Google!');
+        }
+
+        $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
+        $coursestudents = get_role_users(5, $context);
+
+        foreach ($coursestudents as $student) {
+            $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
+                'displayName' => $student->firstname . ' ' . $student->lastname);
+        }
+        $owncopy = false;
+
+        if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ){
+             $owncopy = true;
+        }
+
+        // Use existing doc
+        if (($mform->get_submitted_data())->use_document == 'existing'){
+
+            // Save new file in a COURSE Folder
+            $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
+           // var_dump($sharedlink); exit;
+            $googledocs->google_doc_url = $sharedlink[1];
+            $googledocs->docid = ($sharedlink[0])->id;
+            $googledocs->parentfolderid = $owncopy ? $sharedlink[3] : $sharedlink[2];
+            $googledocs->userid = $USER->id;
+            $googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
+            $googledocs->timemodified =  $googledocs->timecreated;
+            $googledocs->name = ($sharedlink[0])->title;
+            $googledocs->intro =  ($sharedlink[0])->title;
+            $googledocs->sharing = ($sharedlink[0])->shared;
+            $googledocs->introformat = FORMAT_MOODLE;
+            $googledocs->id = $DB->insert_record('googledocs', $googledocs);
+
+            //Same link for all students
+            $data = new \stdClass();
+            foreach ($students as $student){
+                $data->userid = $student['id'];
+                $data->googledocid = $googledocs->id;
+                $data-> url =  $sharedlink[1];
+                $data->name = ($sharedlink[0])->title;
+                $record = $DB->insert_record('googledocs_files', $data);
+            }
+        } else {
+            // Save new file in a new folder
+            $folderid = $gdrive->getfileid($googledocs->name);
+
+            if($folderid == null){
+                $folderid = $gdrive->create_gdrive_folder($googledocs->name, $author);
+            }
+           
+            $sharedlink = $gdrive->create_gdrive_file($googledocs->name, $googledocs->document_type,
+                $googledocs->permissions, $author, $students, $folderid, $owncopy);
+            $googledocs->google_doc_url = $sharedlink[1];
+            $googledocs->docid = ($sharedlink[0])->id;
+            $googledocs->parentfolderid = $folderid;
+            $googledocs->userid = $USER->id;
+            $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
+            $googledocs->timemodified = $googledocs->timecreated;
+            $googledocs->name = $googledocs->name;
+            $googledocs->intro = $googledocs->name;
+            $googledocs->sharing = ($sharedlink[0])->shared; //$distribution == 'all_share' ? 1  : 0 ;
+            $googledocs->introformat = FORMAT_MOODLE;
+
+            $googledocs->id = $DB->insert_record('googledocs', $googledocs);
+            $data = new \stdClass();
+
+            foreach($sharedlink[2]  as $sl=>$s){
+                $data->userid = $sl;
+                $data->googledocid = $googledocs->id;
+                $data-> url = $s[0];
+                $data->name = $s['filename'];
+                $record = $DB->insert_record('googledocs_files', $data);
+
+            }
+        }
+
+        return $googledocs->id;
+
+    } catch (Exception $ex) {
+        echo  "An error occurred: " . $ex->getMessage();
     }
-    $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
-    $context = context_course::instance($googledocs->course);
-    //$users = get_enrolled_users($context);
-    $coursestudents = get_role_users(5, $context);
-    foreach ($coursestudents as $student) {
-        $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
-            'displayName' => $student->firstname . ' ' . $student->lastname);
-    }
-
-    $gdrivedoc = $gdrive->create_gdrive_file($googledocs->name, $googledocs->gdrivetype,
-        $googledocs->gdrivepermissions, $author, $students);
-    $gdrivedoclink = new \moodle_url($gdrivedoc);
-    $googledocs->gdriveurl = $gdrivedoclink->out(false);
-
-
-    // You may have to add extra stuff in here.
-
-    $googledocs->id = $DB->insert_record('googledocs', $googledocs);
-
-    //googledocs_grade_item_update($googledocs);
-
-    return $googledocs->id;
 }
 
 /**
@@ -120,19 +180,32 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
     global $DB;
 
+    $context = context_course::instance($googledocs->course);
+    $gdrive =  new googledrive($context->id, true);
+    //$update_result = $gdrive->update_file(($mform->get_current())->docid,
+      //  ($mform->get_current())->parentfolderid, $mform->get_submitted_data());
+     $update_result = $gdrive->renameFile(($mform->get_current())->docid, ($mform->get_submitted_data())->name);
+
+    $googledocs->introeditor = null;
     $googledocs->timemodified = time();
     $googledocs->id = $googledocs->instance;
 
-    if ($googledocs->intro == null) $googledocs->intro = $mform->get_current()->intro;
-    if ($googledocs->introformat == null) $googledocs->introformat = $mform->get_current()->introformat;
+    if (is_string($update_result)  ) {
+        $googledocs->update_status = $update_result;
+        $result = $DB->update_record('googledocs', $googledocs);
+    }else{
+        $googledocs->update_status = 'modified';
+        $googledocs->intro =   ($mform->get_submitted_data())->name;
+        $googledocs->introformat = $mform->get_current()->introformat;
+        /**
+        if ($googledocs->intro == null) $googledocs->intro = $mform->get_current()->intro;
+        if ($googledocs->introformat == null) $googledocs->introformat = $mform->get_current()->introformat;
 
-    $googledocs->introeditor = null;
-
-    // You may have to add extra stuff in here.
-
-    $result = $DB->update_record('googledocs', $googledocs);
-
-    //googledocs_grade_item_update($googledocs);
+        $googledocs->introeditor = null; */
+        // You may have to add extra stuff in here.
+        $result = $DB->update_record('googledocs', $googledocs);
+        //googledocs_grade_item_update($googledocs);
+    }
 
     return $result;
 }
@@ -188,7 +261,7 @@ function googledocs_delete_instance($id) {
     // Delete any dependent records here.
 
     $DB->delete_records('googledocs', array('id' => $googledocs->id));
-
+    $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     //googledocs_grade_item_delete($googledocs);
 
     return true;
