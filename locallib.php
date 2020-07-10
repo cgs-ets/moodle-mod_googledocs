@@ -160,7 +160,7 @@ function users_files_renderer($instanceid){
                'lastname' => strtoupper($users[$i]->lastname),
                'picture' => $picture,
                'fullname' => $namelink,
-               'sharedurl' => html_writer::link($users[$i]->url,$users[$i]->name),
+               'sharedurl' => html_writer::link($users[$i]->url,$users[$i]->name, array('target'=>'_blank')),
            );
            $rowdata = array($rows[$i]['picture'], $rows[$i]['fullname'], $rows[$i]['sharedurl']);
            $table->add_data($rowdata);
@@ -643,11 +643,14 @@ class googledrive {
             // Set proper permissions to all students.
             // The primary role can be either reader or writer.
             $commenter = false;
-            if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER || $permissiontype == GDRIVEFILEPERMISSION_READER) {
+            if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER) {
                 $studentpermissions = 'reader';
                 $commenter = true;
-            } else {
+            } elseif ($permissiontype == GDRIVEFILEPERMISSION_READER) {
+                  $studentpermissions = 'reader';
+            }else{
                 $studentpermissions = 'writer';
+
             }
             $links_for_students = array();
             $url = urlTemplates();
@@ -670,7 +673,7 @@ class googledrive {
             }
             $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
             $sharedfile = array($file, $sharedlink, $links_for_students );
-          
+
             return $sharedfile;
 
         } catch (Exception $ex) {
@@ -695,7 +698,7 @@ class googledrive {
         $copy = $this->service->files->copy($file->id,$copiedfile);
 
         $links = array ();
-        $linktoshare = $copy->selfLink;//sprintf($url[$copy->mimeType]['linktemplate'], $copy->id);
+        $linktoshare = $copy->selfLink;
         // Insert the permission to the shared file.
         foreach ($students as $student) {
             $this->insert_permission($this->service, $copy->id,
@@ -916,7 +919,6 @@ class googledrive {
         if($commenter) {
             $newPermission->setAdditionalRoles(array('commenter'));
         }
-
         try {
             $service->permissions->insert($fileId, $newPermission);
         } catch (Exception $e) {

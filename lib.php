@@ -71,7 +71,7 @@ function googledocs_supports($feature) {
  * @return int The id of the newly inserted googledocs record
  */
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
-    global $DB, $USER, $COURSE;
+    global $USER;
 
     try{
 
@@ -113,8 +113,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
-            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type,
-                $googledocs->permissions, $author, $students, $folderid, $owncopy);
+            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type, $googledocs->permissions,
+                $author, $students, $folderid, $owncopy);
 
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
 
