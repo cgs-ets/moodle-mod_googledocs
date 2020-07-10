@@ -100,63 +100,26 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         // Use existing doc
         if (($mform->get_submitted_data())->use_document == 'existing'){
-
             // Save new file in a COURSE Folder
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
-           // var_dump($sharedlink); exit;
-            $googledocs->google_doc_url = $sharedlink[1];
-            $googledocs->docid = ($sharedlink[0])->id;
-            $googledocs->parentfolderid = $owncopy ? $sharedlink[3] : $sharedlink[2];
-            $googledocs->userid = $USER->id;
-            $googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
-            $googledocs->timemodified =  $googledocs->timecreated;
-            $googledocs->name = ($sharedlink[0])->title;
-            $googledocs->intro =  ($sharedlink[0])->title;
-            $googledocs->sharing = ($sharedlink[0])->shared;
-            $googledocs->introformat = FORMAT_MOODLE;
-            $googledocs->id = $DB->insert_record('googledocs', $googledocs);
+            $folderid = $sharedlink[3];
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
+            $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
-            //Same link for all students
-            $data = new \stdClass();
-            foreach ($students as $student){
-                $data->userid = $student['id'];
-                $data->googledocid = $googledocs->id;
-                $data-> url =  $sharedlink[1];
-                $data->name = ($sharedlink[0])->title;
-                $record = $DB->insert_record('googledocs_files', $data);
-            }
         } else {
             // Save new file in a new folder
-            $folderid = $gdrive->getfileid($googledocs->name);
+            $folderid = $gdrive->get_file_id($googledocs->name);
 
-            if($folderid == null){
-                $folderid = $gdrive->create_gdrive_folder($googledocs->name, $author);
+            if ($folderid == null) {
+                $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
-           
-            $sharedlink = $gdrive->create_gdrive_file($googledocs->name, $googledocs->document_type,
+            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type,
                 $googledocs->permissions, $author, $students, $folderid, $owncopy);
-            $googledocs->google_doc_url = $sharedlink[1];
-            $googledocs->docid = ($sharedlink[0])->id;
-            $googledocs->parentfolderid = $folderid;
-            $googledocs->userid = $USER->id;
-            $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
-            $googledocs->timemodified = $googledocs->timecreated;
-            $googledocs->name = $googledocs->name;
-            $googledocs->intro = $googledocs->name;
-            $googledocs->sharing = ($sharedlink[0])->shared; //$distribution == 'all_share' ? 1  : 0 ;
-            $googledocs->introformat = FORMAT_MOODLE;
 
-            $googledocs->id = $DB->insert_record('googledocs', $googledocs);
-            $data = new \stdClass();
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
 
-            foreach($sharedlink[2]  as $sl=>$s){
-                $data->userid = $sl;
-                $data->googledocid = $googledocs->id;
-                $data-> url = $s[0];
-                $data->name = $s['filename'];
-                $record = $DB->insert_record('googledocs_files', $data);
+            $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
-            }
         }
 
         return $googledocs->id;
@@ -184,7 +147,7 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
     $gdrive =  new googledrive($context->id, true);
     //$update_result = $gdrive->update_file(($mform->get_current())->docid,
       //  ($mform->get_current())->parentfolderid, $mform->get_submitted_data());
-     $update_result = $gdrive->renameFile(($mform->get_current())->docid, ($mform->get_submitted_data())->name);
+     $update_result = $gdrive->rename_file(($mform->get_current())->docid, ($mform->get_submitted_data())->name);
 
     $googledocs->introeditor = null;
     $googledocs->timemodified = time();

@@ -464,7 +464,6 @@ class googledrive {
     public function share_existing_file(stdClass $mform , $owncopy, $students) {
 
         try {
-
             $document_type =  $mform->document_type;
             $url = $mform->google_doc_url;
 
@@ -486,11 +485,12 @@ class googledrive {
             $urlTemplate = urlTemplates();
 
             // Set the parent folder.
-            $parentdirid = $this->create_gdrive_folder($file->title);
+            $parentdirid = $this->create_folder($file->title);
             $parent = new Google_Service_Drive_ParentReference();
             $parent->setId($parentdirid);
 
-            //The primary role can be either reader or writer.
+            // The primary role can be either reader or writer.
+            // Commenter is an additional role.
             $commenter = false;
 
             if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER) {
@@ -507,8 +507,8 @@ class googledrive {
                $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
-                $link = $this->make_copy($file, $parent,$students, $studentpermissions, $commenter);
-                $sharedfile = array($file, $link, $parentdirid);
+                $links = $this->make_copy($file, $parent,$students, $studentpermissions, $commenter);
+                $sharedfile = array($links[0], $links[1], $links[2], $parentdirid);
             }
 
             return $sharedfile;
@@ -528,13 +528,13 @@ class googledrive {
      * @param string $dirname
      * @param array $author
      */
-    public function create_gdrive_folder($dirname, $author = array() ) {
+    public function create_folder($dirname, $author = array() ) {
         global $COURSE, $SITE;
 
         if (!empty($author)) {
             $this->author = $author;
         }
-        $sitefolderid = $this->getfileid($SITE->fullname);
+        $sitefolderid = $this->get_file_id($SITE->fullname);
         $rootparent = new Google_Service_Drive_ParentReference();
 
         if ($sitefolderid == null) {
@@ -548,7 +548,7 @@ class googledrive {
             $rootparent->setId($sitefolderid);
         }
 
-        $coursefolderid = $this->getfileid($COURSE->fullname);
+        $coursefolderid = $this->get_file_id($COURSE->fullname);
 
         $courseparent = new Google_Service_Drive_ParentReference();
         //course folder doesnt exist. Create it inside Site Folder
@@ -581,7 +581,7 @@ class googledrive {
      * @param array $parentid
      * @return string
      */
-    public function create_gdrive_child_folder($dirname, $parentid){
+    public function create_child_folder($dirname, $parentid){
         // Create the folder with the given name
 
         $fileMetadata = new \Google_Service_Drive_DriveFile(array(
@@ -605,7 +605,7 @@ class googledrive {
      * @param array $students student's details.
      * @return array with, if successful or null.
      */
-    public function create_gdrive_file($docname, $gfiletype = GDRIVEFILETYPE_DOCUMENT,
+    public function create_file($docname, $gfiletype = GDRIVEFILETYPE_DOCUMENT,
                                       $permissiontype = GDRIVEFILEPERMISSION_WRITER,
                                       $author = array(), $students = array(), $parentid = null, $copy = false) {
 
@@ -631,12 +631,12 @@ class googledrive {
                 'parents'=> array($parent),
                 'uploadType' => 'multipart'));
             //In the array, add the attributes you want in the response
-            $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared'));
+            $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title'));
 
             if (!empty($this->author)) {
                 $this->author['type'] = 'user';
                 $this->author['role'] = 'owner'; //writer
-                $this->insertPermission( $this->service, $file->id ,$this->author['emailAddress'],
+                $this->insert_permission( $this->service, $file->id ,$this->author['emailAddress'],
                     $this->author['type'], $this->author['role']);
             }
 
@@ -649,30 +649,31 @@ class googledrive {
             } else {
                 $studentpermissions = 'writer';
             }
-            $links = array();
+            $links_for_students = array();
             $url = urlTemplates();
 
             if($copy){
-               $links = $this->make_copies($file->id, array($parent), $docname, $students, $studentpermissions, $commenter);
+               $links_for_students = $this->make_copies($file->id, array($parent), $docname, $students, $studentpermissions, $commenter);
             }else{
                 //https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html
                 //Global HTTP Batch Endpoints (www.googleapis.com/batch) will cease to work on August 12, 2020
                 // Give proper permissions to author (teacher).
                 if (!empty($this->students)) {
                     foreach ($this->students as $student) {
-                        $links[$student['id']] = array (sprintf($url[$gfiletype]['linktemplate'], $file->id),
+                        $links_for_students[$student['id']] = array (sprintf($url[$gfiletype]['linktemplate'], $file->id),
                             'filename' => $docname);
-                        $this->insertPermission($this->service, $file->id, $student['emailAddress'], 'user',$studentpermissions,
+                        $this->insert_permission($this->service, $file->id, $student['emailAddress'], 'user',$studentpermissions,
                             $commenter);
                     }
                 }
             }
             $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
-            $sharedfile = array($file, $sharedlink, $links );
+            $sharedfile = array($file, $sharedlink, $links_for_students );
 
             return $sharedfile;
 
         } catch (Exception $ex) {
+            print_object ($ex); exit;
               print "An error occurred: " . $ex->getMessage();
         }
         return null;
@@ -691,15 +692,19 @@ class googledrive {
         $copiedfile->setTitle($file->title);
         $copiedfile->setParents(array($parent));
         $copy = $this->service->files->copy($file->id,$copiedfile);
-        $link = sprintf($url[$copy->mimeType]['linktemplate'], $copy->id);
 
+        $links = array ();
+        $linktoshare = $copy->selfLink;//sprintf($url[$copy->mimeType]['linktemplate'], $copy->id);
         // Insert the permission to the shared file.
         foreach ($students as $student) {
-            $this->insertPermission($this->service, $copy->id,
+            $this->insert_permission($this->service, $copy->id,
             $student['emailAddress'], 'user', $studentpermissions, $commenter);
+            $links[$student['id']] = array($copy->alternateLink, 'filename' => $file->title);
         }
+        $copy_details = array ($copy, $copy->alternateLink, $links);
 
-        return $link;
+
+        return $copy_details;
 
     }
     /**
@@ -717,7 +722,7 @@ class googledrive {
         $links = array();
         $url = urlTemplates();
 
-        $parentid = $this->create_gdrive_child_folder($docname . '_students', $parent);
+        $parentid = $this->create_child_folder($docname . '_students', $parent);
         $parentref = new Google_Service_Drive_ParentReference();
         $parentref->setId($parentid);
 
@@ -730,9 +735,11 @@ class googledrive {
                 $links[$student['id']] = array(sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id),
                     'filename' => $docname .'_'.$student['displayName']);
 
-                $this->insertPermission($this->service, $copyid->id, $student['emailAddress'], 'user', $studentpermissions, $commenter);
+                $this->insert_permission($this->service, $copyid->id, $student['emailAddress'], 'user', $studentpermissions, $commenter);
             }
         }
+
+
         return $links;
     }
 
@@ -759,18 +766,18 @@ class googledrive {
 
         } catch (Exception $ex) {
             print "An Error occurred :" . $ex->getMessage();
-            var_dump($ex); exit;
+            //var_dump($ex); exit;
             return $ex;
         }
         return $result;
     }
 
-    function renameFile($fileId, $newTitle) {
+    function rename_file($fileId, $newTitle) {
       try {
 
         $file = new Google_Service_Drive_DriveFile();
         $file->setTitle($newTitle);
-        var_dump($file);
+        //var_dump($file);
 
         $updatedFile = $this->service->files->patch($fileId, $file, array(
           'fields' => 'title'
@@ -827,7 +834,7 @@ class googledrive {
      * @param String $filename
      * @return String
      */
-    public function getfileid($filename) {
+    public function get_file_id($filename) {
 
         $result = array();
         $pageToken = NULL;
@@ -899,7 +906,7 @@ class googledrive {
      * @param String $type The value "user", "group", "domain" or "default".
      * @param String $role The value "owner", "writer" or "reader".
      */
-    function insertPermission($service, $fileId, $value, $type, $role, $commenter = false) {
+    function insert_permission($service, $fileId, $value, $type, $role, $commenter = false) {
         $newPermission = new Google_Service_Drive_Permission();
         $newPermission->setValue($value);
         $newPermission->setRole($role);
@@ -915,6 +922,51 @@ class googledrive {
             print "An error occurred: " . $e->getMessage();
         }
         return null;
+    }
+
+
+    /**
+     * Helper function to save the instance record in DB
+     * @global type $USER
+     * @global type $DB
+     * @param type $googledocs
+     * @param type $sharedlink
+     * @return type
+     */
+    public function save_instance($googledocs, $sharedlink, $folderid){
+
+        global $USER, $DB;
+        $googledocs->google_doc_url = $sharedlink[1];
+        $googledocs->docid = ($sharedlink[0])->id;
+        $googledocs->parentfolderid = $folderid;
+        $googledocs->userid = $USER->id;
+        $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
+        $googledocs->timemodified = $googledocs->timecreated;
+        $googledocs->name = ($sharedlink[0])->title;
+        $googledocs->intro = ($sharedlink[0])->title;
+        $googledocs->use_document = $googledocs->use_document;
+        $googledocs->sharing = ($sharedlink[0])->shared;
+        $googledocs->introformat = FORMAT_MOODLE;
+
+        return $DB->insert_record('googledocs', $googledocs);
+    }
+
+    /**
+     * Helper function to save the students links records.
+     * @global type $DB
+     * @param type $sharedlink
+     * @param type $instanceid
+     */
+    public function save_students_links_records($links_for_students, $instanceid){
+        global  $DB;
+        $data = new \stdClass();
+        foreach($links_for_students  as $sl=>$s){
+            $data->userid = $sl;
+            $data->googledocid = $instanceid;
+            $data-> url = $s[0];
+            $data->name = $s['filename'];
+            $DB->insert_record('googledocs_files', $data);
+        }
     }
 
 }
