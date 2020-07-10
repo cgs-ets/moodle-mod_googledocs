@@ -631,7 +631,7 @@ class googledrive {
                 'parents'=> array($parent),
                 'uploadType' => 'multipart'));
             //In the array, add the attributes you want in the response
-            $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title'));
+            $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title, alternateLink'));
 
             if (!empty($this->author)) {
                 $this->author['type'] = 'user';
@@ -660,20 +660,21 @@ class googledrive {
                 // Give proper permissions to author (teacher).
                 if (!empty($this->students)) {
                     foreach ($this->students as $student) {
-                        $links_for_students[$student['id']] = array (sprintf($url[$gfiletype]['linktemplate'], $file->id),
-                            'filename' => $docname);
                         $this->insert_permission($this->service, $file->id, $student['emailAddress'], 'user',$studentpermissions,
                             $commenter);
+                        //sprintf($url[$gfiletype]['linktemplate'], $file->id)
+                        $links_for_students[$student['id']] = array ($file->alternateLink,
+                            'filename' => $docname);
                     }
                 }
             }
             $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
             $sharedfile = array($file, $sharedlink, $links_for_students );
-
+          
             return $sharedfile;
 
         } catch (Exception $ex) {
-            print_object ($ex); exit;
+
               print "An error occurred: " . $ex->getMessage();
         }
         return null;
