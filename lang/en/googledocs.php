@@ -33,6 +33,8 @@ $string['authorised'] = 'Google drive access authorised.';
 $string['close'] = 'Close now';
 $string['comment'] = 'Comment';
 $string['googledocs:addinstance'] = 'Add a new googledocs';
+$string['googledocs:viewall'] = 'View list of file';
+$string['googledocs:update'] = 'Update resource';
 $string['create_new'] = 'Create blank';
 $string['create_new_folder'] = 'Create new folder';
 $string['use_existing_folder'] = 'Use existing folder';
@@ -70,4 +72,6 @@ $string['view'] = 'View';
 $string['windowillclose'] = 'This window will close in 5 seconds.';
 $string['pluginadministration'] = '';
 $string['sharedurl'] = 'File Shared Link';
+$string['googledocs_api_key'] = 'Google Drive API Key';
+$string['googledocs_api_key_desc'] = 'Generate the API key in your Google console ';
 

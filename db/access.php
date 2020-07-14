@@ -81,4 +81,7 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
+
+
+
 );

@@ -47,7 +47,7 @@ function googledocs_supports($feature) {
 
     switch($feature) {
         case FEATURE_MOD_INTRO:
-            return false; //true;
+            return false; // ...true.
         case FEATURE_SHOW_DESCRIPTION:
             return false;
         case FEATURE_GRADE_HAS_GRADE:
@@ -73,15 +73,14 @@ function googledocs_supports($feature) {
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
     global $USER;
 
-    try{
-
-        $googledocs->timecreated = time();
-        $context = context_course::instance($googledocs->course);
-        $gdrive =  new googledrive($context->id);
+    try {
+            $googledocs->timecreated = time();
+            $context = context_course::instance($googledocs->course);
+            $gdrive = new googledrive($context->id);
 
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
-            $mform->addElement('html',$googleauthlink);
+            $mform->addElement('html', $googleauthlink);
             throw new Exception('Error - not authenticated with Google!');
         }
 
@@ -90,16 +89,16 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         foreach ($coursestudents as $student) {
             $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
-                'displayName' => $student->firstname . ' ' . $student->lastname);
+                    'displayName' => $student->firstname . ' ' . $student->lastname);
         }
-        $owncopy = false;
+            $owncopy = false;
 
-        if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ){
-             $owncopy = true;
+        if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ) {
+            $owncopy = true;
         }
 
-        // Use existing doc
-        if (($mform->get_submitted_data())->use_document == 'existing'){
+            // Use existing doc.
+        if (($mform->get_submitted_data())->use_document == 'existing') {
             // Save new file in a COURSE Folder
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
             $folderid = $sharedlink[3];
@@ -107,8 +106,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         } else {
-            // Save new file in a new folder
-            $folderid = $gdrive->get_file_id($googledocs->name);
+                // Save new file in a new folder.
+                $folderid = $gdrive->get_file_id($googledocs->name);
 
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
@@ -144,22 +143,21 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
     global $DB;
 
     $context = context_course::instance($googledocs->course);
-    $gdrive =  new googledrive($context->id, true);
-    //$update_result = $gdrive->update_file(($mform->get_current())->docid,
-      //  ($mform->get_current())->parentfolderid, $mform->get_submitted_data());
-     $update_result = $gdrive->rename_file(($mform->get_current())->docid, ($mform->get_submitted_data())->name);
-
+    $gdrive = new googledrive($context->id, true);
+    $updateresult = $gdrive->update_file($mform->get_current(), $mform->get_submitted_data());
+    //($mform->get_current())->docid, ($mform->get_current())->parentfolderid,        $mform->get_submitted_data()
     $googledocs->introeditor = null;
     $googledocs->timemodified = time();
     $googledocs->id = $googledocs->instance;
 
-    if (is_string($update_result)  ) {
-        $googledocs->update_status = $update_result;
+    if (is_string($updateresult)  ) { // Error on the update
+        $googledocs->update_status = $updateresult;
         $result = $DB->update_record('googledocs', $googledocs);
-    }else{
+    } else {
         $googledocs->update_status = 'modified';
         $googledocs->intro =   ($mform->get_submitted_data())->name;
         $googledocs->introformat = $mform->get_current()->introformat;
+
         /**
         if ($googledocs->intro == null) $googledocs->intro = $mform->get_current()->intro;
         if ($googledocs->introformat == null) $googledocs->introformat = $mform->get_current()->introformat;
@@ -210,23 +208,20 @@ function googledocs_refresh_events($courseid = 0) {
  * Given an ID of an instance of this module,
  * this function will permanently delete the instance
  * and any data that depends on it.
- *
+ * This function is run by the cron task  from course module
  * @param int $id Id of the module instance
  * @return boolean Success/Failure
  */
 function googledocs_delete_instance($id) {
-    global $DB;
+    global $DB,  $PAGE;
 
     if (! $googledocs = $DB->get_record('googledocs', array('id' => $id))) {
         return false;
     }
 
-    // Delete any dependent records here.
-
     $DB->delete_records('googledocs', array('id' => $googledocs->id));
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     //googledocs_grade_item_delete($googledocs);
-
     return true;
 }
 

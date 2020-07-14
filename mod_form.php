@@ -50,6 +50,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
         global $CFG, $PAGE;
        // Add the javascript required to enhance this mform.
        $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+       $update = optional_param('update', 0, PARAM_INT);
 
         // Start the instance config form.
         $mform = $this->_form;
@@ -76,7 +77,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
-            $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
+            $use_document = $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
             $mform->setDefault('use_document', 'new');
             // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
             $mform->addElement('text', 'name', get_string('document_name', 'googledocs'), array('size' => '64'));
@@ -84,6 +85,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->hideif('name', 'use_document', 'eq', 'existing');
             //$mform->addHelpButton('name', 'name_help', 'googledocs');
+
+            if($update != 0) {
+                $use_document->freeze();
+            }
             $types = google_filetypes();
             $typesarray = array();
             foreach($types as $key => $type) {
@@ -150,9 +155,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
          // Add the javascript required to enhance this mform.
         $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
         parent::apply_admin_locked_flags();
-
-
-
     }
 
 

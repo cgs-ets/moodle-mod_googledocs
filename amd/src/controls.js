@@ -52,26 +52,24 @@
         self.ProcessingMessageDisplay(self.saveAndReturn);
 
     };
-    
-    GoogledocsControl.prototype.ProcessingMessageDisplay = function(buttonId) {
-         // Handle submit click.
 
-       $(buttonId).on('click', function() {
-            $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
-                    +  "<div class='spinner-border processing' role='status'>"
-                    +  "<span class='sr-only'>Loading...</span>"
-                    + "</div>"
-                    + "<div class = 'process_message'>\n\
-                          <p>Saving files into MyDrive. <br>\n\
-                             The process can take sometime.<br> \n\
-                             Please do not close the browser.</p>\n\
-                       </div></div>").appendTo('#page-content');
+        GoogledocsControl.prototype.ProcessingMessageDisplay = function(buttonId) {
+            // Handle submit click.
 
-        });
-    };
-    return {
-        init: init
-    };
-});
+            $(buttonId).on('click', function() {
+                $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
+                        + "<div class='spinner-border processing' role='status'>"
+                        + "<span class='sr-only'>Loading...</span>"
+                        + "</div>"
+                        + "<div class = 'process_message'>\n\
+                               <p>Saving files into MyDrive. <br>\n\
+                                  The process can take sometime.<br> \n\
+                                  Please do not close the browser.</p>\n\
+                            </div></div>").appendTo('#page-content');
 
-
+            });
+        };
+        return {
+            init: init
+        };
+ });
