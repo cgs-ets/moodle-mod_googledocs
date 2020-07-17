@@ -134,7 +134,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
      */
     function validation($data, $files) {
         // Validating doc URL if sharing an existing doc.
-        if ($data['use_document'] == 'existing') {
+
+        if ((isset($data['use_document'])) && $data['use_document'] == 'existing') {
             $data['name'] = '_';
 
             if(empty($data['google_doc_url'])) {

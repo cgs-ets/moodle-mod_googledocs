@@ -91,7 +91,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
                     'displayName' => $student->firstname . ' ' . $student->lastname);
         }
-            $owncopy = false;
+        $owncopy = false;
 
         if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ) {
             $owncopy = true;
@@ -106,8 +106,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         } else {
-                // Save new file in a new folder.
-                $folderid = $gdrive->get_file_id($googledocs->name);
+            // Save new file in a new folder.
+            $folderid = $gdrive->get_file_id($googledocs->name);
 
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
@@ -144,15 +144,14 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
 
     $context = context_course::instance($googledocs->course);
     $gdrive = new googledrive($context->id, true);
-    $updateresult = $gdrive->update_file($mform->get_current(), $mform->get_submitted_data());
-    //($mform->get_current())->docid, ($mform->get_current())->parentfolderid,        $mform->get_submitted_data()
+    $updateresult = $gdrive->updates($mform->get_current(), $mform->get_submitted_data());
+
     $googledocs->introeditor = null;
     $googledocs->timemodified = time();
     $googledocs->id = $googledocs->instance;
 
-    if (is_string($updateresult)  ) { // Error on the update
-        $googledocs->update_status = $updateresult;
-        $result = $DB->update_record('googledocs', $googledocs);
+    if (is_string($updateresult)  ) { // Error on the update.
+        $result = false;
     } else {
         $googledocs->update_status = 'modified';
         $googledocs->intro =   ($mform->get_submitted_data())->name;

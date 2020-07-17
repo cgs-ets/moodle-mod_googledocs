@@ -81,7 +81,6 @@ function google_filetypes() {
 function users_files_renderer($instanceid) {
     global $OUTPUT, $DB, $PAGE, $COURSE, $CFG, $USER;
 
-    preg_match('/(students)/', strtolower($USER->profile['CampusRoles']), $isstudent);
     $context = context_course::instance($COURSE->id);
     $picturefields = user_picture::fields('u');
 
@@ -105,7 +104,6 @@ function users_files_renderer($instanceid) {
         $userrecords = $DB->get_records_sql($sql, array($instanceid));
     }
 
-    $userids = array_keys($userrecords);
     $users = array_values($userrecords);
     $numberofusers = count($users);
 
@@ -182,7 +180,7 @@ function url_templates() {
     $sharedlink['application/vnd.google-apps.presentation'] = array(
         'linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing');
     $sharedlink['application/vnd.google-apps.spreadsheet'] = array(
-        'linktemplate' => 'https://docs.google.com/spreadsheet/d/%s/edit?usp=sharing');
+        'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing');
      $sharedlink['application/vnd.google-apps.folder'] = array(
         'linktemplate' => 'https://drive.google.com/drive/folders/%susp=sharing');
 
@@ -267,7 +265,7 @@ class googledrive {
      * @param int $cmid mod_googledrive instance id.
      * @return void
      */
-    public function __construct($cmid, $update = false) {
+    public function __construct($cmid, $update = false, $students = false) {
         global $CFG;
 
         $this->cmid = $cmid;
@@ -297,7 +295,7 @@ class googledrive {
         $this->client->setClientId($this->issuer->get('clientid'));
         $this->client->setClientSecret($this->issuer->get('clientsecret'));
         $this->client->setAccessType('offline');
-        $this->client->setApprovalPrompt('force');
+        //$this->client->setApprovalPrompt('force');
 
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
@@ -305,6 +303,10 @@ class googledrive {
         if ($update) {
            $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
            $this->client->refreshToken($accesstoken->refresh_token);
+        }
+
+        if($students != null) {
+            $this->set_students($students);
         }
 
         $this->service = new Google_Service_Drive($this->client);
@@ -454,18 +456,7 @@ class googledrive {
         try {
             $document_type =  $mform->document_type;
             $url = $mform->google_doc_url;
-
-            if (strpos($url, 'document')) {
-                $doctype = 'document';
-            } else if  (strpos($url, 'spreadsheets')) {
-                $doctype = 'spreadsheets';
-            } else {
-                $doctype ='presentation';
-            }
-
-            if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit\b\?/', $url, $match) == 1) {
-                $fileid = $match[1] ;
-            }
+            $fileid = $this->get_file_id_from_url($url);
 
             $file = $this->service->files->get($fileid);
             $permissiontype = $mform->permissions;
@@ -570,7 +561,7 @@ class googledrive {
      * @return string
      */
     public function create_child_folder($dirname, $parentid){
-        // Create the folder with the given name
+        // Create the folder with the given name.
 
         $fileMetadata = new \Google_Service_Drive_DriveFile(array(
             'title' => $dirname,
@@ -653,7 +644,7 @@ class googledrive {
                     foreach ($this->students as $student) {
                         $this->insert_permission($this->service, $file->id, $student['emailAddress'], 'user',$studentpermissions,
                             $commenter);
-                        //sprintf($url[$gfiletype]['linktemplate'], $file->id)
+
                         $links_for_students[$student['id']] = array ($file->alternateLink,
                             'filename' => $docname);
                     }
@@ -734,54 +725,138 @@ class googledrive {
         return $links;
     }
 
-    /**
-     *
-     * @param stdClass $instance
-     * @return Google_Servie_Drive_DriveFile NULL is returned if  an API error occurred.
-     */
-    public function update_file($instance, $details) {
+   /**
+    * Update the file(s) and folder(s) in Google Drive.
+    *
+    * @param StdClass $instance
+    * @param Object $details submitted data
+    * @return \Exception
+    */
+    public function updates($instance, $details) {
+        global $DB;
         $result = false;
 
         try {
-
             $fileId = $instance->docid;
             $parentfolderid = $instance->parentfolderid;
 
-            //Updates the "master" file.
-            $result = $this->update_request($fileId,$details);
-            $result = $this->update_request($parentfolderid,$details);
-            //Update the students distributions.
+            // Updates the "master" file.
+            $result = $this->update_file_request($fileId,$details);
+            if (!$result) { throw  new Exception ("Unable to update file in My Drive.");}
+
+            //Update the name of the folder the master file is in.
+            $result = $this->update_file_request($parentfolderid,$details);
+
+            // Update the students distributions.
             $this->update_students_files($instance,$details);
 
-
-
         } catch (Exception $ex) {
-            print "An Error occurred :" . $ex->getMessage();
 
-            return $ex;
+            print "An Error occurred :" . $ex->getMessage();
+            $error = new stdClass();
+            $error->id = $instance->id;
+            $error->update_status = $ex->getMessage();
+
+            $DB->update_record('googledocs', $error); // record the error.
+            return $ex->getMessage();
         }
+
         return $result;
     }
-
+    /**
+     *  Helper function that calls the different updates a file can have.
+     * @global type $DB
+     * @param stdClass $instance
+     * @param Object $details
+     */
     private function update_students_files($instance, $details) {
         global $DB;
 
-        $gf = "SELECT *FROM mdl_googledocs_files WHERE googledocid = :instance_id ";
+        $gf = "SELECT * FROM mdl_googledocs_files WHERE googledocid = :instance_id";
         $result = $DB->get_records_sql($gf, ['instance_id'=> $instance->id]);
+        $students = $this->get_enrolled_students($instance->course);
 
-        if ($instance->distribution == 'all_share') { //Same name for all
-            $newdata = new \stdClass();
-            foreach($result as $r=>$i) {
-                $newdata->id = $i->id;
-                $newdata->name = $details->name;
-                $newdata->update_status = 'modified';
-                $DB->update_record('googledocs_files', $newdata);
-            }
-        }else{
-
+        if ($instance->distribution == 'all_share' && $details->distribution == 'all_share') { //Same name for all
+            $this->update_shared_copy($result, $DB, $details, $instance);
+        } else if ($instance->distribution == 'all_share' && $details->distribution == 'each_gets_own'){
+            //$this->make_copies($instance->id, $parent, $docname, $students, $studentpermissions, $commenter);
+        } else if ($instance->distribution == 'each_gets_own' && $details->distribution == 'each_gets_own' ){
+            $this->update_students_copies($result, $DB, $students, $details, $instance);
         }
 
 
+
+    }
+
+
+
+    /**
+     * Helper function, updates the name of the file on the students record
+     * (googledocs_files).
+     * @param type $result
+     * @param type $DB
+     * @param type $details
+     */
+    private function update_shared_copy($result, $DB, $details, $instance) {
+        $newdata = new \stdClass();
+        foreach($result as $r=>$i) {
+            $newdata->id = $i->id;
+            $newdata->name = $details->name;
+            $newdata->update_status = 'updated';
+            $DB->update_record('googledocs_files', $newdata);
+        }
+        // Update permissions.
+        if ($details->permissions != $instance->permissions) {
+           $this->update_permissions($instance->docid, $details, $instance,  true);
+        }
+    }
+
+    /**
+     * Updates the student's files in Google drive and  its records in the DB.
+     *
+     * @param type $result
+     * @param type $DB
+     * @param type $students
+     * @param type $details
+     */
+    private function update_students_copies($result, $DB, $students, $details, $instance) {
+        $j = 0; // index to traverse enrolled students
+        $newdata = new \stdClass();
+        $resultdetailsupdate = false;
+
+        foreach($result as $r=>$i) {
+
+            $fileid = $this->get_file_id_from_url($i->url);
+            $newdata->id = $i->id;
+            $newdata->name = $details->name .'_'. ($students[$j])['displayName'];
+            $resultdetailsupdate  = $this->update_file_request($fileid, $newdata);
+
+            if ($resultdetailsupdate) {
+                $newdata->update_status = 'updated';
+            }else {
+                $newdata->name = $i->name; // Don't update name as there was an error
+                $newdata->update_status = 'error';
+            }
+            $DB->update_record('googledocs_files', $newdata);
+            $j++;
+        }
+
+        // Updates the students folder name in Google Drive.
+        $studentsfolderid = $this->get_file_id($instance->name .'_students');
+        $this->update_file_request($studentsfolderid, $details, true);
+
+        if ($details->permissions != $instance->permissions) {
+
+           $filename = $instance->name;
+           $results = $DB->get_records_sql('SELECT * FROM {googledocs_files} WHERE '.$DB->sql_like('name', ':name'),
+                                    ['name' => '%'.$DB->sql_like_escape($filename).'%']);
+
+           foreach ($results as $result =>$r) {
+               $fileid = $this->get_file_id_from_url($r->url);
+               $this->update_permissions($fileid, $details, $instance);
+
+           }
+        }
     }
 
 
@@ -860,7 +935,47 @@ class googledrive {
         return null;
     }
 
-        /**
+    /**
+     * Helper function to get the file id from a given URL.
+     * @param type $url
+     * @param type $doctype
+     * @return type
+     */
+    private function get_file_id_from_url($url) {
+
+        if (strpos($url, 'document')) {
+            $doctype = 'document';
+        } else if (strpos($url, 'spreadsheets')) {
+            $doctype = 'spreadsheets';
+        } else {
+            $doctype ='presentation';
+        }
+
+        if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit\b\?/', $url, $match) == 1) {
+            $fileid = $match[1] ;
+        }
+        return $fileid;
+    }
+
+    /**
+     * Helper function to get the students enrolled
+     *
+     * @param int $courseid
+     * @return type
+     */
+    private function get_enrolled_students($courseid){
+
+        $context = \context_course::instance($courseid);
+
+        $coursestudents = get_role_users(5, $context);
+        foreach ($coursestudents as $student) {
+            $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
+            'displayName' => $student->firstname . ' ' . $student->lastname);
+        }
+        return $students;
+    }
+
+    /**
      * Edit/Create Admin Settings Moodle form.
      *
      * @param moodleform $mform Moodle form (passed by reference).
@@ -917,6 +1032,23 @@ class googledrive {
         return null;
     }
 
+    /**
+    * Retrieve a list of permissions.
+    *
+    * @param Google_Service_Drive $service Drive API service instance.
+    * @param String $fileId ID of the file to retrieve permissions for.
+    * @return Array List of permissions.
+    */
+    function get_permissions($fileId) {
+        try {
+            $permissions = $this->service->permissions->listPermissions($fileId, array ('fields' => 'items'));
+
+            return $permissions->getItems();
+        } catch (Exception $e) {
+           print "An error occurred: " . $e->getMessage();
+        }
+        return NULL;
+    }
 
     /**
      * Helper function to save the instance record in DB
@@ -938,7 +1070,7 @@ class googledrive {
         $googledocs->name = ($sharedlink[0])->title;
         $googledocs->intro = ($sharedlink[0])->title;
         $googledocs->use_document = $googledocs->use_document;
-        $googledocs->sharing = ($sharedlink[0])->shared;
+        $googledocs->sharing = 1; //($sharedlink[0])->shared;
         $googledocs->introformat = FORMAT_MOODLE;
 
         return $DB->insert_record('googledocs', $googledocs);
@@ -969,35 +1101,120 @@ class googledrive {
      * @param type $fileid
      * @param type $details
      */
-    private function update_request($fileid, $details) {
+    private function update_file_request($fileid, $details, $studentsfolder = false) {
 
-        $data = array ('title' => $details->name);
-
+        $title = $studentsfolder ? $details->name .'_students' : $details->name;
+        $data = array ('title' => $title);
         $data_string = json_encode($data);
         $contentlength = strlen($data_string);
         $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileid."?uploadType=multipart?key=". $this->api_key ;
         $header = ['Authorization: Bearer ' . $accesstoken->access_token,
-            'Accept: application/json',
-            'Content-Type: application/json',
-            'Content-Length:' . $contentlength];
+                   'Accept: application/json',
+                   'Content-Type: application/json',
+                   'Content-Length:' . $contentlength];
 
         $ch = curl_init($url);
-
-        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+        //curl_setopt($ch, CURLINFO_HEADER_OUT, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
         //curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_exec($ch);
+        curl_getinfo($ch);
 
-        $result = curl_exec($ch);
+        $r =  ((curl_getinfo($ch))['http_code'] === 200) ? true : false;
+        curl_close($ch);
+        return $r;
+    }
+    /**
+     * Calls the update function from Googles API using Curl
+     * The update function from Drive.php did not work.
+     * @param type $fileId
+     * @param type $permission
+     * @return type
+     */
+    private function update_permission_request($fileId, $permission) {
 
+        $data = array ('role' => $permission->role,
+                       'additionalRoles' => $permission->additionalRoles);
+
+        $data_string = json_encode($data);
+        $contentlength = strlen($data_string);
+        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+
+        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
+        $header = ['Authorization: Bearer ' . $accesstoken->access_token,
+                   'Accept: application/json',
+                   'Content-Type: application/json',
+                   'Content-Length:' . $contentlength];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+
+        curl_exec($ch);
+
+        curl_getinfo($ch);
+
+        $r =  ((curl_getinfo($ch))['http_code'] === 200) ? true : false;
         curl_close($ch);
 
-        return $result;
+        return $r;
+    }
 
+    /**
+     * Updates the role of a shared file
+     * @param type $fileId
+     * @param type $permissionlist
+     * @return type
+     */
+    private function update_permissions($fileId, $details, $instance, $shared = false) {
+
+        $permissionlist =  $this->get_permissions($fileId);
+
+        try {
+
+            $commenter = false;
+            $removeaditionalrole = false;
+
+            if ($instance->permissions  == GDRIVEFILEPERMISSION_COMMENTER  &&
+                $details->permissions != GDRIVEFILEPERMISSION_COMMENTER) {
+                $removeaditionalrole = true;
+            }
+            if ($details->permissions == GDRIVEFILEPERMISSION_COMMENTER) {
+                $commenter = true;
+                $newrole = 'reader';
+            } else if ($details->permissions == GDRIVEFILEPERMISSION_READER) {
+                $newrole = 'reader';
+            }else{
+                $newrole = 'writer';
+            }
+
+            foreach ($permissionlist as $pl => $l) {
+
+                if($l->role === "owner") {
+                    continue;
+                }
+
+                if ($commenter) {
+                    $l->setAdditionalRoles(array('commenter'));
+                }else if ($removeaditionalrole) {
+                    $l->setAdditionalRoles(array());
+                }
+
+                $l->setRole($newrole);
+                $this->update_permission_request($fileId, $l);
+
+            }
+
+        } catch(Exception $ex) {
+           print($ex->getMessage());
+        }
     }
 
 }
