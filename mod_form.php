@@ -114,15 +114,20 @@ class mod_googledocs_mod_form extends moodleform_mod {
             );
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
+
+
             // $mform->addHelpButton('permissions', 'permissions_help', 'googledocs');
 
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('each_gets_own', 'googledocs'), 'each_gets_own');
             $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('all_share', 'googledocs'), 'all_share');
-            $mform->addGroup($radioarray, 'distribution_choice', get_string('distribution', 'googledocs'), array(' '), false);
+            $distribution = $mform->addGroup($radioarray, 'distribution_choice', get_string('distribution', 'googledocs'), array(' '), false);
             $mform->setDefault('distribution', 'each_gets_own');
-            // $mform->addHelpButton('distribution_choice', 'distribution_choice_help', 'googledocs');
+            if($update != 0 && $this->get_current()->distribution == 'each_gets_own') {
+                $mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
+                $distribution->freeze();
 
+            }
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons();

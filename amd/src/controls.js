@@ -62,7 +62,7 @@
                         + "<span class='sr-only'>Loading...</span>"
                         + "</div>"
                         + "<div class = 'process_message'>\n\
-                               <p>Saving files into MyDrive. <br>\n\
+                               <p>Saving files into My Drive. <br>\n\
                                   The process can take sometime.<br> \n\
                                   Please do not close the browser.</p>\n\
                             </div></div>").appendTo('#page-content');

@@ -451,9 +451,10 @@ class googledrive {
      * @param array $students
      * @return array
      */
-    public function share_existing_file(stdClass $mform , $owncopy, $students) {
+    public function share_existing_file(stdClass $mform , $owncopy, $students, $isupdate = false) {
 
         try {
+
             $document_type =  $mform->document_type;
             $url = $mform->google_doc_url;
             $fileid = $this->get_file_id_from_url($url);
@@ -732,27 +733,28 @@ class googledrive {
     * @param Object $details submitted data
     * @return \Exception
     */
-    public function updates($instance, $details) {
+    public function updates($instance, $details)  {
         global $DB;
         $result = false;
 
         try {
+
             $fileId = $instance->docid;
             $parentfolderid = $instance->parentfolderid;
 
             // Updates the "master" file.
-            $result = $this->update_file_request($fileId,$details);
+            $result = $this->update_file_request($fileId, $details);
             if (!$result) { throw  new Exception ("Unable to update file in My Drive.");}
 
             //Update the name of the folder the master file is in.
             $result = $this->update_file_request($parentfolderid,$details);
 
-            // Update the students distributions.
+            // Update the students files
             $this->update_students_files($instance,$details);
 
         } catch (Exception $ex) {
 
-            print "An Error occurred :" . $ex->getMessage();
+            print  $ex->getMessage();
             $error = new stdClass();
             $error->id = $instance->id;
             $error->update_status = $ex->getMessage();
@@ -776,15 +778,17 @@ class googledrive {
         $result = $DB->get_records_sql($gf, ['instance_id'=> $instance->id]);
         $students = $this->get_enrolled_students($instance->course);
 
-        if ($instance->distribution == 'all_share' && $details->distribution == 'all_share') { //Same name for all
+        if ($instance->distribution == 'all_share' && (isset($details->distribution) && $details->distribution == 'all_share')) { //Same name for all
             $this->update_shared_copy($result, $DB, $details, $instance);
-        } else if ($instance->distribution == 'all_share' && $details->distribution == 'each_gets_own'){
-            //$this->make_copies($instance->id, $parent, $docname, $students, $studentpermissions, $commenter);
-        } else if ($instance->distribution == 'each_gets_own' && $details->distribution == 'each_gets_own' ){
+        } else if ($instance->distribution == 'all_share' && (isset ($details->distribution) &&
+            $details->distribution== 'each_gets_own')){
+            $sharedlink = $this->share_existing_file($details, true, $students);
+            $this->update_students_links_records($sharedlink[2],  $result);
+            $this->update_distribution($DB, $instance);
+
+        } else if($instance->distribution == 'each_gets_own'){
             $this->update_students_copies($result, $DB, $students, $details, $instance);
         }
-
-
 
     }
 
@@ -803,11 +807,14 @@ class googledrive {
             $newdata->id = $i->id;
             $newdata->name = $details->name;
             $newdata->update_status = 'updated';
+            $newdata->url = $instance->google_doc_url;
+
             $DB->update_record('googledocs_files', $newdata);
         }
         // Update permissions.
-        if ($details->permissions != $instance->permissions) {
-           $this->update_permissions($instance->docid, $details, $instance,  true);
+         if ($details->permissions != $instance->permissions ) {
+           $this->update_permissions($instance->docid, $details, $instance);
+
         }
     }
 
@@ -854,7 +861,6 @@ class googledrive {
            foreach ($results as $result =>$r) {
                $fileid = $this->get_file_id_from_url($r->url);
                $this->update_permissions($fileid, $details, $instance);
-
            }
         }
     }
@@ -1093,6 +1099,26 @@ class googledrive {
             $DB->insert_record('googledocs_files', $data);
         }
     }
+    /**
+     * Helper function to update the students links when there was an update
+     * on the files distribution (from all_share to each_gets_own)
+     * @global type $DB
+     * @param type $links_for_students
+     * @param type $instanceid
+     */
+    public function update_students_links_records($links_for_students, $results){
+        global  $DB;
+        $data = new \stdClass();
+        $id = current($results);
+
+        foreach($links_for_students  as $sl=>$s){
+            $data->id = $id->id;
+            $data-> url = $s[0];
+            $data->name = $s['filename'];
+            $DB->update_record('googledocs_files', $data);
+            $id = next($results);
+        }
+    }
 
     /**
      * Calls the update function from Googles API using Curl
@@ -1120,14 +1146,24 @@ class googledrive {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        //curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_exec($ch);
-        curl_getinfo($ch);
+        try {
 
-        $r =  ((curl_getinfo($ch))['http_code'] === 200) ? true : false;
-        curl_close($ch);
+            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
+                $r = false;
+                throw new Exception(" Your Google authentication in CGS Connect has expired. ");
+            }
+
+            $r = (curl_getinfo($ch))['http_code'] === 200;
+        } catch (Exception $ex) {
+            print ($ex->getMessage());
+        } finally {
+            curl_close($ch);
+        }
         return $r;
+
     }
     /**
      * Calls the update function from Googles API using Curl
@@ -1155,25 +1191,63 @@ class googledrive {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-
         curl_exec($ch);
 
-        curl_getinfo($ch);
-
-        $r =  ((curl_getinfo($ch))['http_code'] === 200) ? true : false;
-        curl_close($ch);
-
+        try {
+            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
+                $r = false;
+                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
+            }
+            $r = (curl_getinfo($ch))['http_code'] === 200;
+        } catch (Exception $ex) {
+            print ($ex->getMessage());
+        } finally {
+            curl_close($ch);
+        }
         return $r;
     }
 
+    /*
+     * Deletes a permission from a file
+     */
+    private function delete_permission_request($fileId, $permissionId) {
+
+        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+
+        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permissionId."?key=". $this->api_key ;
+        $header = ['Authorization: Bearer ' . $accesstoken->access_token,
+                   'Accept: application/json',];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_exec($ch);
+        try {
+            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
+                $r = false;
+                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
+            }
+            $r = (curl_getinfo($ch))['http_code'] === 200;
+        } catch (Exception $ex) {
+            print ($ex->getMessage());
+        } finally {
+            curl_close($ch);
+        }
+
+        return $r;
+
+    }
+
     /**
-     * Updates the role of a shared file
+     * Updates the permission  of a shared file
      * @param type $fileId
      * @param type $permissionlist
      * @return type
      */
-    private function update_permissions($fileId, $details, $instance, $shared = false) {
+    private function update_permissions($fileId, $details, $instance) {
 
         $permissionlist =  $this->get_permissions($fileId);
 
@@ -1186,10 +1260,12 @@ class googledrive {
                 $details->permissions != GDRIVEFILEPERMISSION_COMMENTER) {
                 $removeaditionalrole = true;
             }
+
             if ($details->permissions == GDRIVEFILEPERMISSION_COMMENTER) {
                 $commenter = true;
                 $newrole = 'reader';
-            } else if ($details->permissions == GDRIVEFILEPERMISSION_READER) {
+            } else if ($details->permissions == GDRIVEFILEPERMISSION_READER ||
+                $instance->permissions == GDRIVEFILEPERMISSION_COMMENTER) {
                 $newrole = 'reader';
             }else{
                 $newrole = 'writer';
@@ -1216,5 +1292,39 @@ class googledrive {
            print($ex->getMessage());
         }
     }
+
+    /**
+     * Removes the permission given to students when all_share distr. changes
+     * to each_gets_own
+     * @global type $DB
+     * @param type $result
+     * @param type $instance
+     * @param type $details
+     */
+    private function update_distribution($result, $instance) {
+        global $DB;
+
+        try{
+
+            foreach($result as $r=>$i) {
+
+                $fileId = $this->get_file_id_from_url($i->url);
+                $permissionlist =  $this->get_permissions($fileId);
+
+                foreach ($permissionlist as $pl => $l) {
+
+                    if($l->role === "owner") {
+                        continue;
+                    }
+                    $this->delete_permission_request($instance->docid, $l->id);
+
+                }
+            }
+
+        } catch (Exception $ex) {
+            print($ex->getMessage());
+        }
+    }
+
 
 }
