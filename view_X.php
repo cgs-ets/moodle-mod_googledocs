@@ -32,30 +32,35 @@ require_once(dirname(__FILE__).'/lib.php');
 require_once($CFG->dirroot . '/mod/assign/locallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
+$id = optional_param('id', 0, PARAM_INT); // Course_module ID, or
+$n  = optional_param('n', 0, PARAM_INT);  // ... googledocs instance ID - it should be named as the first character of the module.
 
-$id = required_param('id', PARAM_INT);
-list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
-$googledocs = $DB->get_record('googledocs', array('id'=> $cm->instance), '*', MUST_EXIST);
-$coursecontext = context_course::instance($course->id);
-$PAGE->set_context($coursecontext);
+if ($id) {
+    $cm         = get_coursemodule_from_id('googledocs', $id, 0, false, MUST_EXIST);
+    $course     = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
+    $googledocs  = $DB->get_record('googledocs', array('id' => $cm->instance), '*', MUST_EXIST);
+} else if ($n) {
+    $googledocs  = $DB->get_record('googledocs', array('id' => $n), '*', MUST_EXIST);
+    $course     = $DB->get_record('course', array('id' => $googledocs->course), '*', MUST_EXIST);
+    $cm         = get_coursemodule_from_instance('googledocs', $googledocs->id, $course->id, false, MUST_EXIST);
+} else {
+    print_error('You must specify a course_module ID or an instance ID');
+}
 
 require_login($course, true, $cm);
 
-$url = new moodle_url('/mod/googledocs/view.php', array('id' => $cm->id));
-
+$url = new moodle_url('/mod/assign/view.php', array('id' => $cm->id));
 $PAGE->set_url($url);
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_title(format_string($googledocs->name));
-$PAGE->set_pagetype('course-view-' . $course->format);  // To get the blocks exactly like the course.
-$PAGE->add_body_class('path-user');
 
-$PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
 // Output starts here.
 echo $OUTPUT->header();
 
-$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs);
-$table->render_table();
+users_files_renderer($googledocs->id);
+
+//new googledocs_table();
 
 // Finish the page.
 echo $OUTPUT->footer();

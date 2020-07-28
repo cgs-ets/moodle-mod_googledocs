@@ -30,6 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/google/lib.php');
 require_once($CFG->libdir.'/tablelib.php');
+require_once($CFG->dirroot . '/mod/googledocs/googledocs_table.php');
 
 
 define('GDRIVEFILEPERMISSION_COMMENTER', 'comment'); // Student can Read and Comment.
@@ -38,7 +39,7 @@ define('GDRIVEFILEPERMISSION_READER', 'view'); // Students can read.
 define('GDRIVEFILETYPE_DOCUMENT', 'application/vnd.google-apps.document');
 define('GDRIVEFILETYPE_FOLDER', 'application/vnd.google-apps.folder');
 
-const DEFAULT_PAGE_SIZE = 20;
+//const DEFAULT_PAGE_SIZE = 20;
 
 /**
  * Google Drive file types.
@@ -50,121 +51,35 @@ const DEFAULT_PAGE_SIZE = 20;
 
 function google_filetypes() {
     $types = array (
-        'doc' => array(
+        'document' => array(
             'name'     => get_string('google_doc', 'mod_googledocs'),
             'mimetype' => 'application/vnd.google-apps.document',
-            'icon'     => 'docs.svg',
+            'icon'     => 'document.svg',
         ),
-        'sheet' => array(
+        'spreadsheets' => array(
             'name'     => get_string('google_sheet', 'mod_googledocs'),
             'mimetype' => 'application/vnd.google-apps.spreadsheet',
-            'icon'     => 'sheets.svg',
+            'icon'     => 'spreadsheets.svg',
         ),
-        'slides' => array(
+        'presentation' => array(
             'name'     => get_string('google_slides', 'mod_googledocs'),
             'mimetype' => 'application/vnd.google-apps.presentation',
-            'icon'     => 'slides.svg',
+            'icon'     => 'presentation.svg',
         ),
     );
 
     return $types;
 }
 
-/**
- * Generate a table of students with a link to their shared file
- * @global type $OUTPUT
- * @global type $DB
- * @global type $PAGE
- * @global type $COURSE
- * @global type $CFG
- */
-function users_files_renderer($instanceid) {
-    global $OUTPUT, $DB, $PAGE, $COURSE, $CFG, $USER;
+function get_doc_type_from_url($url) {
 
-    $context = context_course::instance($COURSE->id);
-    $picturefields = user_picture::fields('u');
-
-    if (has_capability('mod/googledocs:view', $context) &&
-        is_enrolled($context, $USER->id, '', true) && !is_siteadmin()
-        && !has_capability('mod/googledocs:viewall', $context)) {
-        $sql = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
-                FROM mdl_user as u
-                INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                WHERE gf.googledocid = ? AND u.id = ?
-                ORDER BY  u.firstname";
-        $userrecords = $DB->get_records_sql($sql, array($instanceid, $USER->id));
-
+    if (strpos($url, 'document')) {
+        return 'document';
+    } else if (strpos($url, 'spreadsheets')) {
+        return 'spreadsheets';
     } else {
-        $sql = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
-                FROM mdl_user as u
-                INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                WHERE gf.googledocid = ?
-                ORDER BY  u.firstname";
-
-        $userrecords = $DB->get_records_sql($sql, array($instanceid));
+        return 'presentation';
     }
-
-    $users = array_values($userrecords);
-    $numberofusers = count($users);
-
-    $perpage  = optional_param('perpage', DEFAULT_PAGE_SIZE, PARAM_INT); // How many per page.
-    $paged = $numberofusers > $perpage;
-
-    if (!$paged) {
-        $page = 0;
-    }
-
-    $table = new flexible_table('mod-googledocs-files-view');
-    $table->pagesize($perpage, $numberofusers);
-    $tablecolumns = array('picture', 'fullname', 'File Shared Link');
-    $tableheaders = array(
-                        '',
-                        get_string('fullname'),
-                        get_string('sharedurl', 'mod_googledocs'),
-                    );
-
-    $table->define_columns($tablecolumns);
-    $table->define_headers($tableheaders);
-    $table->sortable(true);
-    $table->no_sorting('picture');
-    $table->define_baseurl($PAGE->url);
-    $table->set_attribute('class', 'overviewTable');
-    $table->column_style_all('padding', '10px 10px 10px 15px');
-    $table->column_style_all('text-align', 'left');
-    $table->column_style_all('vertical-align', 'middle');
-    $table->column_style('picture', 'width', '5%');
-    $table->column_style('fullname', 'width', '15%');
-    $table->column_style('sharedurl', 'min-width', '200px');
-    $table->column_style('sharedurl', 'width', '*');
-    $table->column_style('sharedurl', 'padding', '0');
-    $table->column_style('sharedurl', 'text-align', 'center');
-    $table->column_style('sharedurl', 'width', '8%');
-    $table->setup();
-
-    $rows = array();
-    $startuser = 0;
-    $enduser = $numberofusers;
-
-    if ($numberofusers > 0) {
-        for ($i = $startuser; $i < $enduser; $i++) {
-            $picture = $OUTPUT->user_picture($users[$i], array('course' => $COURSE->id));
-            $namelink = html_writer::link($CFG->wwwroot.'/user/view.php?id='.$users[$i]->id.'&course='.$COURSE->id,
-               fullname($users[$i]));
-
-            $rows[$i] = array(
-                'userid' => $users[$i]->id,
-                'firstname' => strtoupper($users[$i]->firstname),
-                'lastname' => strtoupper($users[$i]->lastname),
-                'picture' => $picture,
-                'fullname' => $namelink,
-                'sharedurl' => html_writer::link($users[$i]->url, $users[$i]->name, array('target' => '_blank')),
-             );
-            $rowdata = array($rows[$i]['picture'], $rows[$i]['fullname'], $rows[$i]['sharedurl']);
-            $table->add_data($rowdata);
-        }
-    }
-
-    $table->print_html();
 
 }
 
@@ -299,7 +214,7 @@ class googledrive {
 
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
-
+        //var_dump( json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken)); exit;
         if ($update) {
            $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
            $this->client->refreshToken($accesstoken->refresh_token);
@@ -451,7 +366,7 @@ class googledrive {
      * @param array $students
      * @return array
      */
-    public function share_existing_file(stdClass $mform , $owncopy, $students, $isupdate = false) {
+    public function share_existing_file(stdClass $mform , $owncopy, $students) {
 
         try {
 
@@ -483,7 +398,7 @@ class googledrive {
             }
 
             if ($owncopy) {
-               $links = $this->make_copies($file->id, array($parent), $file->title, $students, $studentpermissions, $commenter);
+               $links = $this->make_copies($file->id, array($parent), $file->title, $students, $studentpermissions, $commenter, true);
                $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
@@ -701,19 +616,17 @@ class googledrive {
      * @param string $studentpermissions
      * @param boolean $commenter
      */
-    private function make_copies($fileid, $parent, $docname, $students, $studentpermissions, $commenter = false){
+    private function make_copies($fileid, $parent, $docname, $students, $studentpermissions, $commenter = false, $fromexisting = false){
         $links = array();
         $url = url_templates();
-
-        $parentid = $this->create_child_folder($docname . '_students', $parent);
-        $parentref = new Google_Service_Drive_ParentReference();
-        $parentref->setId($parentid);
 
         if (!empty($students)) {
             foreach ($students as $student) {
                 $copiedfile = new \Google_Service_Drive_DriveFile();
                 $copiedfile->setTitle($docname .'_'.$student['displayName']);
-                $copiedfile->setParents(array($parentref));
+                if($fromexisting) {
+                    $copiedfile->setParents($parent);
+                }
                 $copyid = $this->service->files->copy($fileid,$copiedfile);
                 $links[$student['id']] = array(sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id),
                     'filename' => $docname .'_'.$student['displayName']);
@@ -721,7 +634,6 @@ class googledrive {
                 $this->insert_permission($this->service, $copyid->id, $student['emailAddress'], 'user', $studentpermissions, $commenter);
             }
         }
-
 
         return $links;
     }
@@ -743,7 +655,8 @@ class googledrive {
             $parentfolderid = $instance->parentfolderid;
 
             // Updates the "master" file.
-            $result = $this->update_file_request($fileId, $details);
+           // $result = $this->update_file_request($fileId, $details);
+            $result = $this->update_file_request($parentfolderid,$details);
             if (!$result) { throw  new Exception ("Unable to update file in My Drive.");}
 
             //Update the name of the folder the master file is in.
@@ -848,10 +761,7 @@ class googledrive {
             $j++;
         }
 
-        // Updates the students folder name in Google Drive.
-        $studentsfolderid = $this->get_file_id($instance->name .'_students');
-        $this->update_file_request($studentsfolderid, $details, true);
-
+       // Update permissions.
         if ($details->permissions != $instance->permissions) {
 
            $filename = $instance->name;
@@ -963,6 +873,8 @@ class googledrive {
         return $fileid;
     }
 
+
+
     /**
      * Helper function to get the students enrolled
      *
@@ -1064,11 +976,11 @@ class googledrive {
      * @param type $sharedlink
      * @return type
      */
-    public function save_instance($googledocs, $sharedlink, $folderid){
+    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false){
 
         global $USER, $DB;
-        $googledocs->google_doc_url = $sharedlink[1];
-        $googledocs->docid = ($sharedlink[0])->id;
+        $googledocs->google_doc_url = !$owncopy ? $sharedlink[1] : null;
+        $googledocs->docid = !$owncopy ? ($sharedlink[0])->id : null;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
         $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
@@ -1079,6 +991,9 @@ class googledrive {
         $googledocs->sharing = 1; //($sharedlink[0])->shared;
         $googledocs->introformat = FORMAT_MOODLE;
 
+        if($owncopy) {
+            $this->delete_file_request(($sharedlink[0])->id);
+        }
         return $DB->insert_record('googledocs', $googledocs);
     }
 
@@ -1133,10 +1048,13 @@ class googledrive {
         $data = array ('title' => $title);
         $data_string = json_encode($data);
         $contentlength = strlen($data_string);
+
         $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileid."?uploadType=multipart?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $accesstoken->access_token,
+        $header = ['Authorization: Bearer ' . $token,
                    'Accept: application/json',
                    'Content-Type: application/json',
                    'Content-Length:' . $contentlength];
@@ -1179,10 +1097,13 @@ class googledrive {
 
         $data_string = json_encode($data);
         $contentlength = strlen($data_string);
+
         $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $accesstoken->access_token,
+        $header = ['Authorization: Bearer ' . $token,
                    'Accept: application/json',
                    'Content-Type: application/json',
                    'Content-Length:' . $contentlength];
@@ -1215,15 +1136,18 @@ class googledrive {
     private function delete_permission_request($fileId, $permissionId) {
 
         $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permissionId."?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $accesstoken->access_token,
+        $header = ['Authorization: Bearer ' . $token,
                    'Accept: application/json',];
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+
         curl_exec($ch);
         try {
             if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
@@ -1239,6 +1163,51 @@ class googledrive {
 
         return $r;
 
+    }
+    /**
+     * Delete file.
+     * The class curlio.php in google folder, doesnt have the DELETE option
+     * therefor $service->files->delete throws a coding exception.
+     * That is why this function exists.
+     * @param type $fileId
+     * @return type
+     * @throws Exception
+     */
+    private function delete_file_request($fileId) {
+
+
+        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        //$token = $accesstoken->access_token;
+        //To avoid error in authentication, refresh token.
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
+
+        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."?key=". $this->api_key ;
+        $header = ['Authorization: Bearer ' . $token,
+                   'Accept: application/json',];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($ch,CURLOPT_ENCODING , "");
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+
+        try {
+           if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
+                $r = false;
+                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
+            }
+            $r = (curl_getinfo($ch))['http_code'] === 204;
+
+        } catch (Exception $ex) {
+                print ($ex->getMessage());
+        } finally {
+                curl_close($ch);
+        }
+
+        return $r;
     }
 
     /**

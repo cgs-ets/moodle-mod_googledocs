@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/googledocs/db" VERSION="20200715" COMMENT="XMLDB file for Moodle mod/googledocs"
+<XMLDB PATH="mod/googledocs/db" VERSION="20200723" COMMENT="XMLDB file for Moodle mod/googledocs"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -12,13 +12,14 @@
         <FIELD NAME="use_document" TYPE="char" LENGTH="255" NOTNULL="false" DEFAULT="create_new" SEQUENCE="false"/>
         <FIELD NAME="intro" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="google_doc_url" TYPE="char" LENGTH="256" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="google_doc_url" TYPE="char" LENGTH="256" NOTNULL="false" DEFAULT="null" SEQUENCE="false" COMMENT="When the Googledoc  resource is created from an existing file, record the value. 
+otherwise null."/>
         <FIELD NAME="document_type" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="sharing" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="distribution" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="each_gets_own" SEQUENCE="false"/>
         <FIELD NAME="permissions" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="writer" SEQUENCE="false"/>
-        <FIELD NAME="docid" TYPE="char" LENGTH="256" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the Google document."/>
+        <FIELD NAME="docid" TYPE="char" LENGTH="256" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="ID of the Google document. When resource is created from an existing file, record the ID.  0 otherwise"/>
         <FIELD NAME="parentfolderid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Folder ID where the file is saved"/>
         <FIELD NAME="update_status" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="not_modified" SEQUENCE="false" COMMENT="Valid values:  modified, not_modified, updated, error.  To keep track of changes in the file.  Timemodified and timeshared are not reliable to validate. This status depends on the result from google drive."/>
         <FIELD NAME="timeshared" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Value taken from the createdDate attribute from the Google API response"/>

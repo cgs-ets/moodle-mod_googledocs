@@ -48,7 +48,7 @@ if ($ADMIN->fulltree) {
                                                       get_string('oauth2servicesdesc', 'googledocs'), NULL, $choices));
     }
 
-      $settings->add(new admin_setting_configtext('mod_googledocs/googledocs_api_key', get_string('googledocs_api_key', 'googledocs'),
-
-        get_string('googledocs_api_key_desc', 'googledocs'), ''));
+    $settings->add(new admin_setting_configtext('mod_googledocs/googledocs_api_key', get_string('googledocs_api_key', 'googledocs'),
+    get_string('googledocs_api_key_desc', 'googledocs'), ''));
+    
 }

@@ -97,7 +97,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $typesarray[] = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
             }
             $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
-            $mform->setDefault('document_type', $types['doc']['mimetype']);
+            $mform->setDefault('document_type', $types['document']['mimetype']);
             $mform->hideif('document_type', 'use_document', 'eq', 'existing');
             // $mform->addHelpButton('document_type', 'document_type_help', 'googledocs');
 
@@ -130,7 +130,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             }
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
-            $this->add_action_buttons();
+            $this->add_action_buttons(true, null,false);
         }
     }
 

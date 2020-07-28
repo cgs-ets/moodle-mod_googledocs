@@ -115,12 +115,12 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type, $googledocs->permissions,
                 $author, $students, $folderid, $owncopy);
 
-            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
 
             $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         }
-
+        
         return $googledocs->id;
 
     } catch (Exception $ex) {
