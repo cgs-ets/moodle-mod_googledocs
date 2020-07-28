@@ -39,7 +39,6 @@ define('GDRIVEFILEPERMISSION_READER', 'view'); // Students can read.
 define('GDRIVEFILETYPE_DOCUMENT', 'application/vnd.google-apps.document');
 define('GDRIVEFILETYPE_FOLDER', 'application/vnd.google-apps.folder');
 
-//const DEFAULT_PAGE_SIZE = 20;
 
 /**
  * Google Drive file types.
@@ -1049,9 +1048,7 @@ class googledrive {
         $data_string = json_encode($data);
         $contentlength = strlen($data_string);
 
-        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-        $this->client->refreshToken($accesstoken->refresh_token);
-        $token= (json_decode($this->client->getAccessToken()))->access_token;
+        $token = $this->refresh_token();
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileid."?uploadType=multipart?key=". $this->api_key ;
         $header = ['Authorization: Bearer ' . $token,
@@ -1068,12 +1065,6 @@ class googledrive {
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_exec($ch);
         try {
-
-            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
-                $r = false;
-                throw new Exception(" Your Google authentication in CGS Connect has expired. ");
-            }
-
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1098,9 +1089,7 @@ class googledrive {
         $data_string = json_encode($data);
         $contentlength = strlen($data_string);
 
-        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-        $this->client->refreshToken($accesstoken->refresh_token);
-        $token= (json_decode($this->client->getAccessToken()))->access_token;
+        $token = $this->refresh_token();
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
         $header = ['Authorization: Bearer ' . $token,
@@ -1117,10 +1106,6 @@ class googledrive {
         curl_exec($ch);
 
         try {
-            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
-                $r = false;
-                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
-            }
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1135,9 +1120,7 @@ class googledrive {
      */
     private function delete_permission_request($fileId, $permissionId) {
 
-        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-        $this->client->refreshToken($accesstoken->refresh_token);
-        $token= (json_decode($this->client->getAccessToken()))->access_token;
+        $token = $this->refresh_token();
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permissionId."?key=". $this->api_key ;
         $header = ['Authorization: Bearer ' . $token,
@@ -1147,13 +1130,8 @@ class googledrive {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-
         curl_exec($ch);
         try {
-            if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
-                $r = false;
-                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
-            }
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1175,12 +1153,7 @@ class googledrive {
      */
     private function delete_file_request($fileId) {
 
-
-        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-        //$token = $accesstoken->access_token;
-        //To avoid error in authentication, refresh token.
-        $this->client->refreshToken($accesstoken->refresh_token);
-        $token= (json_decode($this->client->getAccessToken()))->access_token;
+        $token = $this->refresh_token();
 
         $url = "https://www.googleapis.com/drive/v2/files/".$fileId."?key=". $this->api_key ;
         $header = ['Authorization: Bearer ' . $token,
@@ -1192,13 +1165,11 @@ class googledrive {
         curl_setopt($ch,CURLOPT_ENCODING , "");
         curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_exec($ch);
 
 
         try {
-           if ((curl_getinfo($ch))['http_code'] === 401) { // credential expired
-                $r = false;
-                throw new Exception(" Your Google authentication in CGS Connect has expired. \n Please log out and log in again. ");
-            }
+
             $r = (curl_getinfo($ch))['http_code'] === 204;
 
         } catch (Exception $ex) {
@@ -1293,6 +1264,23 @@ class googledrive {
         } catch (Exception $ex) {
             print($ex->getMessage());
         }
+    }
+
+    /**
+     * Helper function to refresh access token.
+     * The access token set in the session doesn't update
+     * the expiration time. By refreshing the token, the error 401
+     * is avoided.
+     * @return type
+     */
+    private function refresh_token() {
+        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        //$token = $accesstoken->access_token;
+        //To avoid error in authentication, refresh token.
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
+
+        return $token;
     }
 
 
