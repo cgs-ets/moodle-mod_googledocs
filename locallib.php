@@ -43,8 +43,7 @@ define('GDRIVEFILETYPE_FOLDER', 'application/vnd.google-apps.folder');
 /**
  * Google Drive file types.
  *
- * @return array google drive file types.
- * http://stackoverflow.com/questions/11412497/what-are-the-google-apps-mime-types-in-google-docs-and-google-drive#11415443
+ * @return array google drive file types. *
  * https://developers.google.com/drive/api/v2/ref-roles
  */
 
@@ -213,10 +212,9 @@ class googledrive {
 
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
-        //var_dump( json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken)); exit;
+
         if ($update) {
-           $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-           $this->client->refreshToken($accesstoken->refresh_token);
+           $this->refresh_token();
         }
 
         if($students != null) {
@@ -250,6 +248,22 @@ class googledrive {
         global $SESSION;
         $SESSION->{self::SESSIONKEY} = $token;
 
+    }
+
+    /**
+     * Helper function to refresh access token.
+     * The access token set in the session doesn't update
+     * the expiration time. By refreshing the token, the error 401
+     * is avoided.
+     * @return string
+     */
+    private function refresh_token() {
+        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
+        //To avoid error in authentication, refresh token.
+        $this->client->refreshToken($accesstoken->refresh_token);
+        $token= (json_decode($this->client->getAccessToken()))->access_token;
+
+        return $token;
     }
 
     /**
@@ -354,7 +368,7 @@ class googledrive {
         }
 
     }
-
+//------------------------------------ CRUD G Suite Documents --------------------------//
     /**
      * Creates a copy of an existing file.
      * If distribution is "Each gets their own copy" create the copies and distribute them.
@@ -880,7 +894,7 @@ class googledrive {
      * @param int $courseid
      * @return type
      */
-    private function get_enrolled_students($courseid){
+    public function get_enrolled_students($courseid){
 
         $context = \context_course::instance($courseid);
 
@@ -889,6 +903,27 @@ class googledrive {
             $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
             'displayName' => $student->firstname . ' ' . $student->lastname);
         }
+        return $students;
+    }
+
+    /**
+     *
+     * @param type $coursestudents
+     * @param type $availabilityconditionsjson
+     * @return string
+     */
+    public function get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
+
+        $groupmembers = $this->get_members_ids($availabilityconditionsjson, $courseid);
+
+        foreach ($coursestudents as $student) {
+
+            if(in_array($student->id, $groupmembers)){
+                $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
+                        'displayName' => $student->firstname . ' ' . $student->lastname);
+            }
+        }
+
         return $students;
     }
 
@@ -966,7 +1001,7 @@ class googledrive {
         }
         return NULL;
     }
-
+//--------------------------------------------- DATA ACCESS FUNCTIONS --------------------------//
     /**
      * Helper function to save the instance record in DB
      * @global type $USER
@@ -1034,6 +1069,61 @@ class googledrive {
         }
     }
 
+
+   //----------------------------------- Restrictions functions----------------------//
+
+    /**
+     * Return the ids of the students from
+     * all the groups  and grouping groups the file has to be created for
+     * @param json $availabilityconditionsjson
+     * @return array
+     */
+    public function get_members_ids($availabilityconditionsjson, $courseid){
+
+        $j = json_decode($availabilityconditionsjson);
+        $groupmembers = array();
+
+        foreach($j->c as $c =>$condition) {
+            if ($condition->type == 'group'){
+                $groupmembers = array_merge($groupmembers, groups_get_members($condition->id, $fields='u.id'));
+            }
+            if ($condition->type == 'grouping') {
+                $groupmembers = array_merge($groupmembers, groups_get_grouping_members($condition->id, $fields='u.id'));
+            }
+        }
+        $groupmembers = array_column($groupmembers, 'id');
+
+        //Look for the groups that are not part of the JSON
+        if($j->op == '!&' || $j->op == '!|') {
+            $groupmembers = $this->filter_group_members_ids($groupmembers, $courseid);
+
+        }
+
+
+        return $groupmembers;
+    }
+
+    /**
+     * For restrictions like Must not match  all or must not match any
+     * the JSON the form provides has the group ids of the groups to exclude.
+     * This function finds the ids of the groups that are not part of the exclusion
+     * and get the group member's ids.
+     * @param type $groupsfromcondition
+     * @param type $courseid
+     * @return type
+     */
+    private function filter_group_members_ids($groupmembers, $courseid) {
+        $context = \context_course::instance($courseid);
+        $coursestudents = get_role_users(5, $context);
+        $allstudentids = array_column($coursestudents, 'id');
+        //$studentsidstoexclude = array_column($groupmembers, 'id');
+
+        return array_diff($allstudentids, $groupmembers);
+
+
+    }
+
+    //------------------------------------------HTTP Requests -----------------------------------------//
     /**
      * Calls the update function from Googles API using Curl
      * The update function from Drive.php did not work.
@@ -1043,28 +1133,28 @@ class googledrive {
      */
     private function update_file_request($fileid, $details, $studentsfolder = false) {
 
-        $title = $studentsfolder ? $details->name .'_students' : $details->name;
-        $data = array ('title' => $title);
-        $data_string = json_encode($data);
-        $contentlength = strlen($data_string);
-
-        $token = $this->refresh_token();
-
-        $url = "https://www.googleapis.com/drive/v2/files/".$fileid."?uploadType=multipart?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $token,
-                   'Accept: application/json',
-                   'Content-Type: application/json',
-                   'Content-Length:' . $contentlength];
-
-        $ch = curl_init($url);
-        //curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_exec($ch);
         try {
+            $title = $studentsfolder ? $details->name .'_students' : $details->name;
+            $data = array ('title' => $title);
+            $data_string = json_encode($data);
+            $contentlength = strlen($data_string);
+
+            $token = $this->refresh_token();
+
+            $url = "https://www.googleapis.com/drive/v2/files/".$fileid."?uploadType=multipart?key=". $this->api_key ;
+            $header = ['Authorization: Bearer ' . $token,
+                       'Accept: application/json',
+                       'Content-Type: application/json',
+                       'Content-Length:' . $contentlength];
+
+            $ch = curl_init($url);
+
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_exec($ch);
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1083,29 +1173,30 @@ class googledrive {
      */
     private function update_permission_request($fileId, $permission) {
 
-        $data = array ('role' => $permission->role,
-                       'additionalRoles' => $permission->additionalRoles);
-
-        $data_string = json_encode($data);
-        $contentlength = strlen($data_string);
-
-        $token = $this->refresh_token();
-
-        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $token,
-                   'Accept: application/json',
-                   'Content-Type: application/json',
-                   'Content-Length:' . $contentlength];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_exec($ch);
-
         try {
+
+            $data = array ('role' => $permission->role,
+                           'additionalRoles' => $permission->additionalRoles);
+
+            $data_string = json_encode($data);
+            $contentlength = strlen($data_string);
+
+            $token = $this->refresh_token();
+
+            $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
+            $header = ['Authorization: Bearer ' . $token,
+                       'Accept: application/json',
+                       'Content-Type: application/json',
+                       'Content-Length:' . $contentlength];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_exec($ch);
+
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1120,18 +1211,18 @@ class googledrive {
      */
     private function delete_permission_request($fileId, $permissionId) {
 
-        $token = $this->refresh_token();
-
-        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permissionId."?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $token,
-                   'Accept: application/json',];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_exec($ch);
         try {
+            $token = $this->refresh_token();
+
+            $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permissionId."?key=". $this->api_key ;
+            $header = ['Authorization: Bearer ' . $token,
+                       'Accept: application/json',];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_exec($ch);
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
             print ($ex->getMessage());
@@ -1153,22 +1244,20 @@ class googledrive {
      */
     private function delete_file_request($fileId) {
 
-        $token = $this->refresh_token();
-
-        $url = "https://www.googleapis.com/drive/v2/files/".$fileId."?key=". $this->api_key ;
-        $header = ['Authorization: Bearer ' . $token,
-                   'Accept: application/json',];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-        curl_setopt($ch,CURLOPT_ENCODING , "");
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_exec($ch);
-
-
         try {
+            $token = $this->refresh_token();
+
+            $url = "https://www.googleapis.com/drive/v2/files/".$fileId."?key=". $this->api_key ;
+            $header = ['Authorization: Bearer ' . $token,
+                       'Accept: application/json',];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+            curl_setopt($ch,CURLOPT_ENCODING , "");
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_exec($ch);
 
             $r = (curl_getinfo($ch))['http_code'] === 204;
 
@@ -1189,10 +1278,9 @@ class googledrive {
      */
     private function update_permissions($fileId, $details, $instance) {
 
-        $permissionlist =  $this->get_permissions($fileId);
-
         try {
 
+            $permissionlist =  $this->get_permissions($fileId);
             $commenter = false;
             $removeaditionalrole = false;
 
@@ -1236,13 +1324,11 @@ class googledrive {
     /**
      * Removes the permission given to students when all_share distr. changes
      * to each_gets_own
-     * @global type $DB
      * @param type $result
      * @param type $instance
      * @param type $details
      */
     private function update_distribution($result, $instance) {
-        global $DB;
 
         try{
 
@@ -1265,23 +1351,5 @@ class googledrive {
             print($ex->getMessage());
         }
     }
-
-    /**
-     * Helper function to refresh access token.
-     * The access token set in the session doesn't update
-     * the expiration time. By refreshing the token, the error 401
-     * is avoided.
-     * @return type
-     */
-    private function refresh_token() {
-        $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
-        //$token = $accesstoken->access_token;
-        //To avoid error in authentication, refresh token.
-        $this->client->refreshToken($accesstoken->refresh_token);
-        $token= (json_decode($this->client->getAccessToken()))->access_token;
-
-        return $token;
-    }
-
 
 }

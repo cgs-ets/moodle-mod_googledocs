@@ -33,6 +33,7 @@
      */
     function init() {
         Log.debug('mod_googledocs/control: initializing controls of the mod_googledocs');
+
         var saveAndReturn = '#id_submitbutton2';
         var saveAndDisplay = '#id_submitbutton';
         var control = new GoogledocsControl(saveAndReturn, saveAndDisplay);
@@ -49,7 +50,7 @@
     GoogledocsControl.prototype.main = function () {
         var self = this;
         self.ProcessingMessageDisplay(self.saveAndDisplay);
-        self.ProcessingMessageDisplay(self.saveAndReturn);
+        self.ProcessingMessageDisplay(self.saveAndReturn);     
 
     };
 

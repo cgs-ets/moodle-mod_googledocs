@@ -217,11 +217,17 @@ class googledocs_table extends \flexible_table {
         return array(($countgroups > 0), $studentrecords, $student);
     }
 
+
+    /**
+     * Renders table with all files already created.
+     * @global type $OUTPUT
+     * @global type $CFG
+     * @global type $PAGE
+     */
     public function render_table() {
 
-        global $OUTPUT, $CFG;
+        global $OUTPUT, $CFG, $PAGE;
         list($hasgroup, $students, $studentview) = $this->query_db(0);
-
         $types = google_filetypes();
         $i = 0;
 
@@ -240,7 +246,7 @@ class googledocs_table extends \flexible_table {
                     'classes' => 'usercheckbox m-1',
                     'id' => 'user' . $student->id,
                     'name' => 'user' .$student->id,
-                    'checked' => false,//$this->selectall,
+                    'checked' => false,
                     'label' => get_string('selectitem', 'moodle', $student->firstname),
                     'labelclasses' => 'accesshide',
                 ]);
@@ -260,7 +266,7 @@ class googledocs_table extends \flexible_table {
                                   'fullname' => $namelink,
                                   'sharedurl' => html_writer::link($student->url, $image, array('target' => '_blank')),
                                   'group' => $hasgroup ? $student->group : 'No Group',
-                                  'status' => 'Created (?)');
+                                  'status' => 'Created');
 
                     $rowdata = array($rows[$i]['checkbox'],
                                      $rows[$i]['picture'],
@@ -313,5 +319,6 @@ class googledocs_table extends \flexible_table {
         return $DB->count_records_sql($sql, array('courseid' => $courseid));
 
     }
+
 
 }

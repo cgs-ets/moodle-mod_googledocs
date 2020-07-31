@@ -71,12 +71,13 @@ function googledocs_supports($feature) {
  * @return int The id of the newly inserted googledocs record
  */
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
-    global $USER;
-
+    global $USER, $DB;
     try {
-            $googledocs->timecreated = time();
-            $context = context_course::instance($googledocs->course);
-            $gdrive = new googledrive($context->id);
+
+        $googledocs->timecreated = time();
+        $context = context_course::instance($googledocs->course);
+        $gdrive = new googledrive($context->id);
+        //$course = $DB->get_record('course', array('id' => $googledocs->course));
 
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
@@ -87,10 +88,26 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
         $coursestudents = get_role_users(5, $context);
 
-        foreach ($coursestudents as $student) {
-            $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
-                    'displayName' => $student->firstname . ' ' . $student->lastname);
+        $j = json_decode(($mform->get_submitted_data())->availabilityconditionsjson);
+       
+        if(empty($j->c)) {
+            $students = $gdrive->get_enrolled_students($googledocs->course);
+        }else{ // Get students based on groups and/or grouping
+            $students = $gdrive->get_students_by_group($coursestudents, ($mform->get_submitted_data())->availabilityconditionsjson,
+                $googledocs->course);
         }
+
+        /*
+        $groupmembers = $gdrive->get_members_ids(($mform->get_submitted_data())->availabilityconditionsjson);
+
+        foreach ($coursestudents as $student) {
+
+            if(in_array($student->id, $groupmembers)){
+                $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
+                        'displayName' => $student->firstname . ' ' . $student->lastname);
+            }
+        } */
+
         $owncopy = false;
 
         if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ) {
@@ -112,6 +129,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
+
             $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type, $googledocs->permissions,
                 $author, $students, $folderid, $owncopy);
 
@@ -120,7 +138,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         }
-        
+
         return $googledocs->id;
 
     } catch (Exception $ex) {

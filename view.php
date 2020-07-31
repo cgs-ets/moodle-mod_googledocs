@@ -34,6 +34,7 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 
 $id = required_param('id', PARAM_INT);
+
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
 $googledocs = $DB->get_record('googledocs', array('id'=> $cm->instance), '*', MUST_EXIST);
 $coursecontext = context_course::instance($course->id);
