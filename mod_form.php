@@ -43,13 +43,16 @@ require_once($CFG->dirroot.'/course/lib.php');
 class mod_googledocs_mod_form extends moodleform_mod {
 
 
+   /* public function __construct($current, $section, $cm, $course) {
+       parent::__construct($current, $section, $cm, $course);
+       moodleform::__construct('fileprocessingtableview.php');
+    }*/
     /**
      * Defines forms elements.
      */
     public function definition() {
-        global $CFG, $PAGE;
-       // Add the javascript required to enhance this mform.
-       $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+        global $CFG, $PAGE, $OUTPUT;
+
        $update = optional_param('update', 0, PARAM_INT);
 
         // Start the instance config form.
@@ -131,6 +134,11 @@ class mod_googledocs_mod_form extends moodleform_mod {
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null,false);
+
+            // Add the javascript required to enhance this mform.
+           // $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+
+
         }
     }
 
@@ -138,8 +146,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Validates forms elements.
      */
     function validation($data, $files) {
+        global $PAGE;
         // Validating doc URL if sharing an existing doc.
 
+         //   var_dump($data); exit;
         if ((isset($data['use_document'])) && $data['use_document'] == 'existing') {
             $data['name'] = '_';
 
@@ -155,13 +165,13 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         return $errors;
     }
-
+/*
     protected function apply_admin_locked_flags(): void {
         global $PAGE;
          // Add the javascript required to enhance this mform.
-        $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+      //$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
         parent::apply_admin_locked_flags();
-    }
+    }*/
 
 
 

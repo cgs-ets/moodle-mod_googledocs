@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/googledocs/db" VERSION="20200723" COMMENT="XMLDB file for Moodle mod/googledocs"
+<XMLDB PATH="mod/googledocs/db" VERSION="20200811" COMMENT="XMLDB file for Moodle mod/googledocs"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -12,8 +12,7 @@
         <FIELD NAME="use_document" TYPE="char" LENGTH="255" NOTNULL="false" DEFAULT="create_new" SEQUENCE="false"/>
         <FIELD NAME="intro" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="google_doc_url" TYPE="char" LENGTH="256" NOTNULL="false" DEFAULT="null" SEQUENCE="false" COMMENT="When the Googledoc  resource is created from an existing file, record the value. 
-otherwise null."/>
+        <FIELD NAME="google_doc_url" TYPE="char" LENGTH="256" NOTNULL="false" DEFAULT="null" SEQUENCE="false" COMMENT="When the Googledoc  resource is created from an existing file, record the value.  otherwise null."/>
         <FIELD NAME="document_type" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="sharing" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -24,6 +23,7 @@ otherwise null."/>
         <FIELD NAME="update_status" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="not_modified" SEQUENCE="false" COMMENT="Valid values:  modified, not_modified, updated, error.  To keep track of changes in the file.  Timemodified and timeshared are not reliable to validate. This status depends on the result from google drive."/>
         <FIELD NAME="timeshared" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Value taken from the createdDate attribute from the Google API response"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="availabilityconditionsjson" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -41,6 +41,18 @@ otherwise null."/>
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="url" TYPE="char" LENGTH="250" NOTNULL="true" SEQUENCE="false" COMMENT="URL to the file shared"/>
         <FIELD NAME="update_status" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="not_modified" SEQUENCE="false" COMMENT="From gdrive update."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="googledocs_work_task" COMMENT="Keep track of the students files being processed">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="docid" TYPE="char" LENGTH="256" NOTNULL="true" SEQUENCE="false" COMMENT="File ID given by Google Drive"/>
+        <FIELD NAME="googledocid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Instance ID (from mdl_googledocs)"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Student ID (from mdl_user)"/>
+        <FIELD NAME="creation_status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = Not created 1 = Created"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

@@ -120,6 +120,69 @@ function googledocs_appears_valid_url($url) {
 function oauth_ready() {
 
 }
+ //----------------------------------- Restrict access functions----------------------//
+ /**
+    *
+    * @param type $coursestudents
+    * @param type $availabilityconditionsjson
+    * @return array of students with the format needed to create docs.
+ */
+function get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
+
+    $groupmembers = get_members_ids($availabilityconditionsjson, $courseid);
+    $students = null;
+    foreach ($coursestudents as $student) {
+        if(in_array($student->id, $groupmembers)){
+            $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
+                'displayName' => $student->firstname . ' ' . $student->lastname);
+        }
+    }
+    return $students;
+}
+
+ /**
+   * Return the ids of the students from
+   * all the groups  and grouping groups the file has to be created for
+   * @param json $availabilityconditionsjson
+   * @return array
+   */
+function get_members_ids($availabilityconditionsjson, $courseid){
+
+    $j = json_decode($availabilityconditionsjson);
+    $groupmembers = array();
+
+    foreach($j->c as $c =>$condition) {
+        if ($condition->type == 'group'){
+            $groupmembers = array_merge($groupmembers, groups_get_members($condition->id, $fields='u.id'));
+        }
+
+        if ($condition->type == 'grouping') {
+            $groupmembers = array_merge($groupmembers, groups_get_grouping_members($condition->id, $fields='u.id'));
+        }
+    }
+    $groupmembers = array_column($groupmembers, 'id');
+    //Look for the groups that are not part of the JSON
+    if($j->op == '!&' || $j->op == '!|') {
+        $groupmembers = filter_group_members_ids($groupmembers, $courseid);
+    }
+    return $groupmembers;
+}
+
+/**
+  * For restrictions like Must not match  all or must not match any
+  * the JSON the form provides has the group ids of the groups to exclude.
+  * This function finds the ids of the groups that are not part of the exclusion
+  * and get the group member's ids.
+  * @param type $groupsfromcondition
+  * @param type $courseid
+  * @return type
+*/
+function filter_group_members_ids($groupmembers, $courseid) {
+    $context = \context_course::instance($courseid);
+    $coursestudents = get_role_users(5, $context);
+    $allstudentids = array_column($coursestudents, 'id');
+    return array_diff($allstudentids, $groupmembers);
+}
 
 /**
  * Google Docs Plugin
@@ -178,7 +241,7 @@ class googledrive {
      * @param int $cmid mod_googledrive instance id.
      * @return void
      */
-    public function __construct($cmid, $update = false, $students = false) {
+    public function __construct($cmid, $update = false, $students = false, $fromws = false) {
         global $CFG;
 
         $this->cmid = $cmid;
@@ -213,7 +276,7 @@ class googledrive {
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
 
-        if ($update) {
+        if ($update || $fromws) {
            $this->refresh_token();
         }
 
@@ -344,6 +407,20 @@ class googledrive {
                 printf("%s (%s)\n", $file->getName(), $file->getId());
             }
         }
+    }
+
+    public function format_permission($permissiontype) {
+        $commenter = false;
+        if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER) {
+            $studentpermissions = 'reader';
+            $commenter = true;
+        } else if ( $permissiontype == GDRIVEFILEPERMISSION_READER) {
+            $studentpermissions = 'reader';
+        }else{
+            $studentpermissions = 'writer';
+        }
+
+        return array($studentpermissions, $commenter);
     }
 
     /**
@@ -547,7 +624,12 @@ class googledrive {
                 $this->insert_permission( $this->service, $file->id ,$this->author['emailAddress'],
                     $this->author['type'], $this->author['role']);
             }
+            $url = url_templates();
+            $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
+            $sharedfile = array($file, $sharedlink,  array() );
 
+            return $sharedfile;
+            //--------------Esto lo tiene que hacer el ws--------------------//
             // Set proper permissions to all students.
             // The primary role can be either reader or writer.
             $commenter = false;
@@ -620,7 +702,7 @@ class googledrive {
     }
     /**
      * Create  copies of the file with a given $fileid.
-     * Save the copies in a folder with the format fileName_Students, to keep the parent folder organised.
+     *
      * Assign permissions to the file. This provide access to the students.
      * @param string $fileid
      * @param array $parent
@@ -649,6 +731,50 @@ class googledrive {
         }
 
         return $links;
+    }
+
+    //Create a copy for the student
+    public function make_file_copy($data, $parent, $student, $permission, $commenter = false, $fromexisting = false){
+        global $DB;
+        $url = url_templates();
+
+        $copyname = $data->name .'_'.$student->name;
+        $copiedfile = new \Google_Service_Drive_DriveFile();
+        $copiedfile->setTitle($copyname);
+
+        if($fromexisting) {
+            $copiedfile->setParents($parent);
+        }
+
+        $copyid = $this->service->files->copy($data->docid, $copiedfile);
+        $link = sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id);
+
+        $this->insert_permission($this->service, $copyid->id, $student->email, $student->type, $permission, $commenter);
+
+        $studentfiledata = new stdClass();
+        $studentfiledata->userid = $student->id;
+        $studentfiledata->googledocid = $data->id;
+        $studentfiledata->url = $link;
+        $studentfiledata->name = $copyname;
+
+        //Save in DB
+        $DB->insert_record('googledocs_files', $studentfiledata);
+
+        //Update creation_status
+       $conditions =['docid' => $data->docid, 'googledocid' => $data->id,'userid' => $student->id];
+       $id =  $DB->get_field('googledocs_work_task', 'id', $conditions,  IGNORE_MISSING);
+       $d = new StdClass();
+       $d->id = $id;
+       $d->creation_status = 1;
+       $DB->update_record('googledocs_work_task', $d);
+
+       $gd = new StdClass();
+       $gd->id = $data->id;
+       $gd->sharing = 1;
+       $DB->update_record('googledocs', $gd);
+
+       return $link;
+
     }
 
    /**
@@ -800,6 +926,10 @@ class googledrive {
         //return parent::logout();
     }
 
+    public function get_service(){
+        return $this->service;
+    }
+
     /**
      * Get a file.
      *
@@ -837,7 +967,7 @@ class googledrive {
         $result = array();
         $pageToken = NULL;
 
-        if($this->service->files != null) {
+       // if($this->service->files != null) {
             do {
                 try {
                     $parameters = array();
@@ -860,7 +990,7 @@ class googledrive {
                 }
             }
 
-        }
+        //}
         return null;
     }
 
@@ -911,11 +1041,11 @@ class googledrive {
      * @param type $coursestudents
      * @param type $availabilityconditionsjson
      * @return string
-     */
+
     public function get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
 
         $groupmembers = $this->get_members_ids($availabilityconditionsjson, $courseid);
-
+        $students;
         foreach ($coursestudents as $student) {
 
             if(in_array($student->id, $groupmembers)){
@@ -925,7 +1055,7 @@ class googledrive {
         }
 
         return $students;
-    }
+    } */
 
     /**
      * Edit/Create Admin Settings Moodle form.
@@ -977,7 +1107,8 @@ class googledrive {
             $newPermission->setAdditionalRoles(array('commenter'));
         }
         try {
-            $service->permissions->insert($fileId, $newPermission);
+            $fileresource =  $service->permissions->insert($fileId, $newPermission);
+            $fileresource['selfLink'];
         } catch (Exception $e) {
             print "An error occurred: " . $e->getMessage();
         }
@@ -1014,7 +1145,7 @@ class googledrive {
 
         global $USER, $DB;
         $googledocs->google_doc_url = !$owncopy ? $sharedlink[1] : null;
-        $googledocs->docid = !$owncopy ? ($sharedlink[0])->id : null;
+        $googledocs->docid = ($sharedlink[0])->id; //!$owncopy ? ($sharedlink[0])->id : null;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
         $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
@@ -1022,12 +1153,15 @@ class googledrive {
         $googledocs->name = ($sharedlink[0])->title;
         $googledocs->intro = ($sharedlink[0])->title;
         $googledocs->use_document = $googledocs->use_document;
-        $googledocs->sharing = 1; //($sharedlink[0])->shared;
+        $googledocs->sharing = 0; //($sharedlink[0])->shared; //Up to this point the copies are not created yet.
         $googledocs->introformat = FORMAT_MOODLE;
 
+        /*
         if($owncopy) {
             $this->delete_file_request(($sharedlink[0])->id);
-        }
+        }*/
+
+
         return $DB->insert_record('googledocs', $googledocs);
     }
 
@@ -1048,6 +1182,27 @@ class googledrive {
             $DB->insert_record('googledocs_files', $data);
         }
     }
+
+    /**
+     * Save relevant data to create students file copies
+     * @global type $DB
+     * @param type $file
+     * @param type $students
+     */
+    public function save_work_task_scheduled($fileid, $students, $googledocid){
+        global  $DB;
+        foreach($students as $s){
+
+            $data = new \stdClass();
+            $data->docid = $fileid;
+            $data->googledocid = $googledocid;
+            $data->userid = $s['id'];
+
+            $DB->insert_record('googledocs_work_task', $data);
+        }
+    }
+
+
     /**
      * Helper function to update the students links when there was an update
      * on the files distribution (from all_share to each_gets_own)
@@ -1067,60 +1222,6 @@ class googledrive {
             $DB->update_record('googledocs_files', $data);
             $id = next($results);
         }
-    }
-
-
-   //----------------------------------- Restrictions functions----------------------//
-
-    /**
-     * Return the ids of the students from
-     * all the groups  and grouping groups the file has to be created for
-     * @param json $availabilityconditionsjson
-     * @return array
-     */
-    public function get_members_ids($availabilityconditionsjson, $courseid){
-
-        $j = json_decode($availabilityconditionsjson);
-        $groupmembers = array();
-
-        foreach($j->c as $c =>$condition) {
-            if ($condition->type == 'group'){
-                $groupmembers = array_merge($groupmembers, groups_get_members($condition->id, $fields='u.id'));
-            }
-            if ($condition->type == 'grouping') {
-                $groupmembers = array_merge($groupmembers, groups_get_grouping_members($condition->id, $fields='u.id'));
-            }
-        }
-        $groupmembers = array_column($groupmembers, 'id');
-
-        //Look for the groups that are not part of the JSON
-        if($j->op == '!&' || $j->op == '!|') {
-            $groupmembers = $this->filter_group_members_ids($groupmembers, $courseid);
-
-        }
-
-
-        return $groupmembers;
-    }
-
-    /**
-     * For restrictions like Must not match  all or must not match any
-     * the JSON the form provides has the group ids of the groups to exclude.
-     * This function finds the ids of the groups that are not part of the exclusion
-     * and get the group member's ids.
-     * @param type $groupsfromcondition
-     * @param type $courseid
-     * @return type
-     */
-    private function filter_group_members_ids($groupmembers, $courseid) {
-        $context = \context_course::instance($courseid);
-        $coursestudents = get_role_users(5, $context);
-        $allstudentids = array_column($coursestudents, 'id');
-        //$studentsidstoexclude = array_column($groupmembers, 'id');
-
-        return array_diff($allstudentids, $groupmembers);
-
-
     }
 
     //------------------------------------------HTTP Requests -----------------------------------------//

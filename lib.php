@@ -32,7 +32,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot.'/mod/googledocs/locallib.php');
-
+require_once($CFG->dirroot . '/mod/googledocs/googledocs_table.php');
 /* Moodle core API */
 
 /**
@@ -71,13 +71,15 @@ function googledocs_supports($feature) {
  * @return int The id of the newly inserted googledocs record
  */
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
-    global $USER, $DB;
+    global $USER;
+
     try {
 
         $googledocs->timecreated = time();
+        $googledocs->availabilityconditionsjson = ($mform->get_submitted_data())->availabilityconditionsjson;
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
-        //$course = $DB->get_record('course', array('id' => $googledocs->course));
+
 
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
@@ -86,27 +88,19 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         }
 
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
-        $coursestudents = get_role_users(5, $context);
+            $coursestudents = get_role_users(5, $context);
 
         $j = json_decode(($mform->get_submitted_data())->availabilityconditionsjson);
-       
+
         if(empty($j->c)) {
             $students = $gdrive->get_enrolled_students($googledocs->course);
         }else{ // Get students based on groups and/or grouping
-            $students = $gdrive->get_students_by_group($coursestudents, ($mform->get_submitted_data())->availabilityconditionsjson,
-                $googledocs->course);
+            $students = get_students_by_group($coursestudents, ($mform->get_submitted_data())->availabilityconditionsjson, $googledocs->course);
         }
 
-        /*
-        $groupmembers = $gdrive->get_members_ids(($mform->get_submitted_data())->availabilityconditionsjson);
-
-        foreach ($coursestudents as $student) {
-
-            if(in_array($student->id, $groupmembers)){
-                $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
-                        'displayName' => $student->firstname . ' ' . $student->lastname);
-            }
-        } */
+        if ($student == null) {
+           throw new exception ('No Students provided. The file was not created');
+        }
 
         $owncopy = false;
 
@@ -125,7 +119,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         } else {
             // Save new file in a new folder.
             $folderid = $gdrive->get_file_id($googledocs->name);
-
+            //var_dump($folderid);exit;
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
@@ -134,15 +128,17 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
                 $author, $students, $folderid, $owncopy);
 
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
+            $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
 
-            $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
+            //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         }
 
         return $googledocs->id;
 
     } catch (Exception $ex) {
-        echo  "An error occurred: " . $ex->getMessage();
+        echo $ex->getMessage();
+
     }
 }
 
@@ -238,6 +234,7 @@ function googledocs_delete_instance($id) {
 
     $DB->delete_records('googledocs', array('id' => $googledocs->id));
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
+    $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
     //googledocs_grade_item_delete($googledocs);
     return true;
 }

@@ -25,51 +25,129 @@
 /**
  * @module mod_googledocs/control
  */
- define(['jquery', 'core/log'], function ($, Log) {
+define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
     'use strict';
-
     /**
      * Initializes the block controls.
      */
-    function init() {
+    function init(create) {
         Log.debug('mod_googledocs/control: initializing controls of the mod_googledocs');
-
-        var saveAndReturn = '#id_submitbutton2';
         var saveAndDisplay = '#id_submitbutton';
-        var control = new GoogledocsControl(saveAndReturn, saveAndDisplay);
+        var parentfile_id = $('table.overviewTable').attr('data-googledoc-id');
+        var control = new GoogledocsControl(saveAndDisplay, parentfile_id, create);
         control.main();
     }
 
     // Constructor.
-    function GoogledocsControl(saveAndReturn, saveAndDisplay) {
+    function GoogledocsControl(saveAndDisplay, parentfile_id, create) {
         var self = this;
-        self.saveAndReturn = saveAndReturn;
+        self.parentfile_id = parentfile_id;
         self.saveAndDisplay = saveAndDisplay;
+        self.create = create;
     }
 
     GoogledocsControl.prototype.main = function () {
         var self = this;
-        self.ProcessingMessageDisplay(self.saveAndDisplay);
-        self.ProcessingMessageDisplay(self.saveAndReturn);     
+        self.processingMessageDisplay(self.saveAndReturn);
+        // Only call the create service if the files are not created.
+        // This JS is called in the view.php page, which calls the function
+        // that renders the table. It is the same table for created and processing
+       
+        if(!self.create) {
+            self.callService();
+        }else{
+              self.initTags();
+        }
 
     };
+    
+    GoogledocsControl.prototype.initTags = function (){
+        var self = this;
+        $('tbody').children().each(function(e){
+            if ($('#link_file_' + e).attr('href') != '#'){
+                self.tagDisplay(e, true);
+            }else{
+                self.tagDisplay(e, false);
+            }
+        });
+    };
+    /**
+     *
+     * @param {int} rownumber
+     * @param  boolean creation
+     * @returns display created or failed on the table's status column.
+     */
+    GoogledocsControl.prototype.tagDisplay = function(rownumber, creation){
 
-        GoogledocsControl.prototype.ProcessingMessageDisplay = function(buttonId) {
-            // Handle submit click.
+        if(creation === true){
+            $('#file_' + rownumber).html('Created');
+            $('#file_' + rownumber).addClass('tag_doc success');
+        }else{
+            $('#file_' + rownumber).html('Failed');
+            $('#file_' + rownumber).addClass('tag_doc failed');
+        }
+    };
 
-            $(buttonId).on('click', function() {
-                $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
-                        + "<div class='spinner-border processing' role='status'>"
-                        + "<span class='sr-only'>Loading...</span>"
-                        + "</div>"
-                        + "<div class = 'process_message'>\n\
-                               <p>Saving files into My Drive. <br>\n\
-                                  The process can take sometime.<br> \n\
-                                  Please do not close the browser.</p>\n\
-                            </div></div>").appendTo('#page-content');
+    GoogledocsControl.prototype.processingMessageDisplay = function(buttonId) {
+        // Handle submit click.
+
+        $(buttonId).on('click', function() {
+            $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
+                + "<div class='spinner-border processing' role='status'>"
+                + "<span class='sr-only'>Loading...</span>"
+                + "</div>"
+//                + "<div class = 'process_message'>\n\
+//                    <p>Saving files into My Drive. <br>\n\
+//                        The process can take sometime.<br> \n\
+//                        Please do not close the browser.</p>\n\
+                 +   "</div></div>").appendTo('#page-content');
 
             });
-        };
+    };
+    GoogledocsControl.prototype.callService = function(){
+        var self = this;
+
+        $('tbody').children().each(function(e){
+            var student_id = $(this).find('#file_' + e).attr('data-student-id');
+            if (typeof student_id != "undefined"){
+                var student_email=  $(this).find('#file_' + e).attr('data-student-email');
+                var student_name =  $(this).find('a#fullname_' + student_id).html();
+                self.create_student_file(e, student_id, student_email, student_name);
+            }
+        });
+    };
+
+    GoogledocsControl.prototype.create_student_file = function (rownumber, student_id, student_email, student_name) {
+        var self = this;
+        $('#file_' + rownumber).addClass('progress_bar processing'); // progress bar visible.
+       
+        Ajax.call([{
+                methodname: 'mod_googledocs_create_students_file',
+                args: {
+                    parentfile_id: self.parentfile_id,
+                    student_email: student_email,
+                    student_name: student_name,
+                    student_id: student_id,
+                },
+                done: function (response) {
+                    Log.debug(response.url);
+                    // Add file's link
+                    var ref = $('#' + 'link_file_' + rownumber);
+                    $(ref).attr("href", response.url);
+                    // Remove progress bar and display status
+                    $('#file_' + rownumber).removeClass('progress_bar processing');
+                    self.tagDisplay(rownumber, true);
+
+
+                },
+                fail: function (reason) {
+                    Log.error(reason);
+                    $('#file_' + rownumber).removeClass('progress_bar  processing');
+                    self.tagDisplay(rownumber, false);
+                }
+            }]);
+    };
+
         return {
             init: init
         };

@@ -28,7 +28,6 @@ require_once($CFG->libdir . '/tablelib.php');
 require_once($CFG->dirroot . '/user/lib.php');
 
 defined('MOODLE_INTERNAL') || die;
-
 /**
  * Class for the displaying the googledocs  table.
  * Based on participants_table.pho
@@ -69,13 +68,6 @@ class googledocs_table extends \flexible_table {
      */
     protected $selectall;
 
-
-    /**
-     * @var \stdClass[] The list of groups with membership info for the course.
-     */
-    protected $groups;
-
-
     /**
      * @var \stdClass $course The course details.
      */
@@ -97,11 +89,13 @@ class googledocs_table extends \flexible_table {
      */
     protected $table;
 
-    public function __construct($courseid, $selectall, $context, $instanceid, $googledocs) {
+    protected $coursestudents;
+
+    protected $created;
+
+    public function __construct($courseid, $selectall, $context, $instanceid, $googledocs, $created = true) {
 
         global $OUTPUT, $PAGE;
-
-        //parent::__construct('mod-googledocs-files-view' . $courseid);
 
         $this->selectall = $selectall;
         $this->context = $context;
@@ -143,17 +137,18 @@ class googledocs_table extends \flexible_table {
 
         $this->table->define_baseurl($PAGE->url);
         $this->table->set_attribute('class', 'overviewTable');
+        $this->table->set_attribute('data-googledoc-id', $googledocs->docid);
         $this->table->column_style_all('padding', '10px 10px 10px 15px');
         $this->table->column_style_all('text-align', 'left');
         $this->table->column_style_all('vertical-align', 'middle');
         $this->table->column_style('', 'width', '5%');
         $this->table->column_style('picture', 'width', '5%');
         $this->table->column_style('fullname', 'width', '15%');
-       // $this->table->column_style('sharedurl', 'width', '50px');
         $this->table->column_style('sharedurl', 'width', '15%');
         $this->table->column_style('sharedurl', 'padding', '0');
         $this->table->column_style('sharedurl', 'text-align', 'center');
         $this->table->column_style('sharedurl', 'width', '8%');
+
         $this->table->setup();
 
         // Set the variables we need to use later.
@@ -161,6 +156,9 @@ class googledocs_table extends \flexible_table {
         $this->context = $context;
         $this->instanceid = $instanceid;
         $this->googledocs = $googledocs;
+        $this->created = $created;
+        $this->coursestudents = get_role_users(5, $this->context, false,'u.*');
+
     }
 
 
@@ -175,42 +173,22 @@ class googledocs_table extends \flexible_table {
         global $DB, $USER;
         $picturefields = user_picture::fields('u');
         $countgroups = $this->get_course_group_number($this->courseid);
+
         $student = false;
 
         if (has_capability('mod/googledocs:view', $this->context) &&
             is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
             && !has_capability('mod/googledocs:viewall', $this->context)) {
             $student = true;
-            $rawdata = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
-                        FROM mdl_user as u
-                        INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                        WHERE gf.googledocid = ? AND u.id = ?
-                        ORDER BY  u.firstname";
+            list($rawdata, $params) = $this->query_student_file_view($picturefields);
+        }else {
+            if($this->created) {
+                list($rawdata, $params) = $this->queries_get_students_list_created($picturefields);
+            }else{
+               $studentrecords = $this->queries_get_students_list_processing($picturefields, $countgroups);
 
-            $params = array($this->googledocs->id, $USER->id);
-
-        }else if ($countgroups > 0){
-
-            $rawdata = "SELECT  DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.url, gd.name, gm.groupid,
-                        gr.name as 'Group', gd.course as  'COURSE ID'
-                        FROM mdl_user as u
-                        INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                        INNER JOIN mdl_googledocs as gd on gf.googledocid = gd.id
-                        INNER JOIN mdl_groups_members as gm on gm.userid = u.id
-                        INNER JOIN mdl_groups as gr on gr.id = gm.groupid and gr.courseid = gd.course
-                        WHERE gd.course = ? AND gf.name like '{$this->googledocs->name }_%'";
-
-              $params = array($this->courseid);
-
-        } else{
-
-            $rawdata = "SELECT DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.name, gf.url
-                        FROM mdl_user as u
-                        INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                        WHERE gf.googledocid = ?
-                        ORDER BY  u.firstname";
-
-            $params = array($this->instanceid);
+               return array(($countgroups > 0), $studentrecords, $student);
+            }
         }
 
         $studentrecords = $DB->get_records_sql($rawdata, $params);
@@ -225,11 +203,10 @@ class googledocs_table extends \flexible_table {
      * @global type $PAGE
      */
     public function render_table() {
-
-        global $OUTPUT, $CFG, $PAGE;
+        global $CFG;
         list($hasgroup, $students, $studentview) = $this->query_db(0);
         $types = google_filetypes();
-        $i = 0;
+
 
         if ($studentview) {
             $user = array_values($students);
@@ -239,68 +216,64 @@ class googledocs_table extends \flexible_table {
             print_string('clicktoopen', 'url', "<a href=\"{$user[0]->url}\"$extra><img class='link_icon' src='{$imgurl}'></a>");
 
         }else{
+              $this->render_table_helper($types, $hasgroup, $students);
 
-            foreach($students as $student) {
-
-                $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
-                    'classes' => 'usercheckbox m-1',
-                    'id' => 'user' . $student->id,
-                    'name' => 'user' .$student->id,
-                    'checked' => false,
-                    'label' => get_string('selectitem', 'moodle', $student->firstname),
-                    'labelclasses' => 'accesshide',
-                ]);
-
-                $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid));
-                $namelink = html_writer::link($CFG->wwwroot.'/user/view.php?id='.$student->id.'&course='.$this->courseid,
-                    fullname($student));
-                $icon = $types[get_doc_type_from_url($student->url)]['icon'];
-                $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
-                $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
-
-                $rows[$i] = array('checkbox' => $OUTPUT->render($checkbox),
-                                  'userid' => $student->id,
-                                  'firstname' => strtoupper($student->firstname),
-                                  'lastname' => strtoupper($student->lastname),
-                                  'picture' => $picture,
-                                  'fullname' => $namelink,
-                                  'sharedurl' => html_writer::link($student->url, $image, array('target' => '_blank')),
-                                  'group' => $hasgroup ? $student->group : 'No Group',
-                                  'status' => 'Created');
-
-                    $rowdata = array($rows[$i]['checkbox'],
-                                     $rows[$i]['picture'],
-                                     $rows[$i]['fullname'],
-                                     $rows[$i]['sharedurl'],
-                                     $rows[$i]['group'],
-                                     $rows[$i]['status']);
-
-                    $this->table->add_data($rowdata);
-
-                $i++;
-            }
-            $this->table->print_html();
         }
+
+        return  $this->coursestudents;
 
     }
 
-    /**
-     * Render the participants table.
-     *
-     * @param int $pagesize Size of page for paginated displayed table.
-     * @param bool $useinitialsbar Whether to use the initials bar which will only be used if there is a fullname column defined.
-     * @param string $downloadhelpbutton
-     */
-   /* public function out($pagesize, $useinitialsbar, $downloadhelpbutton = '') {
-        global $PAGE;
+    private function render_table_helper($types, $hasgroup, $students){
+        global $OUTPUT, $CFG;
 
-        parent::out($pagesize, $useinitialsbar, $downloadhelpbutton);
+        $i = 0;
 
-        /*if (has_capability('moodle/course:enrolreview', $this->context)) {
-            $params = ['contextid' => $this->context->id, 'courseid' => $this->course->id];
-            $PAGE->requires->js_call_amd('core_user/status_field', 'init', [$params]);
-        }
-    }*/
+        foreach($students as $student) {
+
+            $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
+                'classes' => 'usercheckbox m-1',
+                'id' => 'user' . $student->id,
+                'name' => 'user' .$student->id,
+                'checked' => false,
+                'label' => get_string('selectitem', 'moodle', $student->firstname),
+                'labelclasses' => 'accesshide',
+            ]);
+
+            $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid));
+            $namelink = html_writer::link($CFG->wwwroot.'/user/view.php?id='.$student->id.'&course='.$this->courseid,
+                    fullname($student), array('id' => 'fullname_' . $student->id));
+                $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
+                $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+                $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+            $url = isset($student->url) ? $student->url : '#';
+            $groupname = isset($student->group) ? $student->group : 'No Group';
+            $rows[$i] = array('checkbox' => $OUTPUT->render($checkbox),
+                            'userid' => $student->id,
+                            'firstname' => strtoupper($student->firstname),
+                            'lastname' => strtoupper($student->lastname),
+                            'picture' => $picture,
+                            'fullname' => $namelink,
+                            'sharedurl' =>html_writer::link($url, $image, array('target' => '_blank', 'id'=>'link_file_'. $i)),
+                            'group' => $groupname,
+                            'status' => html_writer::start_div('', ["id"=>'file_'. $i, "data-student-id" => $student->id, "data-student-email"=>$student->email]).html_writer::end_div()
+
+                        );
+
+            $rowdata = array($rows[$i]['checkbox'],
+                             $rows[$i]['picture'],
+                             $rows[$i]['fullname'],
+                             $rows[$i]['sharedurl'],
+                             $rows[$i]['group'],
+                             $rows[$i]['status']);
+
+            $this->table->add_data($rowdata);
+                $i++;
+            }
+
+            $this->table->print_html();
+
+    }
 
     /**
      * Return the number of groups for a particular course
@@ -318,6 +291,100 @@ class googledocs_table extends \flexible_table {
 
         return $DB->count_records_sql($sql, array('courseid' => $courseid));
 
+    }
+
+    /*
+     * This queries are executed when the table view corresponds to
+     * a set of files already created.
+     */
+    private function queries_get_students_list_created($picturefields){
+        global $DB;
+        $countgroups = $this->get_course_group_number($this->courseid);
+        $j = json_decode($this->googledocs->availabilityconditionsjson);
+        if ($countgroups > 0 || !(empty($j->c))) {
+            $rawdata = "SELECT  DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.url, gd.name, gm.groupid,
+                        gr.name as 'Group', gd.course as  'COURSE ID'
+                        FROM mdl_user as u
+                        INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
+                        INNER JOIN mdl_googledocs as gd on gf.googledocid = gd.id
+                        INNER JOIN mdl_groups_members as gm on gm.userid = u.id
+                        INNER JOIN mdl_groups as gr on gr.id = gm.groupid and gr.courseid = gd.course
+                        WHERE gd.course = ? AND gf.name like '{$this->googledocs->name }_%'";
+
+             $params = array($this->courseid);
+
+        }else {
+            $rawdata = "SELECT DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.name, gf.url
+                        FROM mdl_user as u
+                        INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
+                        WHERE gf.googledocid = ?
+                        ORDER BY  u.firstname";
+
+            $params = array($this->instanceid);
+        }
+
+         return array($rawdata, $params);
+
+    }
+
+    /**
+     *
+     */
+
+    private function queries_get_students_list_processing($picturefields, $countgroups) {
+
+       $j = json_decode($this->googledocs->availabilityconditionsjson);
+
+       if($countgroups == 0 || empty($j->c)) {
+           return  $this->coursestudents;//get_role_users(5, $this->context, false, $picturefields);
+       }else{
+
+            $students = $this->get_students_by_group($this->coursestudents, $this->googledocs->availabilityconditionsjson,
+                    $this->googledocs->course);
+
+            return $students;
+       }
+    }
+
+    /**
+     * Returns the students in a group.
+     *
+     * @param type $coursestudents
+     * @param type $availabilityconditionsjson
+     * @param type $courseid
+     * @return array stdClass
+     */
+    private function  get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
+
+            $groupmembers = get_members_ids($availabilityconditionsjson, $courseid);
+            $i=0;
+            foreach ($coursestudents as $student) {
+
+                if(in_array($student->id, $groupmembers)){
+                    $students[$i] = $student;
+                    $i++;
+                }
+            }
+
+
+            return $students;
+    }
+
+    /**
+     * This query fetches the student file info
+     * to display when a student clicks on the name of the file in a course.
+     */
+    private function query_student_file_view($picturefields) {
+        global $USER;
+        $rawdata = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
+                    FROM mdl_user as u
+                    INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
+                    WHERE gf.googledocid = ? AND u.id = ?
+                    ORDER BY  u.firstname";
+
+            $params = array($this->googledocs->id, $USER->id);
+
+        return array($rawdata, $params);
     }
 
 

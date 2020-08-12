@@ -36,4 +36,55 @@ table.flexible.overviewTable {
     width: 35px;
     text-align: center;
 }
+.progress_bar.processing {
+    display: inline-block;;
+}
+.progress_bar {
+/*  margin: auto;*/
+  width: 100px;
+  max-width:80%;
+  height: 15px;
+  box-shadow: 0px 0px 4px #ffffffd1;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  display: none;
+}
+.progress_bar:before {
+    content: '';
+    width: 200%;
+    height: 100%;
+    position: absolute;
+    animation: progress-anime 10s ease-out infinite;
+    background: linear-gradient(to right,#79a7c1 0%,#60a9d9 50%,#d2d2d2 50%,#d2d2d2 100%);
+}
 
+@keyframes progress-anime {
+    0% {left: -100%;}
+    75% {left: -5%;}
+    85% {left: -5%;}
+    95% {left: 0;}
+}
+.success {
+    color: #fff;
+    background-color: rgba(17,119,209,.75);
+}
+
+.failed {
+    color: #fff;
+    background-color: #d43f3a;     
+}
+
+.tag_doc {
+    display: inline-block;
+    padding: .25em .4em;
+    font-size: 90%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    -webkit-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    -o-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}

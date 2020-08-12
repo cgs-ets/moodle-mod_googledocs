@@ -32,13 +32,14 @@ require_once(dirname(__FILE__).'/lib.php');
 require_once($CFG->dirroot . '/mod/assign/locallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
+$new = optional_param('forceview', 0, PARAM_INT);
 
 $id = required_param('id', PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
 $googledocs = $DB->get_record('googledocs', array('id'=> $cm->instance), '*', MUST_EXIST);
 $coursecontext = context_course::instance($course->id);
-$PAGE->set_context($coursecontext);
+$PAGE->set_context($coursecontext); //Every page needs a context.
 
 require_login($course, true, $cm);
 
@@ -49,14 +50,16 @@ $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_title(format_string($googledocs->name));
 $PAGE->set_pagetype('course-view-' . $course->format);  // To get the blocks exactly like the course.
 $PAGE->add_body_class('path-user');
-
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
 // Output starts here.
 echo $OUTPUT->header();
+$created = ($googledocs->sharing == 1);
 
-$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs);
+$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs, $created);
 $table->render_table();
 
+
+$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created));
 // Finish the page.
 echo $OUTPUT->footer();
