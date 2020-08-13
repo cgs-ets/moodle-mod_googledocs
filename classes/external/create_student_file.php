@@ -88,16 +88,17 @@ trait create_student_file {
         // Generate the student file
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
+        $student = new \stdClass();
+        $student->id = $student_id;
+        $student->name = $student_name;
+        $student->email = $student_email;
+        $student->type = 'user'; //$type; TODO: AGregar una columna  a la tabla de la instancia indicando que tipo es.
+        $fromexisting = $data->use_document == 'new' ? false : true;
+
         if ($data->distribution == 'each_gets_own') {
-            $student = new \stdClass();
-            $student->id = $student_id;
-            $student->name = $student_name;
-            $student->email = $student_email;
-            $student->type = 'user'; //$type; TODO: AGregar una columna  a la tabla de la instancia indicando que tipo es.
-            $fromexisting = $data->use_document == 'new' ? false : true;
             $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
         }else{
-            $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);
+           $url = $gdrive->share_single_copy($student, $data, $role, $commenter);
         }
 
         return array(

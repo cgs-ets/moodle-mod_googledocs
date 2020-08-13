@@ -80,7 +80,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
 
-
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
             $mform->addElement('html', $googleauthlink);
@@ -98,7 +97,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $students = get_students_by_group($coursestudents, ($mform->get_submitted_data())->availabilityconditionsjson, $googledocs->course);
         }
 
-        if ($student == null) {
+        if ($students == null) {
            throw new exception ('No Students provided. The file was not created');
         }
 
@@ -108,18 +107,17 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $owncopy = true;
         }
 
-            // Use existing doc.
+        // Use existing doc.
         if (($mform->get_submitted_data())->use_document == 'existing') {
             // Save new file in a COURSE Folder
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
             $folderid = $sharedlink[3];
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
-            $gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
+            //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
         } else {
             // Save new file in a new folder.
             $folderid = $gdrive->get_file_id($googledocs->name);
-            //var_dump($folderid);exit;
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
@@ -128,11 +126,10 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
                 $author, $students, $folderid, $owncopy);
 
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
-            $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
-
             //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
-
         }
+
+        $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
 
         return $googledocs->id;
 

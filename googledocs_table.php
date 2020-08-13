@@ -242,10 +242,10 @@ class googledocs_table extends \flexible_table {
 
             $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid));
             $namelink = html_writer::link($CFG->wwwroot.'/user/view.php?id='.$student->id.'&course='.$this->courseid,
-                    fullname($student), array('id' => 'fullname_' . $student->id));
-                $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
-                $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
-                $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+                fullname($student), array('id' => 'fullname_' . $student->id));
+            $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
+            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
             $url = isset($student->url) ? $student->url : '#';
             $groupname = isset($student->group) ? $student->group : 'No Group';
             $rows[$i] = array('checkbox' => $OUTPUT->render($checkbox),
@@ -309,7 +309,8 @@ class googledocs_table extends \flexible_table {
                         INNER JOIN mdl_googledocs as gd on gf.googledocid = gd.id
                         INNER JOIN mdl_groups_members as gm on gm.userid = u.id
                         INNER JOIN mdl_groups as gr on gr.id = gm.groupid and gr.courseid = gd.course
-                        WHERE gd.course = ? AND gf.name like '{$this->googledocs->name }_%'";
+                        WHERE gd.course = ? AND (gf.name like '{$this->googledocs->name }_%'
+                                            OR gf.name like '{$this->googledocs->name }')";
 
              $params = array($this->courseid);
 

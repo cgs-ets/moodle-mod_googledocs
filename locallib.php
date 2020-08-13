@@ -488,7 +488,7 @@ class googledrive {
             }
 
             if ($owncopy) {
-               $links = $this->make_copies($file->id, array($parent), $file->title, $students, $studentpermissions, $commenter, true);
+               //$links = $this->make_copies($file->id, array($parent), $file->title, $students, $studentpermissions, $commenter, true);
                $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
@@ -629,6 +629,7 @@ class googledrive {
             $sharedfile = array($file, $sharedlink,  array() );
 
             return $sharedfile;
+
             //--------------Esto lo tiene que hacer el ws--------------------//
             // Set proper permissions to all students.
             // The primary role can be either reader or writer.
@@ -732,18 +733,41 @@ class googledrive {
 
         return $links;
     }
+    /**
+     * Called by the WS    $gdrive->share_single_copy($student, $data, $role, $commenter);
+     *    $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);
+     */
+    public function share_single_copy($student, $data, $role, $commenter) {
+        global $DB;
+        $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
 
-    //Create a copy for the student
-    public function make_file_copy($data, $parent, $student, $permission, $commenter = false, $fromexisting = false){
+        $d = new stdClass();
+        $d->userid = $student->id;
+        $d->googledocid = $data->id;
+        $d->url = $data->google_doc_url;
+        $d->name = $data->name;
+
+        $DB->insert_record('googledocs_files', $d);
+        $this->update_creation_and_sharing_status($data, $student);
+
+        return $data->google_doc_url;
+
+
+    }
+    //Create a copy for the student called by the ws
+    public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false, $fromexisting = false){
         global $DB;
         $url = url_templates();
 
-        $copyname = $data->name .'_'.$student->name;
+        $docname = $fromexisting ? ($this->getFile($data->docid))->getTitle() : $data->name;
+        $copyname = $docname .'_'.$student->name;
         $copiedfile = new \Google_Service_Drive_DriveFile();
         $copiedfile->setTitle($copyname);
 
         if($fromexisting) {
-            $copiedfile->setParents($parent);
+            $parent = new Google_Service_Drive_ParentReference();
+            $parent->setId($parentdirid);
+            $copiedfile->setParents(array($parent));
         }
 
         $copyid = $this->service->files->copy($data->docid, $copiedfile);
@@ -761,6 +785,20 @@ class googledrive {
         $DB->insert_record('googledocs_files', $studentfiledata);
 
         //Update creation_status
+       $this->update_creation_and_sharing_status($data, $studentfiledata);
+
+       return $link;
+
+    }
+    /**
+     * Update status in googledocs and  googledocs_work_task tables
+     * @global type $DB
+     * @param type $data
+     * @param type $student
+     */
+    private function update_creation_and_sharing_status($data, $student) {
+       global $DB;
+       //Update creation_status
        $conditions =['docid' => $data->docid, 'googledocid' => $data->id,'userid' => $student->id];
        $id =  $DB->get_field('googledocs_work_task', 'id', $conditions,  IGNORE_MISSING);
        $d = new StdClass();
@@ -772,8 +810,6 @@ class googledrive {
        $gd->id = $data->id;
        $gd->sharing = 1;
        $DB->update_record('googledocs', $gd);
-
-       return $link;
 
     }
 
@@ -794,7 +830,6 @@ class googledrive {
             $parentfolderid = $instance->parentfolderid;
 
             // Updates the "master" file.
-           // $result = $this->update_file_request($fileId, $details);
             $result = $this->update_file_request($parentfolderid,$details);
             if (!$result) { throw  new Exception ("Unable to update file in My Drive.");}
 
@@ -937,23 +972,38 @@ class googledrive {
      * @param string $file name to save the file to.
      * @return string JSON encoded array of information about the file.
      */
-    public function get_file($reference, $filename = '') {
-        global $CFG;
+//    public function get_file($reference, $filename = '') {
+//        global $CFG;
+//
+//        $auth = $this->client->getAuth();
+//        $request = $auth->authenticatedRequest(new Google_Http_Request($reference));
+//          var_dump($request); exit;
+//        if ($request->getResponseHttpCode() == 200) {
+//            $path = $this->prepare_file($filename);
+//            $content = $request->getResponseBody();
+//            if (file_put_contents($path, $content) !== false) {
+//                @chmod($path, $CFG->filepermissions);
+//                return array(
+//                    'path' => $path,
+//                    'url' => $reference
+//                );
+//            }
+//        }
+//        throw new repository_exception('cannotdownload', 'repository');
+//    }
 
-        $auth = $this->client->getAuth();
-        $request = $auth->authenticatedRequest(new Google_Http_Request($reference));
-        if ($request->getResponseHttpCode() == 200) {
-            $path = $this->prepare_file($filename);
-            $content = $request->getResponseBody();
-            if (file_put_contents($path, $content) !== false) {
-                @chmod($path, $CFG->filepermissions);
-                return array(
-                    'path' => $path,
-                    'url' => $reference
-                );
-            }
+    /**
+     *
+     * @param String $fileId
+     * @return File Resource
+     */
+    public function getFile($fileId) {
+        try {
+            $file = $this->service->files->get($fileId);
+            return $file;
+        } catch (Exception $e) {
+           print "An error occurred: " . $e->getMessage();
         }
-        throw new repository_exception('cannotdownload', 'repository');
     }
 
     /**
@@ -1103,12 +1153,12 @@ class googledrive {
         $newPermission->setRole($role);
         $newPermission->setType($type);
 
+
         if($commenter) {
             $newPermission->setAdditionalRoles(array('commenter'));
         }
         try {
-            $fileresource =  $service->permissions->insert($fileId, $newPermission);
-            $fileresource['selfLink'];
+            return $service->permissions->insert($fileId, $newPermission);
         } catch (Exception $e) {
             print "An error occurred: " . $e->getMessage();
         }
