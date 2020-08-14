@@ -32,23 +32,22 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
      */
     function init(create) {
         Log.debug('mod_googledocs/control: initializing controls of the mod_googledocs');
-        var saveAndDisplay = '#id_submitbutton';
+       
         var parentfile_id = $('table.overviewTable').attr('data-googledoc-id');
-        var control = new GoogledocsControl(saveAndDisplay, parentfile_id, create);
+        var control = new GoogledocsControl(parentfile_id, create);
         control.main();
     }
 
     // Constructor.
-    function GoogledocsControl(saveAndDisplay, parentfile_id, create) {
+    function GoogledocsControl( parentfile_id, create) {
         var self = this;
         self.parentfile_id = parentfile_id;
-        self.saveAndDisplay = saveAndDisplay;
         self.create = create;
     }
 
     GoogledocsControl.prototype.main = function () {
         var self = this;
-        self.processingMessageDisplay(self.saveAndReturn);
+      
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
@@ -88,22 +87,6 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         }
     };
 
-    GoogledocsControl.prototype.processingMessageDisplay = function(buttonId) {
-        // Handle submit click.
-
-        $(buttonId).on('click', function() {
-            $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
-                + "<div class='spinner-border processing' role='status'>"
-                + "<span class='sr-only'>Loading...</span>"
-                + "</div>"
-//                + "<div class = 'process_message'>\n\
-//                    <p>Saving files into My Drive. <br>\n\
-//                        The process can take sometime.<br> \n\
-//                        Please do not close the browser.</p>\n\
-                 +   "</div></div>").appendTo('#page-content');
-
-            });
-    };
     GoogledocsControl.prototype.callService = function(){
         var self = this;
 
@@ -120,7 +103,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
     GoogledocsControl.prototype.create_student_file = function (rownumber, student_id, student_email, student_name) {
         var self = this;
         $('#file_' + rownumber).addClass('progress_bar processing'); // progress bar visible.
-       
+
         Ajax.call([{
                 methodname: 'mod_googledocs_create_students_file',
                 args: {

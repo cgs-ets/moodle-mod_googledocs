@@ -248,7 +248,7 @@ class googledocs_table extends \flexible_table {
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
             $url = isset($student->url) ? $student->url : '#';
             $student->group = $this->get_students_group_names($student->id, $this->courseid);
-            $groupname = isset($student->group) ? $student->group : 'No Group';
+            $groupname = !empty($student->group)  ? $student->group : 'No Group';
             $rows[$i] = array('checkbox' => $OUTPUT->render($checkbox),
                             'userid' => $student->id,
                             'firstname' => strtoupper($student->firstname),

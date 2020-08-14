@@ -136,7 +136,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $this->add_action_buttons(true, null,false);
 
             // Add the javascript required to enhance this mform.
-           // $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
+            $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
 
 
         }
@@ -165,13 +165,13 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         return $errors;
     }
-/*
-    protected function apply_admin_locked_flags(): void {
-        global $PAGE;
-         // Add the javascript required to enhance this mform.
-      //$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init');
-        parent::apply_admin_locked_flags();
-    }*/
+
+//    protected function apply_admin_locked_flags(): void {
+//        global $PAGE;
+//         // Add the javascript required to enhance this mform.
+//        $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array(true, true));
+//        parent::apply_admin_locked_flags();
+//    }
 
 
 
