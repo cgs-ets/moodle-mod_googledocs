@@ -488,7 +488,6 @@ class googledrive {
             }
 
             if ($owncopy) {
-               //$links = $this->make_copies($file->id, array($parent), $file->title, $students, $studentpermissions, $commenter, true);
                $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
@@ -630,43 +629,6 @@ class googledrive {
 
             return $sharedfile;
 
-            //--------------Esto lo tiene que hacer el ws--------------------//
-            // Set proper permissions to all students.
-            // The primary role can be either reader or writer.
-            $commenter = false;
-            if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER) {
-                $studentpermissions = 'reader';
-                $commenter = true;
-            } elseif ($permissiontype == GDRIVEFILEPERMISSION_READER) {
-                  $studentpermissions = 'reader';
-            }else{
-                $studentpermissions = 'writer';
-
-            }
-            $links_for_students = array();
-            $url = url_templates();
-
-            if($copy){
-               $links_for_students = $this->make_copies($file->id, array($parent), $docname, $students, $studentpermissions, $commenter);
-            }else{
-                //https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html
-                //Global HTTP Batch Endpoints (www.googleapis.com/batch) will cease to work on August 12, 2020
-                // Give proper permissions to author (teacher).
-                if (!empty($this->students)) {
-                    foreach ($this->students as $student) {
-                        $this->insert_permission($this->service, $file->id, $student['emailAddress'], 'user',$studentpermissions,
-                            $commenter);
-
-                        $links_for_students[$student['id']] = array ($file->alternateLink,
-                            'filename' => $docname);
-                    }
-                }
-            }
-            $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
-            $sharedfile = array($file, $sharedlink, $links_for_students );
-
-            return $sharedfile;
-
         } catch (Exception $ex) {
             print "An error occurred: " . $ex->getMessage();
         }
@@ -734,8 +696,7 @@ class googledrive {
         return $links;
     }
     /**
-     * Called by the WS    $gdrive->share_single_copy($student, $data, $role, $commenter);
-     *    $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);
+     * Called by the WS
      */
     public function share_single_copy($student, $data, $role, $commenter) {
         global $DB;
@@ -1014,34 +975,18 @@ class googledrive {
      */
     public function get_file_id($filename) {
 
-        $result = array();
         $pageToken = NULL;
-
-       // if($this->service->files != null) {
-            do {
-                try {
-                    $parameters = array();
-                    if ($pageToken) {
-                        $parameters['pageToken'] = $pageToken;
-                    }
-                    $files = $this->service->files->listFiles($parameters);
-                    $result = array_merge($result, $files->getItems());
-                    $pageToken = $files->getNextPageToken();
-
-                } catch (Exception $e) {
-                    print "An error occurred: " . $e->getMessage();
-                    $pageToken = NULL;
-                }
-            } while ($pageToken);
-
+        $p = ['q' => "mimeType = '" . GDRIVEFILETYPE_FOLDER . "' and title = '$filename' and trashed  = false" ,
+               ];
+         $files = $this->service->files->listFiles($p);
+         $result = $this->service->files->listFiles($p);
             foreach ($result as $r){
                 if($r->title == $filename){
-                   return $r->id;
+                   return ($r->id);
                 }
             }
-
-        //}
         return null;
+
     }
 
     /**
