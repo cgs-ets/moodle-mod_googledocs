@@ -247,6 +247,7 @@ class googledocs_table extends \flexible_table {
             $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
             $url = isset($student->url) ? $student->url : '#';
+            $student->group = $this->get_students_group_names($student->id, $this->courseid);
             $groupname = isset($student->group) ? $student->group : 'No Group';
             $rows[$i] = array('checkbox' => $OUTPUT->render($checkbox),
                             'userid' => $student->id,
@@ -366,9 +367,26 @@ class googledocs_table extends \flexible_table {
                     $i++;
                 }
             }
-
-
             return $students;
+    }
+
+      /**
+     * @param type $userid
+     * @param type $courseid
+     * @return string
+     */
+    private function get_students_group_names($userid, $courseid) {
+        $usergroups =  groups_get_user_groups($courseid, $userid);
+        $groupnames = '';
+        foreach($usergroups as $usergroup => $ug)  {
+            $names = array_merge_recursive($usergroups[$usergroup]);
+        }
+
+        foreach($names as $name) {
+            $groupnames .= ' ' . groups_get_group_name($name);
+        }
+
+        return $groupnames;
     }
 
     /**
