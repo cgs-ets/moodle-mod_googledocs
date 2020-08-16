@@ -173,7 +173,6 @@ function get_members_ids($availabilityconditionsjson, $courseid){
   * the JSON the form provides has the group ids of the groups to exclude.
   * This function finds the ids of the groups that are not part of the exclusion
   * and get the group member's ids.
-  * @param type $groupsfromcondition
   * @param type $courseid
   * @return type
 */
@@ -518,6 +517,7 @@ class googledrive {
         if (!empty($author)) {
             $this->author = $author;
         }
+      
         $sitefolderid = $this->get_file_id($SITE->fullname);
         $rootparent = new Google_Service_Drive_ParentReference();
 
@@ -566,8 +566,8 @@ class googledrive {
      * @return string
      */
     public function create_child_folder($dirname, $parentid){
+        
         // Create the folder with the given name.
-
         $fileMetadata = new \Google_Service_Drive_DriveFile(array(
             'title' => $dirname,
             'mimeType' => GDRIVEFILETYPE_FOLDER,
@@ -575,7 +575,8 @@ class googledrive {
             'uploadType' => 'multipart'));
 
         $customdir = $this->service->files->insert($fileMetadata, array('fields' => 'id'));
-       return  $customdir->id;
+        
+        return  $customdir->id;
     }
 
 
@@ -614,6 +615,7 @@ class googledrive {
                 'content' => '',
                 'parents'=> array($parent),
                 'uploadType' => 'multipart'));
+            
             //In the array, add the attributes you want in the response
             $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title, alternateLink'));
 
@@ -926,32 +928,7 @@ class googledrive {
         return $this->service;
     }
 
-    /**
-     * Get a file.
-     *
-     * @param string $reference reference of the file.
-     * @param string $file name to save the file to.
-     * @return string JSON encoded array of information about the file.
-     */
-//    public function get_file($reference, $filename = '') {
-//        global $CFG;
-//
-//        $auth = $this->client->getAuth();
-//        $request = $auth->authenticatedRequest(new Google_Http_Request($reference));
-//          var_dump($request); exit;
-//        if ($request->getResponseHttpCode() == 200) {
-//            $path = $this->prepare_file($filename);
-//            $content = $request->getResponseBody();
-//            if (file_put_contents($path, $content) !== false) {
-//                @chmod($path, $CFG->filepermissions);
-//                return array(
-//                    'path' => $path,
-//                    'url' => $reference
-//                );
-//            }
-//        }
-//        throw new repository_exception('cannotdownload', 'repository');
-//    }
+
 
     /**
      *
@@ -975,18 +952,21 @@ class googledrive {
      */
     public function get_file_id($filename) {
 
-        $pageToken = NULL;
         $p = ['q' => "mimeType = '" . GDRIVEFILETYPE_FOLDER . "' and title = '$filename' and trashed  = false" ,
-               ];
-         $files = $this->service->files->listFiles($p);
-         $result = $this->service->files->listFiles($p);
-            foreach ($result as $r){
-                if($r->title == $filename){
-                   return ($r->id);
-                }
+              'corpus' => 'DEFAULT',
+              'maxResults' => 1,
+              'fields' => 'items'
+            ];
+        
+        $result = $this->service->files->listFiles($p);
+        
+        foreach ($result as $r){
+            if($r->title == $filename){
+                return ($r->id);
             }
-        return null;
-
+        }
+     
+         return null;
     }
 
     /**
@@ -1030,60 +1010,7 @@ class googledrive {
         }
         return $students;
     }
-
-    /**
-     *
-     * @param type $coursestudents
-     * @param type $availabilityconditionsjson
-     * @return string
-
-    public function get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
-
-        $groupmembers = $this->get_members_ids($availabilityconditionsjson, $courseid);
-        $students;
-        foreach ($coursestudents as $student) {
-
-            if(in_array($student->id, $groupmembers)){
-                $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
-                        'displayName' => $student->firstname . ' ' . $student->lastname);
-            }
-        }
-
-        return $students;
-    } */
-
-    /**
-     * Edit/Create Admin Settings Moodle form.
-     *
-     * @param moodleform $mform Moodle form (passed by reference).
-     * @param string $classname repository class name.
-     */
-    /*
-    public static function type_config_form($mform, $classname = 'repository') {
-
-        // TODO: this function is not used, yet.
-        // We are using Moodle's google api clientid & secret, for now.
-
-        $callbackurl = new moodle_url(self::CALLBACKURL);
-
-        $a = new stdClass;
-        $a->docsurl = get_docs_url('Google_OAuth_2.0_setup');
-        $a->callbackurl = $callbackurl->out(false);
-
-        $mform->addElement('static', null, '', get_string('oauthinfo', 'repository_googledocs', $a));
-
-        parent::type_config_form($mform);
-        $mform->addElement('text', 'clientid', get_string('clientid', 'repository_googledocs'));
-        $mform->setType('clientid', PARAM_RAW_TRIMMED);
-        $mform->addElement('text', 'secret', get_string('secret', 'repository_googledocs'));
-        $mform->setType('secret', PARAM_RAW_TRIMMED);
-
-        $strrequired = get_string('required');
-        $mform->addRule('clientid', $strrequired, 'required', null, 'client');
-        $mform->addRule('secret', $strrequired, 'required', null, 'client');
-    }
-    */
-
+ 
     /**
      * Insert a new permission to a given file
      * @param Google_Service_Drive $service Drive API service instance.
@@ -1445,6 +1372,13 @@ class googledrive {
 
         } catch (Exception $ex) {
             print($ex->getMessage());
+        }
+    }
+    
+    public function create_dummy_folders() {
+        for($i = 0; $i < 20; $i++) {
+            $dirname = 'C' .$i;
+            $this->create_folder($dirname);
         }
     }
 

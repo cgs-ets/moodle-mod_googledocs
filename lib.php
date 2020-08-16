@@ -74,12 +74,12 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-
+        
         $googledocs->timecreated = time();
         $googledocs->availabilityconditionsjson = ($mform->get_submitted_data())->availabilityconditionsjson;
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
-
+        
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
             $mform->addElement('html', $googleauthlink);
@@ -113,11 +113,12 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
             $folderid = $sharedlink[3];
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
-            //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
-
+            
         } else {
             // Save new file in a new folder.
+            //$gdrive->create_dummy_folders();
             $folderid = $gdrive->get_file_id($googledocs->name);
+           
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
