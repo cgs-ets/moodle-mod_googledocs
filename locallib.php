@@ -30,8 +30,6 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/google/lib.php');
 require_once($CFG->libdir.'/tablelib.php');
-require_once($CFG->dirroot . '/mod/googledocs/googledocs_table.php');
-
 
 define('GDRIVEFILEPERMISSION_COMMENTER', 'comment'); // Student can Read and Comment.
 define('GDRIVEFILEPERMISSION_EDITOR', 'edit'); // Students can Read and Write.

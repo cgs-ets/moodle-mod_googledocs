@@ -65,10 +65,6 @@ $t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance,
 $t->render_table();
 
 
-//$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup);
-//$table->render_table();
-
-
 $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created, $bygroup));
 // Finish the page.
 echo $OUTPUT->footer();
