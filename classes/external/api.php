@@ -36,6 +36,7 @@ use external_api;
 class api extends external_api {
 
     use create_student_file;
+    use create_group_file;
 
 
 }

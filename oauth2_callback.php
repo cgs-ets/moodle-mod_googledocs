@@ -48,7 +48,7 @@ $PAGE->set_url(
 $PAGE->set_context(null);
 $strauthorised = get_string('authorised', 'googledocs');
 $PAGE->set_title($strauthorised);
-$PAGE->set_pagelayout('popup');
+$PAGE->set_pagelayout('print');
 echo $OUTPUT->header();
 echo $OUTPUT->heading($strauthorised, 2);
 

@@ -51,18 +51,20 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Defines forms elements.
      */
     public function definition() {
-        global $CFG, $PAGE, $OUTPUT;
+       global $CFG, $PAGE;
 
+       // Add the javascript required to enhance this mform.
+       $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
        $update = optional_param('update', 0, PARAM_INT);
+       $course_groups = groups_get_all_groups($PAGE->course->id);
+       // Start the instance config form.
+       $mform = $this->_form;
+       $mform->addElement('header', 'general', get_string('general', 'form'));
 
-        // Start the instance config form.
-        $mform = $this->_form;
-        $mform->addElement('header', 'general', get_string('general', 'form'));
+       // Get the Google Drive object.
+       $client = new googledrive($this->context->id);
 
-        // Get the Google Drive object.
-        $client = new googledrive($this->context->id);
-
-        // Check whether the user is logged into their Google account.
+       // Check whether the user is logged into their Google account.
         if (!$client->check_google_login()) {
 
             // Print the login button.
@@ -97,13 +99,23 @@ class mod_googledocs_mod_form extends moodleform_mod {
             foreach($types as $key => $type) {
                 $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
-                $typesarray[] = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
+               $doctype = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
+
+               if($update) {
+                   $doctype->freeze();
+               }
+                $typesarray[] = $doctype;
             }
+
             $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
             $mform->setDefault('document_type', $types['document']['mimetype']);
+
             $mform->hideif('document_type', 'use_document', 'eq', 'existing');
             // $mform->addHelpButton('document_type', 'document_type_help', 'googledocs');
 
+            if($update != 0) {
+                $doctype->freeze();
+            }
             $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size'=>'64'));
             $mform->setType('google_doc_url', PARAM_RAW_TRIMMED);
             $mform->addRule('google_doc_url', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
@@ -118,25 +130,69 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
-
-            // $mform->addHelpButton('permissions', 'permissions_help', 'googledocs');
-
-            $radioarray = array();
-            $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('each_gets_own', 'googledocs'), 'each_gets_own');
-            $radioarray[] = $mform->createElement('radio', 'distribution', '', get_string('all_share', 'googledocs'), 'all_share');
-            $distribution = $mform->addGroup($radioarray, 'distribution_choice', get_string('distribution', 'googledocs'), array(' '), false);
-            $mform->setDefault('distribution', 'each_gets_own');
-            if($update != 0 && $this->get_current()->distribution == 'each_gets_own') {
-                $mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
-                $distribution->freeze();
-
+            if(!empty($course_groups)){
+                $distribution = array(
+                'std_copy' => get_string('dist_student_copy', 'googledocs'),
+                'group_copy' => get_string('dist_group_copy', 'googledocs'),
+                'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
+            }else{
+                $distribution = array(
+                'std_copy' => get_string('dist_student_copy', 'googledocs'),
+                'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
             }
+
+            $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'), $distribution);
+           // $mform->setDefault('distribution', 'std_copy');
+/* poner cuando este andando
+            if($update != 0 ) { //&& ($this->get_current()->distribution == 'std_copy' || $this->get_current()->distribution == 'group_copy')
+                $mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
+                $distselect->freeze();
+
+            } */
+
+
+            // Groups
+            $groups = array('0' => 'All Groups');
+            foreach($course_groups as $g) {
+                // skip empty groups.
+                if(!groups_get_members($g->id, 'u.id')) {
+                    continue;
+                }
+                 $groups[$g->id] = $g->name;
+            }
+
+            if(!empty($course_groups)){
+                $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
+                //$mform->setDefault('groups','0');
+                $selectgroups->setMultiple(true);
+            }
+
+            // Grouping.
+            $course_grouping = groups_get_all_groupings($PAGE->course->id);
+            $grouping = array('0' => 'All Groupings');
+
+
+            foreach($course_grouping as $g) {
+                // Only list those groupings with groups in it.
+                if(empty(groups_get_grouping_members($g->id))){
+                    continue;
+                }
+                $grouping[$g->id] = $g->name;
+            }
+
+            if(!empty($course_groups)){
+                $selectgrouping = $mform->addElement('select', 'groupings', get_string('groupings', 'googledocs'), $grouping);
+                //$mform->setDefault('groupings', '0');
+                $selectgrouping->setMultiple(true);
+            }
+
+
+
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null,false);
 
-            // Add the javascript required to enhance this mform.
-            $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
+
 
 
         }

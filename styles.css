@@ -3,28 +3,61 @@
     Author     : Veronica Bermegui.
 */
 
-table.flexible.overviewTable {
-    margin: 20px 0;
-    width: 100%;
-    table-layout: fixed;
-}
-.spinner-border.processing {
-    width: 120px;
-    height: 120px;
-    border: 16px solid #f3f3f3;
-    border-top: 16px solid #3498db;
-    /*margin-top: 311px;*/
+
+
+/*Group and Grouping  elements*/
+select#id_groups  {
+    width: 22%;
 }
 
-.d-flex.justify-content-center.overlay {
-    background-color: rgba(204, 204, 204, 0.57);
-    position: fixed;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 10000;
+select#id_groupings  {
+    width: 22%;
 }
+
+td.group-name-column{
+    width: 10%;
+    font-weight: bold;
+}
+td.pic-name{
+    text-align: left;
+}
+
+td.status-link-column {
+    width: 20%;
+}
+
+/*Students table table elements*/
+td.fullname-column {
+    text-align: left;
+}
+
+td.fullname-column {
+   text-align: left;
+}
+img.pic{
+   margin-left: 20%;
+}
+
+th.table-student-columns{
+    width: 20%;
+}
+
+th.checkbox-column {
+    width: 4%;
+}
+
+/*Group and Grouping Tables commonalities*/
+
+.container-fluid.table-container {
+    margin-top: 2%;
+}
+
+table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
+    text-align: center;
+    background-color: #FFFFFF;
+    width: 100%;
+}
+
 
 .process_message {
     font-weight: bold;
@@ -40,7 +73,7 @@ table.flexible.overviewTable {
     display: inline-block;;
 }
 .progress_bar {
-/*  margin: auto;*/
+
   width: 100px;
   max-width:80%;
   height: 15px;
@@ -87,4 +120,23 @@ table.flexible.overviewTable {
     -webkit-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     -o-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+/*Processing spinner properties*/
+
+.spinner-border.processing {
+    width: 120px;
+    height: 120px;
+    border: 16px solid #f3f3f3;
+    border-top: 16px solid #3498db;
+}
+
+.d-flex.justify-content-center.overlay {
+    background-color: rgba(204, 204, 204, 0.57);
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 10000;
 }

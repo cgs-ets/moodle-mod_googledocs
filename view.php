@@ -31,6 +31,7 @@ require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
 require_once(dirname(__FILE__).'/lib.php');
 require_once($CFG->dirroot . '/mod/assign/locallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
+require_once($CFG->dirroot . '/mod/googledocs/googledocs_rendering.php');
 
 $new = optional_param('forceview', 0, PARAM_INT);
 
@@ -54,12 +55,20 @@ $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 
 // Output starts here.
 echo $OUTPUT->header();
+
+//echo $OUTPUT->render_from_template('mod_googledocs/group_table', $coursecontext);
+
 $created = ($googledocs->sharing == 1);
+$bygroup = ($googledocs->distribution == 'group_copy');
 
-$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs, $created);
-$table->render_table();
+$t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup);
+$t->render_table();
 
 
-$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created));
+//$table = new googledocs_table($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup);
+//$table->render_table();
+
+
+$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created, $bygroup));
 // Finish the page.
 echo $OUTPUT->footer();

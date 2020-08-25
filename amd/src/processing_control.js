@@ -38,26 +38,31 @@ define(['jquery', 'core/log'], function ($, Log) {
     function init() {
         Log.debug('mod_googledocs/processing_control');
         var saveAndDisplay = '#id_submitbutton';
-        var control = new GoogledocsProcessingControl(saveAndDisplay);
+        var selectGroup = '#id_groups';
+        var selectGrouping = '#id_groupings'
+        var control = new GoogledocsProcessingControl(saveAndDisplay, selectGroup, selectGrouping);
         control.main();
     }
 
     // Constructor.
-    function GoogledocsProcessingControl(saveAndDisplay) {
+    function GoogledocsProcessingControl(saveAndDisplay,  selectGroup, selectGrouping) {
         var self = this;
         self.saveAndDisplay = saveAndDisplay;
+        self.selectGroup = selectGroup;
+        self.selectGrouping = selectGrouping;
 
     };
 
     GoogledocsProcessingControl.prototype.main = function () {
         var self = this;
-        self.processingMessageDisplay(self.saveAndDisplay);
+        self.processingMessageDisplay();
+       // self.toggle();
     };
    
-    GoogledocsProcessingControl.prototype.processingMessageDisplay = function(buttonId) {
+    GoogledocsProcessingControl.prototype.processingMessageDisplay = function() {
         // Handle submit click.
-
-        $(buttonId).on('click', function() {
+        var self = this;
+        $(self.saveAndDisplay).on('click', function() {
             $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
                 + "<div class='spinner-border processing' role='status'>"
                 + "<span class='sr-only'>Loading...</span>"
@@ -70,7 +75,25 @@ define(['jquery', 'core/log'], function ($, Log) {
 
             });
     };
-        return {
-            init: init
-        };
+    GoogledocsProcessingControl.prototype.toggle = function(){
+      var self = this;
+      
+      $(self.selectGroup).on('change', function() {
+        var ids = [];
+        $( "select#id_groups option:selected" ).each(function(ids) {
+            ids.push($(this)[0].value );
+            if ($(this)[0].value == 0) {
+                return false;
+            }
+
+        });
+        
+        console.log(ids);
+
+    });
+    };
+
+    return {
+         init: init
+    };
  });

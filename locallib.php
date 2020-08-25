@@ -88,12 +88,24 @@ function get_doc_type_from_url($url) {
 function url_templates() {
     $sharedlink = array();
 
-    $sharedlink['application/vnd.google-apps.document'] = array(
-        'linktemplate' => 'https://docs.google.com/document/d/%s/edit?usp=sharing');
-    $sharedlink['application/vnd.google-apps.presentation'] = array(
-        'linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing');
-    $sharedlink['application/vnd.google-apps.spreadsheet'] = array(
-        'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing');
+    $sharedlink['application/vnd.google-apps.document'] =
+        array(  'linktemplate' => 'https://docs.google.com/document/d/%s/edit?usp=sharing',
+                'linkbegin' => 'https://docs.google.com/document/d/',
+                'linkend' =>'/edit?usp=sharing'
+            );
+
+    $sharedlink['application/vnd.google-apps.presentation'] =
+        array(  'linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing',
+                'linkbegin' => 'https://docs.google.com/presentation/d/',
+                'linkend' =>'/edit?usp=sharing'
+            );
+    $sharedlink['application/vnd.google-apps.spreadsheet'] =
+        array(
+            'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing',
+            'linlbegin' => 'https://docs.google.com/spreadsheets/d/',
+            'linkend' => '/edit?usp=sharing'
+            );
+
      $sharedlink['application/vnd.google-apps.folder'] = array(
         'linktemplate' => 'https://drive.google.com/drive/folders/%susp=sharing');
 
@@ -120,16 +132,16 @@ function googledocs_appears_valid_url($url) {
 function oauth_ready() {
 
 }
- //----------------------------------- Restrict access functions----------------------//
+ //----------------------------------- Group functions----------------------//
  /**
     *
     * @param type $coursestudents
-    * @param type $availabilityconditionsjson
+    * @param type $conditionsjson
     * @return array of students with the format needed to create docs.
  */
-function get_students_by_group($coursestudents, $availabilityconditionsjson, $courseid){
+function get_students_by_group($coursestudents, $conditionsjson, $courseid){
 
-    $groupmembers = get_members_ids($availabilityconditionsjson, $courseid);
+    $groupmembers = get_group_grouping_members_ids($conditionsjson, $courseid);
     $students = null;
     foreach ($coursestudents as $student) {
         if(in_array($student->id, $groupmembers)){
@@ -143,12 +155,14 @@ function get_students_by_group($coursestudents, $availabilityconditionsjson, $co
  /**
    * Return the ids of the students from
    * all the groups  and grouping groups the file has to be created for
-   * @param json $availabilityconditionsjson
+  *  This function is used when the group/grouping is set in the general area in the form.
+   * @param json $conditionsjson
    * @return array
    */
-function get_members_ids($availabilityconditionsjson, $courseid){
+function get_group_grouping_members_ids($conditionsjson){
 
-    $j = json_decode($availabilityconditionsjson);
+    $j = json_decode($conditionsjson);
+
     $groupmembers = array();
 
     foreach($j->c as $c =>$condition) {
@@ -161,26 +175,26 @@ function get_members_ids($availabilityconditionsjson, $courseid){
         }
     }
     $groupmembers = array_column($groupmembers, 'id');
-    //Look for the groups that are not part of the JSON
-    if($j->op == '!&' || $j->op == '!|') {
-        $groupmembers = filter_group_members_ids($groupmembers, $courseid);
-    }
+
     return $groupmembers;
 }
 
-/**
-  * For restrictions like Must not match  all or must not match any
-  * the JSON the form provides has the group ids of the groups to exclude.
-  * This function finds the ids of the groups that are not part of the exclusion
-  * and get the group member's ids.
-  * @param type $courseid
-  * @return type
-*/
-function filter_group_members_ids($groupmembers, $courseid) {
-    $context = \context_course::instance($courseid);
-    $coursestudents = get_role_users(5, $context);
-    $allstudentids = array_column($coursestudents, 'id');
-    return array_diff($allstudentids, $groupmembers);
+
+function prepare_group_grouping_json($type, $data) {
+
+    $conditions = array();
+    if(!in_array('0', $data)){
+
+        foreach($data as $d) {
+            $condition = new stdClass();
+            $condition->type = $type;
+            $condition->id = $d;
+            array_push ($conditions, $condition);
+        }
+
+    }
+
+    return $conditions;
 }
 
 /**
@@ -385,29 +399,6 @@ class googledrive {
         return $output;
     }
 
-
-    public function read_gdrive_files() {
-        // Get the API client and construct the service object.
-        //$client = getClient();
-        //$service = new Google_Service_Drive($client);
-
-        // Print the names and IDs for up to 10 files.
-        $optparams = array(
-            'pageSize' => 10,
-            'fields' => 'nextPageToken, files(id, name)'
-        );
-        $results = $this->service->files->listFiles($optparams);
-
-        if (count($results->getFiles()) == 0) {
-            print "No files found.\n";
-        } else {
-            print "Files:\n";
-            foreach ($results->getFiles() as $file) {
-                printf("%s (%s)\n", $file->getName(), $file->getId());
-            }
-        }
-    }
-
     public function format_permission($permissiontype) {
         $commenter = false;
         if ($permissiontype == GDRIVEFILEPERMISSION_COMMENTER) {
@@ -517,7 +508,7 @@ class googledrive {
         if (!empty($author)) {
             $this->author = $author;
         }
-      
+
         $sitefolderid = $this->get_file_id($SITE->fullname);
         $rootparent = new Google_Service_Drive_ParentReference();
 
@@ -566,7 +557,7 @@ class googledrive {
      * @return string
      */
     public function create_child_folder($dirname, $parentid){
-        
+
         // Create the folder with the given name.
         $fileMetadata = new \Google_Service_Drive_DriveFile(array(
             'title' => $dirname,
@@ -575,7 +566,7 @@ class googledrive {
             'uploadType' => 'multipart'));
 
         $customdir = $this->service->files->insert($fileMetadata, array('fields' => 'id'));
-        
+
         return  $customdir->id;
     }
 
@@ -590,9 +581,7 @@ class googledrive {
      * @param array $students student's details.
      * @return array with, if successful or null.
      */
-    public function create_file($docname, $gfiletype = GDRIVEFILETYPE_DOCUMENT,
-                                      $permissiontype = GDRIVEFILEPERMISSION_WRITER,
-                                      $author = array(), $students = array(), $parentid = null, $copy = false) {
+    public function create_file($docname, $gfiletype = GDRIVEFILETYPE_DOCUMENT, $author = array(), $students = array(), $parentid = null) {
 
         if (!empty($author)) {
             $this->author = $author;
@@ -615,7 +604,7 @@ class googledrive {
                 'content' => '',
                 'parents'=> array($parent),
                 'uploadType' => 'multipart'));
-            
+
             //In the array, add the attributes you want in the response
             $file = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title, alternateLink'));
 
@@ -702,6 +691,7 @@ class googledrive {
      */
     public function share_single_copy($student, $data, $role, $commenter) {
         global $DB;
+
         $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
 
         $d = new stdClass();
@@ -711,12 +701,14 @@ class googledrive {
         $d->name = $data->name;
 
         $DB->insert_record('googledocs_files', $d);
+
         $this->update_creation_and_sharing_status($data, $student);
 
         return $data->google_doc_url;
 
 
     }
+
     //Create a copy for the student called by the ws
     public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false, $fromexisting = false){
         global $DB;
@@ -739,19 +731,42 @@ class googledrive {
         $this->insert_permission($this->service, $copyid->id, $student->email, $student->type, $permission, $commenter);
 
         $studentfiledata = new stdClass();
-        $studentfiledata->userid = $student->id;
+       // $studentfiledata->userid = $student->id;
         $studentfiledata->googledocid = $data->id;
         $studentfiledata->url = $link;
         $studentfiledata->name = $copyname;
 
+        // Distribution = group_copy
+        if (isset($student->isgroup)){
+            $studentfiledata->groupid =  $student->id;
+        }else{
+            $studentfiledata->userid = $student->id;
+        }
+
         //Save in DB
         $DB->insert_record('googledocs_files', $studentfiledata);
 
-        //Update creation_status
-       $this->update_creation_and_sharing_status($data, $studentfiledata);
+        //Update creation_status.
+        //If the copy if for a student and not a group. Because at this point
+        //the copies are not being shared with the members of the yet.
+       if(!isset($student->groupid)){
+         $this->update_creation_and_sharing_status($data, $studentfiledata);
+       }
 
        return $link;
+    }
 
+    // Each group gets a copy. function called by the WS.
+    public function make_file_copy_for_group($data, $student, $role, $commenter = false ) {
+
+        $groupmembers = groups_get_members($data->groupid, $fields='u.id');
+        $groupmembersids = array_column($groupmembers, 'id');
+
+        if(in_array($student->id, $groupmembersids)){
+          // $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
+           //return $data->google_doc_url;
+           return $this->share_single_copy($student, $data, $role, $commenter);
+        }
     }
     /**
      * Update status in googledocs and  googledocs_work_task tables
@@ -762,12 +777,23 @@ class googledrive {
     private function update_creation_and_sharing_status($data, $student) {
        global $DB;
        //Update creation_status
-       $conditions =['docid' => $data->docid, 'googledocid' => $data->id,'userid' => $student->id];
-       $id =  $DB->get_field('googledocs_work_task', 'id', $conditions,  IGNORE_MISSING);
+       $conditions = ['docid' => $data->docid, 'googledocid' => $data->id,'userid' => $student->userid];
+
+       $id =  $DB->get_field('googledocs_work_task', 'id', $conditions);
        $d = new StdClass();
-       $d->id = $id;
        $d->creation_status = 1;
-       $DB->update_record('googledocs_work_task', $d);
+
+       if (!$id) {
+        $d->id = $id;
+        $DB->update_record('googledocs_work_task', $d);
+
+       }else{ // It comes from dist. by group/grouping. It has to be added
+        $d->docid = $data->docid;
+        $d->googledocid = $data->id;
+        $d->userid = $student->userid;
+        $DB->insert_record (googledocs_work_task, $d);
+       }
+
 
        $gd = new StdClass();
        $gd->id = $data->id;
@@ -957,15 +983,15 @@ class googledrive {
               'maxResults' => 1,
               'fields' => 'items'
             ];
-        
+
         $result = $this->service->files->listFiles($p);
-        
+
         foreach ($result as $r){
             if($r->title == $filename){
                 return ($r->id);
             }
         }
-     
+
          return null;
     }
 
@@ -975,7 +1001,7 @@ class googledrive {
      * @param type $doctype
      * @return type
      */
-    private function get_file_id_from_url($url) {
+    public function get_file_id_from_url($url) {
 
         if (strpos($url, 'document')) {
             $doctype = 'document';
@@ -1010,7 +1036,7 @@ class googledrive {
         }
         return $students;
     }
- 
+
     /**
      * Insert a new permission to a given file
      * @param Google_Service_Drive $service Drive API service instance.
@@ -1057,17 +1083,17 @@ class googledrive {
 //--------------------------------------------- DATA ACCESS FUNCTIONS --------------------------//
     /**
      * Helper function to save the instance record in DB
-     * @global type $USER
-     * @global type $DB
-     * @param type $googledocs
-     * @param type $sharedlink
+     * @global type $googledocs
+     * @global type $sharedlink
+     * @param type $folderid
+     * @param type $owncopy
      * @return type
      */
     public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false){
 
         global $USER, $DB;
-        $googledocs->google_doc_url = !$owncopy ? $sharedlink[1] : null;
-        $googledocs->docid = ($sharedlink[0])->id; //!$owncopy ? ($sharedlink[0])->id : null;
+        $googledocs->google_doc_url = (!$owncopy || $googledocs->distribution =='group_copy') ? $sharedlink[1] : null;
+        $googledocs->docid = ($sharedlink[0])->id;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
         $googledocs->timeshared =  (strtotime(($sharedlink[0])->createdDate));
@@ -1075,7 +1101,7 @@ class googledrive {
         $googledocs->name = ($sharedlink[0])->title;
         $googledocs->intro = ($sharedlink[0])->title;
         $googledocs->use_document = $googledocs->use_document;
-        $googledocs->sharing = 0; //($sharedlink[0])->shared; //Up to this point the copies are not created yet.
+        $googledocs->sharing = 0;  //Up to this point the copies are not created yet.
         $googledocs->introformat = FORMAT_MOODLE;
 
         /*
@@ -1374,10 +1400,10 @@ class googledrive {
             print($ex->getMessage());
         }
     }
-    
+
     public function create_dummy_folders() {
         for($i = 0; $i < 20; $i++) {
-            $dirname = 'C' .$i;
+            $dirname = 'Folder_' .$i;
             $this->create_folder($dirname);
         }
     }

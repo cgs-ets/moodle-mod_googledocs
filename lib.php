@@ -74,12 +74,12 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-        
+
+        //var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
-        $googledocs->availabilityconditionsjson = ($mform->get_submitted_data())->availabilityconditionsjson;
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
-        
+
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
             $mform->addElement('html', $googleauthlink);
@@ -87,14 +87,22 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         }
 
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
-            $coursestudents = get_role_users(5, $context);
+        $coursestudents = get_role_users(5, $context);
+        $students = $gdrive->get_enrolled_students($googledocs->course);
 
-        $j = json_decode(($mform->get_submitted_data())->availabilityconditionsjson);
+        if (isset(($mform->get_submitted_data())->groups)){
+            $groups = prepare_group_grouping_json("group", ($mform->get_submitted_data())->groups);
+            $grouping = prepare_group_grouping_json("grouping", ($mform->get_submitted_data())->groupings);
+            $group_grouping = array_merge($groups, $grouping);
 
-        if(empty($j->c)) {
-            $students = $gdrive->get_enrolled_students($googledocs->course);
-        }else{ // Get students based on groups and/or grouping
-            $students = get_students_by_group($coursestudents, ($mform->get_submitted_data())->availabilityconditionsjson, $googledocs->course);
+            $jsongroup = new stdClass();
+            $jsongroup->c = $group_grouping;
+
+            if(!empty($jsongroup->c)){
+                $googledocs->group_grouping_json = json_encode($jsongroup);
+                $students = get_students_by_group($coursestudents, json_encode($jsongroup),
+                    $googledocs->course);
+            }
         }
 
         if ($students == null) {
@@ -102,8 +110,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         }
 
         $owncopy = false;
-
-        if ((($mform->get_submitted_data())->distribution) == 'each_gets_own' ) {
+        $dist = ($mform->get_submitted_data())->distribution;
+        if ($dist == 'std_copy' || $dist == 'group_copy') {
             $owncopy = true;
         }
 
@@ -113,24 +121,27 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
             $folderid = $sharedlink[3];
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
-            
+
         } else {
             // Save new file in a new folder.
-            //$gdrive->create_dummy_folders();
+            // $gdrive->create_dummy_folders();
             $folderid = $gdrive->get_file_id($googledocs->name);
-           
+
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->name, $author);
             }
 
-            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type, $googledocs->permissions,
-                $author, $students, $folderid, $owncopy);
+            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type ,
+                $author, $students, $folderid);
 
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
             //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
+
+            if($dist == 'std_copy') {
+                $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
+            }
         }
 
-        $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
 
         return $googledocs->id;
 

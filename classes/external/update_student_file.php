@@ -39,7 +39,7 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 /**
  * Trait implementing the external function mod_googledocs_create_students_file
  */
-trait create_student_file {
+trait update_student_file {
 
 
     /**
@@ -48,16 +48,13 @@ trait create_student_file {
      *
     */
 
-    public static  function create_student_file_parameters(){
+    public static  function update_student_file_parameters(){
         return new external_function_parameters(
             array(
-                  'by_group' => new external_value(PARAM_BOOL, 'True is distr. is by group'),
-                  'group_id' => new external_value(PARAM_RAW, 'Group ID'),
-                  'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
                   'student_email' =>  new external_value(PARAM_RAW, 'student email'),
+                  'student_name' => new external_value(PARAM_RAW, 'studentname'),
                   'student_id' => new external_value(PARAM_RAW, 'student ID'),
-                  'student_name' => new external_value(PARAM_RAW, 'studentname')
             )
         );
     }
@@ -70,42 +67,23 @@ trait create_student_file {
      *         int $nav represents a nav direction, 0: Backward, 1: Forward.
      * @return a timetable for a user.
      */
-    public static function create_student_file($by_group, $group_id, $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
+    public static function update_student_file($parentfile_id,  $student_email, $student_name, $student_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
+        $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
+        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
 
         //Parameters validation
-        self::validate_parameters(self::create_student_file_parameters(),
+        self::validate_parameters(self::update_student_file_parameters(),
             array(
-                  'by_group' => $by_group,
-                  'group_id' => $group_id,
-                  'instance_id' => $instance_id,
                   'parentfile_id' => $parentfile_id,
                   'student_email'=> $student_email,
-                  'student_id' => $student_id,
                   'student_name' => $student_name,
+                  'student_id' => $student_id,
                 )
         );
-
-        if ($by_group) {
-            $filedata = "SELECT gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
-                            INNER JOIN mdl_googledocs_files AS gf
-                            ON gd.id = gf.googledocid
-                            WHERE gd.id = :instanceid AND gf.groupid = :group_id";
-
-            $data = $DB->get_record_sql($filedata, ['instanceid'=> $instance_id, 'group_id' =>$group_id]);
-            // google_doc_url is the url of the original file
-            // when dist is by group a file for the group is created and that file is the one
-            //to share with the groups members.
-            $data->google_doc_url = $data->url;
-            $data->docid = $parentfile_id;
-
-        }else{
-            $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
-            $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
-        }
 
         // Generate the student file
         $gdrive = new \googledrive($context->id, false, false, true);
@@ -114,15 +92,14 @@ trait create_student_file {
         $student->id = $student_id;
         $student->name = $student_name;
         $student->email = $student_email;
-        $student->type = 'user';
-        $fromexisting = $data->use_document == 'new' ? false : true;
+        $student->type = 'user'; //$type; TODO: AGregar una columna  a la tabla de la instancia indicando que tipo es.
 
-        if ($data->distribution == 'std_copy') {
-           $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
-        }else if ($data->distribution == 'dist_share_same'){
-           $url = $gdrive->share_single_copy($student, $data, $role, $commenter);
+        if ($data->distribution == 'each_gets_own') {
+            $fromexisting = $data->use_document == 'new' ? false : true;
+            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
         }else{
-           $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter);
+            $gdrive->share_single_copy($student, $data, $role, $commenter);
+            $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);
         }
 
         return array(
@@ -136,7 +113,7 @@ trait create_student_file {
      * @return external_single_structure
      *
      */
-    public static function create_student_file_returns(){
+    public static function update_student_file_returns(){
         return new external_single_structure(
                 array(
                     'url' => new external_value(PARAM_RAW,'File URL '),
