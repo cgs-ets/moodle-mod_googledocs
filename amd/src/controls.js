@@ -120,9 +120,9 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         var self = this;
        
         $('tbody').children().each(function(e){
-            var student_id = $(this).attr('data-student-id');           
+            var student_id = $(this).attr('data-student-id');  
             var student_email = $(this).attr('data-student-email');
-            var student_name = $(this).attr('student-name'); //TODO: CAMBIAR EN LA TABLA STUDENT
+            var student_name = $(this).attr('student-name');
             self.create_student_file(e, student_id, student_email, student_name, parentfile_id);
 
         });
