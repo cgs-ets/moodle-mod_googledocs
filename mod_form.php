@@ -83,14 +83,13 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
             $use_document = $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
-            $mform->setDefault('use_document', 'new');
+             $mform->setDefault('use_document', 'new');
             // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
-            $mform->addElement('text', 'name', get_string('document_name', 'googledocs'), array('size' => '64'));
-            $mform->setType('name', PARAM_TEXT);
-            $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-            $mform->hideif('name', 'use_document', 'eq', 'existing');
-            $mform->setDefault('name', '_');
-            //$mform->addHelpButton('name', 'name_help', 'googledocs');
+            $mform->addElement('text', 'namedoc', get_string('document_name', 'googledocs'), array('size' => '64'));
+            $mform->setType('namedoc', PARAM_TEXT);
+            $mform->hideif('namedoc', 'use_document', 'eq', 'existing');
+            $mform->disabledIf('namedoc', 'use_document', 'eq', 'existing');
+            $mform->addRule('namedoc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
             if($update != 0) {
                 $use_document->freeze();
@@ -144,9 +143,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'), $distribution);
            // $mform->setDefault('distribution', 'std_copy');
-/* poner cuando este andando*/
-            if($update != 0 ) { //&& ($this->get_current()->distribution == 'std_copy' || $this->get_current()->distribution == 'group_copy')
-                //$mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
+
+            if($update != 0 ) {
                 $distselect->freeze();
 
             }
@@ -211,10 +209,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
         global $PAGE;
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-        //    var_dump(count($data['groups'])); exit;
-        if ((isset($data['use_document'])) && $data['use_document'] == 'existing') {
-            $data['name'] = '_';
-
+        
+        if($data['use_document'] != 'new') {
             if(empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
             } else if (!googledocs_appears_valid_url($data['google_doc_url'])) {
@@ -225,18 +221,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
         if (in_array('0', $data['groups']) && (count($data['groups']) > 1) ) {
             $errors['groups'] = get_string('groupsinvalid', 'googledocs');
         }
- 
-
-
         return $errors;
     }
 
-//    protected function apply_admin_locked_flags(): void {
-//        global $PAGE;
-//         // Add the javascript required to enhance this mform.
-//        $PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array(true, true));
-//        parent::apply_admin_locked_flags();
-//    }
 
 
 
