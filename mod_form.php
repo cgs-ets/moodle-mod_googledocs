@@ -89,6 +89,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->setType('name', PARAM_TEXT);
             $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->hideif('name', 'use_document', 'eq', 'existing');
+            $mform->setDefault('name', '_');
             //$mform->addHelpButton('name', 'name_help', 'googledocs');
 
             if($update != 0) {
@@ -143,16 +144,16 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'), $distribution);
            // $mform->setDefault('distribution', 'std_copy');
-/* poner cuando este andando
+/* poner cuando este andando*/
             if($update != 0 ) { //&& ($this->get_current()->distribution == 'std_copy' || $this->get_current()->distribution == 'group_copy')
-                $mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
+                //$mform->addHelpButton('distribution_choice', 'distribution_choice', 'googledocs');
                 $distselect->freeze();
 
-            } */
-
+            }
 
             // Groups
             $groups = array('0' => 'All Groups');
+
             foreach($course_groups as $g) {
                 // skip empty groups.
                 if(!groups_get_members($g->id, 'u.id')) {
@@ -166,6 +167,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 //$mform->setDefault('groups','0');
                 $selectgroups->setMultiple(true);
             }
+
+            //Only display if the dist. selected is by group.
+            $mform->hideif('groups', 'distribution', 'eq', 'std_copy');
+            $mform->hideif('groups', 'distribution', 'eq', 'dist_share_same');
 
             // Grouping.
             $course_grouping = groups_get_all_groupings($PAGE->course->id);
@@ -184,6 +189,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $selectgrouping = $mform->addElement('select', 'groupings', get_string('groupings', 'googledocs'), $grouping);
                 //$mform->setDefault('groupings', '0');
                 $selectgrouping->setMultiple(true);
+                $selectgrouping->freeze();
             }
 
 
@@ -204,8 +210,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
     function validation($data, $files) {
         global $PAGE;
         // Validating doc URL if sharing an existing doc.
-
-         //   var_dump($data); exit;
+        $errors = parent::validation($data, $files);
+        //    var_dump(count($data['groups'])); exit;
         if ((isset($data['use_document'])) && $data['use_document'] == 'existing') {
             $data['name'] = '_';
 
@@ -215,9 +221,12 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
             }
         }
-        //When creating from an existing file there is no file name to provide.
-        //If this sentence is executed first,the validation fails.
-        $errors = parent::validation($data, $files);
+
+        if (in_array('0', $data['groups']) && (count($data['groups']) > 1) ) {
+            $errors['groups'] = get_string('groupsinvalid', 'googledocs');
+        }
+ 
+
 
         return $errors;
     }

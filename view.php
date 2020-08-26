@@ -56,7 +56,7 @@ $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 // Output starts here.
 echo $OUTPUT->header();
 
-//echo $OUTPUT->render_from_template('mod_googledocs/group_table', $coursecontext);
+//echo $OUTPUT->render_from_template('mod_googledocs/grouping_table', $coursecontext);
 
 $created = ($googledocs->sharing == 1);
 $bygroup = ($googledocs->distribution == 'group_copy');

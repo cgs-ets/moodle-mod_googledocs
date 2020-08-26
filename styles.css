@@ -26,14 +26,13 @@ td.status-link-column {
     width: 20%;
 }
 
+
+
 /*Students table table elements*/
 td.fullname-column {
     text-align: left;
 }
 
-td.fullname-column {
-   text-align: left;
-}
 img.pic{
    margin-left: 20%;
 }

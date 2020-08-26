@@ -72,6 +72,7 @@ $string['urlempty'] = 'If sharing an existing doc, you must enter a documents UR
 $string['dirurlempty'] = 'If sharing an existing folder, you must enter a folders URL';
 $string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
 $string['dirurlinvalid'] = 'The folder URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
+$string['groupsinvalid'] = 'You have chosen "All Groups" and a particular group. Either select All Groups or the groups you want to share a file with ';
 $string['use_document'] = 'Use document';
 $string['use_folder'] = 'Use Folder';
 $string['use_existing'] = 'Use existing';

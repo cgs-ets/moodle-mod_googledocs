@@ -90,8 +90,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $students = $gdrive->get_enrolled_students($googledocs->course);
 
         if (isset(($mform->get_submitted_data())->groups)){
-            $groups = prepare_group_grouping_json("group", ($mform->get_submitted_data())->groups);
-            $grouping = prepare_group_grouping_json("grouping", ($mform->get_submitted_data())->groupings);
+            $groups = prepare_group_grouping_json("group", ($mform->get_submitted_data())->groups, $googledocs->course);
+            $grouping = prepare_group_grouping_json("grouping", ($mform->get_submitted_data())->groupings, $googledocs->course);
             $group_grouping = array_merge($groups, $grouping);
 
             $jsongroup = new stdClass();
@@ -134,7 +134,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
                 $author, $students, $folderid);
 
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
-            //$gdrive->save_students_links_records($sharedlink[2],  $googledocs->id);
 
             if($dist == 'std_copy') {
                 $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);

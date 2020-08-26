@@ -18,13 +18,66 @@
     @copyright 2020 Veronica Bermegui
     @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
+
 {{!
     @template mod_googledocs/grouping_table
 
-    Google docs group content template.
+    Google docs grouping content template.
 
- Example context (json):
-
-
+    Example context (json):
 
 }}
+<div class="container-fluid table-container">
+
+  <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" data-googledoc-id={{googledocid}}
+    data-owner-email={{owneremail}} data-instance-id ="{{instanceid}}">
+        <thead class="thead-light">
+            <tr>
+                <th class="header ">Grouping</th>
+                <th class="header ">Groups</th>
+            </tr>
+        </thead>
+            <tbody class = "table-striped">
+                    <tr>
+                        <td>Grouping name</td>
+                        <td>
+                                {{! Groups table starts }}
+                           <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" data-googledoc-id={{googledocid}}
+                                data-owner-email={{owneremail}} data-instance-id ="{{instanceid}}">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th class="header ">Group Name</th>
+                                            <th class="header">Link</th>
+                                            <th class="header">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody >
+                                        {{#groups}}
+                                        {{#groupname}}
+                                            <tr id = "group_{{groupid}}"  aria-expanded="false"
+                                                aria-controls="group-{{groupid}}" data-group-name="{{groupname}}" data-group-id="{{groupid}}" >
+                                                <td class="group-name-column clickable" data-toggle="collapse" href="#group-members-{{groupid}}">
+                                                    <span data-toggle="tooltip" title="Click to see Members">{{groupname}}<span>
+                                                </td>
+                                                <td id="shared-link-group-id-{{groupid}}"class="status-link-column">{{{fileicon}}}</td>
+                                                <td  class="status-link-column">{{{sharing_status}}}</td>
+                                            </tr>
+                                        {{/groupname}}
+                                    </tbody>
+                                    {{#student-id}}
+                                        <tbody class = "table-striped collapse" id ="group-members-{{groupid}}">
+                                                <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}">
+                                                    <td class="pic-name">{{{picture}}}</td>
+                                                    <td class="status-link-column invisible">{{{link}}}</td>
+                                                    <td class="status-link-column invisible">{{{status}}}</td>
+                                                </tr>
+                                        </tbody>
+                                    {{/student-id}}
+                                 {{/groups}}
+                            </table>
+                            {{! Groups table finishes }}
+                        </td>
+                    </tr>
+            </tbody>
+    </table>
+</div>

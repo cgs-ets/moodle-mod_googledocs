@@ -35,6 +35,7 @@ use external_single_structure;
 
 require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
+require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 /**
  * Trait implementing the external function mod_googledocs_create_groups_file
@@ -98,11 +99,12 @@ trait create_group_file {
         $group->isgroup = true;
         $fromexisting = $data->use_document == 'new' ? false : true;
 
-        $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $group, $role, $commenter, $fromexisting);
+        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting);
         $googledocid = $gdrive->get_file_id_from_url($url);
-        
+
         return array(
-            'googledocid'=>$googledocid
+            'googledocid' => $googledocid,
+            'url' => $url
         );
     }
 
@@ -116,6 +118,7 @@ trait create_group_file {
         return new external_single_structure(
                 array(
                     'googledocid' => new external_value(PARAM_RAW,'file id'),
+                     'url' => new external_value(PARAM_RAW,'File URL '),
                  )
       );
     }

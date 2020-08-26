@@ -177,8 +177,14 @@ function get_group_grouping_members_ids($conditionsjson){
     return $groupmembers;
 }
 
-
-function prepare_group_grouping_json($type, $data) {
+/**
+ * Generate an array with stdClass object that has the format
+ * needed to generate the JSON
+ * @param type $type
+ * @param type $data
+ * @return array
+ */
+function prepare_group_grouping_json($type, $data, $courseid = 0) {
 
     $conditions = array();
     if(!in_array('0', $data)){
@@ -190,8 +196,17 @@ function prepare_group_grouping_json($type, $data) {
             array_push ($conditions, $condition);
         }
 
+    }else { //All groups
+        $all_groups = groups_get_all_groups($courseid, 0, 0, $fields='g.id');
+        foreach($all_groups as $gid) {
+            $condition = new stdClass();
+            $condition->type = $type;
+            $condition->id = $gid->id;
+      //      var_dump($gid->id);
+            array_push ($conditions, $condition);
+        }
+        //var_dump($all_groups); exit;
     }
-
     return $conditions;
 }
 

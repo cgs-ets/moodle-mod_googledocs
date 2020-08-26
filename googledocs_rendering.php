@@ -130,7 +130,7 @@ class googledocs_rendering {
                 'labelclasses' => 'accesshide',
             ]);
 
-            $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture pic'));
+            $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture'));
             $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
@@ -198,19 +198,26 @@ class googledocs_rendering {
 
         $data['googledocid'] = $this->googledocs->docid;
         $data['instanceid'] = $this->googledocs->id;
+        $urlshared =  '#';
 
         $i = 0;
+
         foreach($groupsandmembers as $groupmember=> $members) {
 
-             $data['groups'][] = ['groupid' => $members['groupid'],
+            $conditions =['googledocid' => $this->instanceid, 'groupid' => $members['groupid']];
+            $urlshared =  $DB->get_field('googledocs_files', 'url', $conditions,  IGNORE_MISSING);
+
+            $data['groups'][] = ['groupid' => $members['groupid'],
                                   'groupname' => $groupmember,
+                                  'fileicon' => html_writer::link($urlshared, $iconimage, array('target' => '_blank','id'=>'shared_link_url_'. $members['groupid'])),
+                                  'sharing_status' => html_writer::start_div('', ["id"=>'status_col']).html_writer::end_div()
                                  ];
 
             foreach($members['groupmembers'] as $member) {
 
                 $url = isset($member->url) ? $member->url : '#';
 
-                $data['groups'][] =  ['picture' => $OUTPUT->user_picture($member, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture pic' )) ,
+                $data['groups'][] =  ['picture' => $OUTPUT->user_picture($member, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture ' )) ,
                                       'fullname' =>  fullname($member),
                                       'link' => html_writer::link($url, $iconimage, array('target' => '_blank','id'=>'link_file_'. $i)),
                                       'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div(),
@@ -223,6 +230,9 @@ class googledocs_rendering {
             }
         }
 
+        //Fetch the common URL
+        $q = "SELECT url FROM googledocs_files WHERE groupid : groupid AND googledocid: googledocid";
+        //$params = ['groupid' =>];
         echo $OUTPUT->render_from_template('mod_googledocs/group_table', $data);
 
     }
@@ -306,9 +316,8 @@ class googledocs_rendering {
 
         foreach ($groupsresult as $gr) {
 
-            $groupmembers[$gr->name] = [ 'groupid' =>$gr->id,
-                                         'groupmembers' =>groups_get_members($gr->id, $fields='u.*', $sort='firstname ASC')];
-
+            $groupmembers[$gr->name] = [ 'groupid' => $gr->id,
+                                         'groupmembers' => groups_get_members($gr->id, $fields='u.*', $sort='firstname ASC')];
         }
 
        return $groupmembers;
@@ -431,9 +440,23 @@ class googledocs_rendering {
     }
     /**
      * When the dist. is by group and files were already created and distributed
-     * fetch the urls from the DB.
+     * fetch the URL from the DB.
      */
-    private function get_students_files_url($groupsandmembers){
+    private function get_sharing_file_url($groupsandmembers){
+        global $DB;
+
+         foreach($groupsandmembers as $groupmember=> $members) {
+            foreach($members['groupmembers'] as $member) {
+                  $conditions =['googledocid' => $this->instanceid, 'groupid' => $member->id];
+                  $url =  $DB->get_field('googledocs_files', 'url', $conditions,  IGNORE_MISSING);
+                  $member->url = $url;
+            }
+         }
+
+         return $groupsandmembers;
+    }
+
+        private function get_students_files_url($groupsandmembers){
         global $DB;
 
          foreach($groupsandmembers as $groupmember=> $members) {
@@ -446,6 +469,7 @@ class googledocs_rendering {
 
          return $groupsandmembers;
     }
+
 
 
 
