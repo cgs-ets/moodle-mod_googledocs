@@ -68,6 +68,7 @@ $string['oauth2services'] = 'OAuth 2 service';
 $string['oauth2servicesdesc'] = 'Choose the Google OAuth2 service the Google Docs activity will use.';
 $string['permissions'] = 'Permissions';
 $string['pluginname'] = 'Google Docs';
+$string['docnameinvalid'] = 'The name provided is invalid';
 $string['urlempty'] = 'If sharing an existing doc, you must enter a documents URL.';
 $string['dirurlempty'] = 'If sharing an existing folder, you must enter a folders URL';
 $string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
@@ -85,3 +86,4 @@ $string['googledocs_api_key_desc'] = 'Generate the API key in your Google consol
 $string['groupheader'] = 'Groups';
 $string['clicktoopen'] = 'Click {$a} to open resource';
 $string['status'] = 'Status';
+
