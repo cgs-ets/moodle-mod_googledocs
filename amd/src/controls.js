@@ -72,7 +72,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
            $('tbody').children().each(function(e){
             var tag = $(this).find('#status_col');
             tag.removeClass('progress_bar processing');
-            tag.html('Sharing');
+            tag.html('Created');
             tag.addClass('tag_doc success');
            });
         });
