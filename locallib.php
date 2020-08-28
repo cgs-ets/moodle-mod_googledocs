@@ -202,10 +202,9 @@ function prepare_group_grouping_json($type, $data, $courseid = 0) {
             $condition = new stdClass();
             $condition->type = $type;
             $condition->id = $gid->id;
-      //      var_dump($gid->id);
             array_push ($conditions, $condition);
         }
-        //var_dump($all_groups); exit;
+
     }
     return $conditions;
 }
@@ -770,7 +769,7 @@ class googledrive {
     }
 
     // Each group gets a copy. function called by the WS.
-    public function make_file_copy_for_group($data, $student, $role, $commenter = false ) {
+    public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false ) {
 
         $groupmembers = groups_get_members($data->groupid, $fields='u.id');
         $groupmembersids = array_column($groupmembers, 'id');

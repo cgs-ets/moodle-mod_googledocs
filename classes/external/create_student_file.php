@@ -90,7 +90,7 @@ trait create_student_file {
         );
 
         if ($by_group) {
-            $filedata = "SELECT gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
+            $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
                             INNER JOIN mdl_googledocs_files AS gf
                             ON gd.id = gf.googledocid
                             WHERE gd.id = :instanceid AND gf.groupid = :group_id";
@@ -101,6 +101,7 @@ trait create_student_file {
             //to share with the groups members.
             $data->google_doc_url = $data->url;
             $data->docid = $parentfile_id;
+            $data->name = $data->groupfilename; //Get the name for the group's file.
 
         }else{
             $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
@@ -122,7 +123,7 @@ trait create_student_file {
         }else if ($data->distribution == 'dist_share_same'){
            $url = $gdrive->share_single_copy($student, $data, $role, $commenter);
         }else{
-           $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter);
+           $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
         }
 
         return array(

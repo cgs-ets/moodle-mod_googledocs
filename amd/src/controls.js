@@ -62,13 +62,13 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         }else{
               self.initTags();
         }
-        
+
         // When sharing by group or grouping. The same file is shared.
-        // The generation of this file might be quick, but the giving the students
-        // a permission can take sometime. In order for the entire sharing is done
-        // The progress bar is only removed when all the ajax calls finis.
+        // The generation of this file might be quick, but giving the students
+        // a permission can take some time. In order for the entire sharing is done
+        // The progress bar is only removed when all the ajax calls finish.
         $(document).ajaxStop(function() {
-           
+
            $('tbody').children().each(function(e){
             var tag = $(this).find('#status_col');
             tag.removeClass('progress_bar processing');
@@ -183,7 +183,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
                     self.tagDisplay(rownumber, false);
                 }
             }]);
-      
+
     };
 
     GoogledocsControl.prototype.callGroupFileService = function (){
@@ -192,11 +192,11 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         var self = this;
         $('tbody').find('[data-group-name]').each(function(e){
             var group_name = $(this).attr('data-group-name');
-            var groupid =   $(this).attr('data-group-id'); 
+            var groupid =   $(this).attr('data-group-id');
             var a_element = ($(this).find('#shared_link_url_' + groupid))[0]; //It is always the one element.
            ($(this).find('div#status_col')).addClass('progress_bar processing');
             self.create_group_file(a_element, owner_email, group_name, groupid);
-            //(($(this).find('div#status_col'))).removeClass('progress_bar processing');
+
         });
 
     };
@@ -204,7 +204,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
     GoogledocsControl.prototype.create_group_file = function(a_element ,owner_email, group_name, group_id){
 
         var self = this;
-      
+
         Ajax.call([{
             methodname: 'mod_googledocs_create_group_file',
             args: {

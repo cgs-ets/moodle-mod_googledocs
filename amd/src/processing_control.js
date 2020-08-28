@@ -29,9 +29,9 @@
 /**
  * @module mod_googledocs/control
  */
-define(['jquery', 'core/log'], function ($, Log) {
+define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
     'use strict';
-    
+
     /**
      * Initializes the block controls.
      */
@@ -56,9 +56,8 @@ define(['jquery', 'core/log'], function ($, Log) {
     GoogledocsProcessingControl.prototype.main = function () {
         var self = this;
         self.processingMessageDisplay();
-       // self.toggle();
     };
-   
+
     GoogledocsProcessingControl.prototype.processingMessageDisplay = function() {
         // Handle submit click.
         var self = this;
@@ -68,8 +67,8 @@ define(['jquery', 'core/log'], function ($, Log) {
                 + "<span class='sr-only'>Loading...</span>"
                 + "</div>"
                 + "<div class = 'process_message'>\n\
-                   <p>Saving files into My Drive. <br>\n\
-                        The process can take sometime.<br> \n\
+                   <p>Saving to Google Drive. <br>\n\
+                        This process can take some time.<br> \n\
                         Please do not close the browser.</p>\n\
                     </div></div>").appendTo('#page-content');
 
@@ -77,7 +76,7 @@ define(['jquery', 'core/log'], function ($, Log) {
     };
     GoogledocsProcessingControl.prototype.toggle = function(){
       var self = this;
-      
+
       $(self.selectGroup).on('change', function() {
         var ids = [];
         $( "select#id_groups option:selected" ).each(function(ids) {

@@ -73,7 +73,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-
+        //var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
@@ -88,15 +88,15 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
 
-        if (isset(($mform->get_submitted_data())->groups)){
+        if (isset(($mform->get_submitted_data())->groups) || isset(($mform->get_submitted_data())->groupings)){
             $groups = prepare_group_grouping_json("group", ($mform->get_submitted_data())->groups, $googledocs->course);
             $grouping = prepare_group_grouping_json("grouping", ($mform->get_submitted_data())->groupings, $googledocs->course);
             $group_grouping = array_merge($groups, $grouping);
-
+            //var_dump($group_grouping); exit;
             $jsongroup = new stdClass();
             $jsongroup->c = $group_grouping;
 
-            if(!empty($jsongroup->c)){
+            if (!empty($jsongroup->c)) {
                 $googledocs->group_grouping_json = json_encode($jsongroup);
                 $students = get_students_by_group($coursestudents, json_encode($jsongroup),
                     $googledocs->course);
@@ -109,7 +109,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         $owncopy = false;
         $dist = ($mform->get_submitted_data())->distribution;
-        if ($dist == 'std_copy' || $dist == 'group_copy') {
+        if ($dist == 'std_copy' || $dist == 'group_copy' || $dist =='grouping_copy') {
             $owncopy = true;
         }
 

@@ -60,8 +60,9 @@ echo $OUTPUT->header();
 
 $created = ($googledocs->sharing == 1);
 $bygroup = ($googledocs->distribution == 'group_copy');
+$bygrouping = ($googledocs->distribution == 'grouping_copy');
 
-$t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup);
+$t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup, $bygrouping);
 $t->render_table();
 
 

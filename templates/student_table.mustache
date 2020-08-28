@@ -24,6 +24,27 @@
     Google docs group content template.
 
     Example context (json):
+    {
+        "googledocid": "1vmmj_eVJe0NZCpkQoBFyRdu4lyekPaIi5zSIl1KFZoM",
+        "instanceid": "2",
+        "members": [],
+        "students": [
+            {
+                "checkbox": "<input id="user5" name="user5" type="checkbox" class="usercheckbox m-1" value="" data-action="toggle" data-toggle="slave" data-togglegroup="students-file-table" /> <label for="user5" class="accesshide">Select '(Student) Vanesa'</label>",
+                "picture": "<a href="http://localhost/cgs/moodle/user/view.php?id=5&amp;course=3">
+                            <img src="http://localhost/cgs/moodle/pluginfile.php/50/user/icon/boostcgs/f2?rev=17604" class="userpicture" width="35" height="35" alt="Picture of (Student) Vanesa Bermegui" title="Picture of (Student) Vanesa Bermegui" />(Student) Vanesa Bermegui</a>",
+                "fullname": "(Student) Vanesa Bermegui",
+                "student-id": "5",
+                "student-email": "vane@hotmail.com",
+                "link": "<a target="_blank" id="link_file_0" href="">
+                            <img src="http://localhost/cgs/moodle/mod/googledocs/pix/document.svg" class="link_icon" />
+                        </a>",
+                "groupname": "Group C",
+                "student-groupid": "3",
+                "status": "<div id="file_0"></div>"
+            },
+        ]
+    }
 
 
 
@@ -36,7 +57,6 @@
                 <th class="checkbox-column"></th>
                 <th class ="table-student-columns">Full name</th>
                 <th class ="table-student-columns">Links</th>
-                <th class ="table-student-columns">Groups</th>
                 <th class ="table-student-columns">Status</th>
 
             </tr>
@@ -46,9 +66,8 @@
             {{#students}}
                 <tr  data-student-id ="{{student-id}}" data-student-email="{{student-email}}" student-name="{{fullname}}">
                     <td>{{{checkbox}}}</td>
-                    <td  class="fullname-column">{{{picture}}}</td>                   
+                    <td  class="fullname-column">{{{picture}}}</td>
                     <td>{{{link}}}</td>
-                    <td>{{groupname}}</td>
                     <td>{{{status}}}</td
                 </tr>
             {{/students}}
