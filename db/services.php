@@ -35,12 +35,22 @@ $functions = [
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
-    
+
     'mod_googledocs_create_group_file' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
         'methodname' =>'create_group_file', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for a group', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true    // Is this service available to 'internal' ajax calls.
+    ],
+
+    'mod_googledocs_create_grouping_file' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' =>'create_grouping_file', // External function name.
+        'classpath' => '',
+        'description' => 'Create googledoc file for a grouping ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.

@@ -88,9 +88,21 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
 
-        if (isset(($mform->get_submitted_data())->groups) || isset(($mform->get_submitted_data())->groupings)){
-            $groups = prepare_group_grouping_json("group", ($mform->get_submitted_data())->groups, $googledocs->course);
-            $grouping = prepare_group_grouping_json("grouping", ($mform->get_submitted_data())->groupings, $googledocs->course);
+        $groups=[];
+
+        if(!empty(($mform->get_submitted_data())->groups)) {
+            $groups = prepare_group_json( ($mform->get_submitted_data())->groups, $googledocs->course);
+        }
+
+        $grouping = [];
+        if(!empty(($mform->get_submitted_data())->groupings)) {
+            $grouping = prepare_grouping_json(($mform->get_submitted_data())->groupings, $googledocs->course);
+        }
+
+        //var_dump($grouping); exit;
+
+        if (!empty($groups) || !empty($grouping)){
+
             $group_grouping = array_merge($groups, $grouping);
             //var_dump($group_grouping); exit;
             $jsongroup = new stdClass();
@@ -98,8 +110,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
             if (!empty($jsongroup->c)) {
                 $googledocs->group_grouping_json = json_encode($jsongroup);
-                $students = get_students_by_group($coursestudents, json_encode($jsongroup),
-                    $googledocs->course);
+                $students = get_students_by_group($coursestudents, json_encode($jsongroup), $googledocs->course);
             }
         }
 

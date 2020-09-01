@@ -25,86 +25,71 @@
     Google docs grouping content template.
 
     Example context (json):
-        {
-            "groups": [
-                {
-                    "groupid": "1",
-                    "groupname": "Group A",
-                    "fileicon": "<a target="_blank" id="shared_link_url_1" href="0"><img src="http://localhost/cgs/moodle/mod/googledocs/pix/document.svg" class="link_icon" /></a>",
-                    "sharing_status": "<div id="status_col"></div>"
-                },            
-                {
-                    "picture": "<a href="http://localhost/cgs/moodle/user/view.php?id=10&amp;course=3">
-                                <img src="http://localhost/cgs/moodle/theme/image.php/boostcgs/core/1598492027/u/f2" class="userpicture defaultuserpic" width="35" height="35" alt="Picture of Alex T" title="Picture of Alex T" />Alex T</a>",
-                    "fullname": "Alex T",
-                    "link": "<a target="_blank" id="link_file_0" href="">
-                             <img src="http://localhost/cgs/moodle/mod/googledocs/pix/document.svg" class="link_icon" />
-                             </a>",
-                    "status": "<div id="file_0"></div>",
-                    "student-id": "10",
-                    "student-email": "alex@staff.com",
-                    "groupid": "1"
-                },
-            ],
 
-            "googledocid": "1HgHissGCrTqTjm4rbOKe2CApJbPUri0BPBkECH6mrEc",
-            "owneremail": "vero.web.dev.practice@gmail.com",
-            "members": [],
-            "instanceid": "1"
-            }
+     
 
 }}
 <div class="container-fluid table-container">
-
-  <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" data-googledoc-id={{googledocid}}
-    data-owner-email={{owneremail}} data-instance-id ="{{instanceid}}">
+  {{#file_details}}
+  <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover groupingTable " data-parentFile-id= "{{docid}}"
+    data-owner-email = "{{owneremail}}" data-instance-id = "{{instanceid}}">
         <thead class="thead-light">
             <tr>
                 <th class="header ">Grouping</th>
                 <th class="header ">Groups</th>
             </tr>
         </thead>
-            <tbody class = "table-striped">
-                    <tr>
-                        <td>Grouping name</td>
-                        <td>
-                                {{! Groups table starts }}
-                           <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" data-googledoc-id={{googledocid}}
-                                data-owner-email={{owneremail}} data-instance-id ="{{instanceid}}">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th class="header ">Group Name</th>
-                                            <th class="header">Link</th>
-                                            <th class="header">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody >
-                                        {{#groups}}
-                                        {{#groupname}}
-                                            <tr id = "group_{{groupid}}"  aria-expanded="false"
-                                                aria-controls="group-{{groupid}}" data-group-name="{{groupname}}" data-group-id="{{groupid}}" >
-                                                <td class="group-name-column clickable" data-toggle="collapse" href="#group-members-{{groupid}}">
-                                                    <span data-toggle="tooltip" title="Click to see Members">{{groupname}}<span>
-                                                </td>
-                                                <td id="shared-link-group-id-{{groupid}}"class="status-link-column">{{{fileicon}}}</td>
-                                                <td  class="status-link-column">{{{sharing_status}}}</td>
-                                            </tr>
-                                        {{/groupname}}
-                                    </tbody>
-                                    {{#student-id}}
-                                        <tbody class = "table-striped collapse" id ="group-members-{{groupid}}">
-                                                <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}">
-                                                    <td class="pic-name">{{{picture}}}</td>
-                                                    <td class="status-link-column invisible">{{{link}}}</td>
-                                                    <td class="status-link-column invisible">{{{status}}}</td>
-                                                </tr>
-                                        </tbody>
-                                    {{/student-id}}
-                                 {{/groups}}
-                            </table>
-                            {{! Groups table finishes }}
-                        </td>
-                    </tr>
-            </tbody>
-    </table>
+
+            {{#groupings}}
+                <tbody class = "table-striped grouping-groups" data-grouping-id="{{grouping_id}}">
+
+                        <tr data-grouping-id = "{{grouping_id}}" data-grouping-name = "{{grouping_name}}">
+                            <td class= "grouping_name_cell">{{grouping_name}}</td>
+                            <td class="groups">
+
+                              {{! Groups table starts }}
+                               {{#grouping_members}}
+                                    <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" data-googledoc-id={{googledocid}}
+                                         data-owner-email={{owneremail}} data-instance-id = "{{instanceid}}" data-group-id = "{{groupid}}" data-grouping-id ="{{grouping_id}}">
+                                             <thead class="thead-light">
+                                                 <tr>
+                                                     <th class="header ">Group Name</th>
+                                                     <th class="header">Link</th>
+                                                     <th class="header">Status</th>
+                                                 </tr>
+                                             </thead>
+
+                                             <tbody >
+                                                     <tr id = "group_{{groupid}}"  aria-expanded="false"
+                                                         aria-controls="group-members-{{groupid}}" data-group-name="{{group_name}}" data-group-id="{{groupid}}" >
+                                                         <td class="group-name-column clickable" data-toggle="collapse"  href="#group-members-{{groupid}}">
+                                                             <span data-toggle="tooltip" title="Click to see Members">{{group_name}}<span>
+                                                         </td>
+                                                         <td id="shared-link-group-id-{{groupid}}"class="status-link-column">{{{fileicon}}}</td>
+                                                         <td  class="status-link-column">{{{sharing_status}}}</td>
+                                                     </tr>
+
+                                             </tbody>
+
+                                             {{#groupmembers}}
+                                                    <tbody class = "table-striped collapse" id ="group-members-{{groupid}}">
+                                                            <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}">
+                                                                <td class="pic-name">{{{picture}}}</td>
+                                                                <td class="status-link-column invisible">{{{link}}}</td>
+                                                                <td class="status-link-column invisible">{{{status}}}</td>
+                                                            </tr>
+                                                    </tbody>
+                                            {{/groupmembers}}
+
+
+                                     </table>
+                                    {{/grouping_members}}
+                                {{! Groups table finishes }}
+                            </td>
+                        </tr> 
+          
+                </tbody>
+            {{/groupings}}
+    </table> {{ ! Grouping table finishes}}
+{{/file_details}}
 </div>

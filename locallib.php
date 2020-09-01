@@ -184,14 +184,14 @@ function get_group_grouping_members_ids($conditionsjson){
  * @param type $data
  * @return array
  */
-function prepare_group_grouping_json($type, $data, $courseid = 0) {
+function prepare_group_json( $data, $courseid = 0) {
 
     $conditions = array();
     if(!in_array('0', $data)){
 
         foreach($data as $d) {
             $condition = new stdClass();
-            $condition->type = $type;
+            $condition->type = 'group';
             $condition->id = $d;
             array_push ($conditions, $condition);
         }
@@ -200,13 +200,38 @@ function prepare_group_grouping_json($type, $data, $courseid = 0) {
         $all_groups = groups_get_all_groups($courseid, 0, 0, $fields='g.id');
         foreach($all_groups as $gid) {
             $condition = new stdClass();
-            $condition->type = $type;
+            $condition->type = 'group';
             $condition->id = $gid->id;
             array_push ($conditions, $condition);
         }
 
     }
     return $conditions;
+}
+
+function prepare_grouping_json($data, $courseid = 0) {
+     $conditions = array();
+    if(!in_array('0', $data)){
+
+        foreach($data as $d) {
+            $condition = new stdClass();
+            $condition->type = 'grouping';
+            $condition->id = $d;
+            array_push ($conditions, $condition);
+        }
+
+    }else { //All groupings
+        $all_groups = groups_get_all_groupings($courseid);
+        foreach($all_groups as $gid) {
+            $condition = new stdClass();
+            $condition->type = 'grouping';
+            $condition->id = $gid->id;
+            array_push ($conditions, $condition);
+        }
+
+    }
+    return $conditions;
+
 }
 
 /**
@@ -743,14 +768,15 @@ class googledrive {
         $this->insert_permission($this->service, $copyid->id, $student->email, $student->type, $permission, $commenter);
 
         $studentfiledata = new stdClass();
-       // $studentfiledata->userid = $student->id;
         $studentfiledata->googledocid = $data->id;
         $studentfiledata->url = $link;
         $studentfiledata->name = $copyname;
 
-        // Distribution = group_copy
+
         if (isset($student->isgroup)){
             $studentfiledata->groupid =  $student->id;
+        }else if(isset($student->isgrouping)){
+            $studentfiledata->groupingid =  $student->id;
         }else{
             $studentfiledata->userid = $student->id;
         }
@@ -759,9 +785,9 @@ class googledrive {
         $DB->insert_record('googledocs_files', $studentfiledata);
 
         //Update creation_status.
-        //If the copy if for a student and not a group. Because at this point
-        //the copies are not being shared with the members of the yet.
-       if(!isset($student->groupid)){
+        //If the copy is for a student and not a group or grouping. Because at this point
+        //the copies are not being shared with the member yet.
+       if(!isset($student->groupid) || !isset( $studentfiledata->groupingid)){
          $this->update_creation_and_sharing_status($data, $studentfiledata);
        }
 
@@ -770,7 +796,7 @@ class googledrive {
 
     // Each group gets a copy. function called by the WS.
     public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false ) {
-
+       // print_object($data); exit;
         $groupmembers = groups_get_members($data->groupid, $fields='u.id');
         $groupmembersids = array_column($groupmembers, 'id');
 
@@ -780,6 +806,7 @@ class googledrive {
            return $this->share_single_copy($student, $data, $role, $commenter);
         }
     }
+
     /**
      * Update status in googledocs and  googledocs_work_task tables
      * @global type $DB

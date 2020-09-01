@@ -61,11 +61,11 @@ echo $OUTPUT->header();
 $created = ($googledocs->sharing == 1);
 $bygroup = ($googledocs->distribution == 'group_copy');
 $bygrouping = ($googledocs->distribution == 'grouping_copy');
-
+//var_dump($bygrouping); exit;
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup, $bygrouping);
 $t->render_table();
 
 
-$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created, $bygroup));
+$PAGE->requires->js_call_amd('mod_googledocs/controls', 'init', array($created, $bygroup, $bygrouping));
 // Finish the page.
 echo $OUTPUT->footer();

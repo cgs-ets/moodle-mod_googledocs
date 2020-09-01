@@ -26,6 +26,12 @@ td.status-link-column {
     width: 20%;
 }
 
+td.grouping_name_cell {
+    display: table-cell;
+    vertical-align: middle !important;
+}
+   
+
 
 
 /*Students table table elements*/

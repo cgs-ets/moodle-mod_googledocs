@@ -109,7 +109,7 @@ class googledocs_rendering {
         }else if ($this->bygrouping){
             $this->render_table_by_grouping($types);
         }else{
-            //Render both group and grouping
+            //Render both group and grouping. It will go first.
         }
 
         return  $this->coursestudents;
@@ -199,7 +199,6 @@ class googledocs_rendering {
             'groups' =>array(),
             'googledocid' => '',
             'owneremail' => $owneremail->email,
-            //'members' => array()
         ];
 
         $data['googledocid'] = $this->googledocs->docid;
@@ -236,32 +235,54 @@ class googledocs_rendering {
             }
         }
 
-        //Fetch the common URL
-        $q = "SELECT url FROM googledocs_files WHERE groupid : groupid AND googledocid: googledocid";
-
         echo $OUTPUT->render_from_template('mod_googledocs/group_table', $data);
 
     }
 
+    /**
+     *
+     * @global type $DB
+     * @global type $CFG
+     * @global type $OUTPUT
+     * @param type $types
+     */
     private function render_table_by_grouping($types) {
-        global $DB, $CFG;
-        $all_groupings = $this->get_groupings_and_members();
+        global $DB, $CFG, $OUTPUT;
 
         $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
         $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
+        $j = json_decode($this->googledocs->group_grouping_json);
         //Get teacher email. Is the owner of the copies that are going to be created for each group.
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
 
-        $data = [
-            'groups' =>array(),
-            'googledocid' => '',
-            'owneremail' => $owneremail->email,
-            //'members' => array()
-        ];
+        $data['file_details'] = [ 'owneremail' => $owneremail->email,
+                                  'docid' =>$this->googledocs->docid,
+                                  'instanceid' =>$this->instanceid
+                                ];
+        $url = '#';
+        foreach($j->c as $c =>$condition) {
+            if ($condition->type == 'grouping'){
+                $groupingdetails = groups_get_grouping($condition->id, 'id, name' );
+                $members = $this->get_grouping_groups_and_members($groupingdetails->id);
 
-        var_dump($all_groupings);
+                if (!empty($members)) {
+                    $data['groupings'][] = ['grouping_name' => $groupingdetails->name,
+                                            'grouping_id' => $groupingdetails->id,  //grouping id
+                                            'fileicon' =>html_writer::link($url, $iconimage,
+                                                array('target' => '_blank','id'=>'shared_link_'.$groupingdetails->id)),
+                                            'sharing_status' => html_writer::start_div('', ["id"=>'file_grouping']).html_writer::end_div(),
+                                            'grouping_members' => $members];
+
+                }
+            }
+
+        }
+
+        echo $OUTPUT->render_from_template('mod_googledocs/grouping_table', $data);
+        //print_object( $data); exit;
+
     }
 
 
@@ -342,32 +363,38 @@ class googledocs_rendering {
         $groupsresult  =  $DB->get_records_sql($sql, $inparams);
 
         foreach ($groupsresult as $gr) {
+            $members = groups_get_members($gr->id, $fields='u.*', $sort='firstname ASC');
 
+            if(empty($members)) {
+                continue;
+            }
             $groupmembers[$gr->name] = [ 'groupid' => $gr->id,
-                                         'groupmembers' => groups_get_members($gr->id, $fields='u.*', $sort='firstname ASC')];
+                                         'groupmembers' => $members];
         }
 
        return $groupmembers;
     }
 
+    private function set_data_for_grouping_table($groupingmembers) {
+        global $OUTPUT;
+        $i = 0;
+        $data = [];
 
 
-    /**
-     * Gets the grouping and its members. In this case,
-     * a member in a grouping is a group.
-     */
-    private function get_groupings_and_members() {
+        foreach($groupingmembers as $member ){
 
-        $j = json_decode($this->googledocs->group_grouping_json);
+                $data [] = ['picture' => $OUTPUT->user_picture($member,
+                                                array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture ' )) ,
+                           'fullname' =>  fullname($member),
+                            'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div(),
+                            'student-id' =>$member->id,
+                            'student-email'=>$member->email,
 
-        foreach($j->c as $c =>$condition) {
-            if ($condition->type == 'grouping'){
-                $groupingdetails = groups_get_grouping($condition->id, 'id, name' );
-                $groupingmembers[$groupingdetails->name] = [$groupingdetails->id,  //grouping id
-                                                            'grouping_members' => $this->get_grouping_groups_and_members($groupingdetails->id)];
-            }
+                        ];
+                    $i++;
         }
-        return $groupingmembers;
+
+        return $data;
     }
 
     /**
@@ -386,13 +413,15 @@ class googledocs_rendering {
                 WHERE groupingid  $insql";
 
         $ggresult  =  $DB->get_records_sql($sql, $inparams);
-        $fields = 'u.id, u.email';
 
         foreach ($ggresult as $gg) {
 
             $group = groups_get_group($gg->groupid);
-            $groupmembers[$group->name] = [ 'groupid' => $gg->groupid,
-                                            'groupmembers' => groups_get_members($gg->groupid, $fields, $sort='firstname ASC')];
+            $gmembers = groups_get_members($gg->groupid,'u.*', $sort='firstname ASC');
+
+            $groupmembers []= [ 'groupid' => $gg->groupid,
+                                'group_name' =>$group->name,
+                                'groupmembers' => $this->set_data_for_grouping_table($gmembers) ];
         }
 
        return $groupmembers;

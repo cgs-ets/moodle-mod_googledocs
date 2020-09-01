@@ -45,14 +45,19 @@ trait create_student_file {
     /**
      * Returns description of method parameters
      * @return external_function_parameters
-     *
+     *by_group : by_group,
+                    by_grouping: by_grouping,
+                    group_id : student_group_id,
+                    grouping_id: student_grouping_id,
     */
 
     public static  function create_student_file_parameters(){
         return new external_function_parameters(
             array(
                   'by_group' => new external_value(PARAM_BOOL, 'True is distr. is by group'),
+                  'by_grouping'  => new external_value(PARAM_BOOL, 'True is distr. is by grouping'),
                   'group_id' => new external_value(PARAM_RAW, 'Group ID'),
+                  'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
                   'student_email' =>  new external_value(PARAM_RAW, 'student email'),
@@ -70,7 +75,8 @@ trait create_student_file {
      *         int $nav represents a nav direction, 0: Backward, 1: Forward.
      * @return a timetable for a user.
      */
-    public static function create_student_file($by_group, $group_id, $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
+    public static function create_student_file($by_group, $by_grouping, $group_id, $grouping_id,
+                                               $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
@@ -80,7 +86,9 @@ trait create_student_file {
         self::validate_parameters(self::create_student_file_parameters(),
             array(
                   'by_group' => $by_group,
+                  'by_grouping' => $by_grouping,
                   'group_id' => $group_id,
+                  'grouping_id' => $grouping_id,
                   'instance_id' => $instance_id,
                   'parentfile_id' => $parentfile_id,
                   'student_email'=> $student_email,
@@ -103,9 +111,24 @@ trait create_student_file {
             $data->docid = $parentfile_id;
             $data->name = $data->groupfilename; //Get the name for the group's file.
 
+        }else if($by_grouping){
+             $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
+                            INNER JOIN mdl_googledocs_files AS gf
+                            ON gd.id = gf.googledocid
+                            WHERE gd.id = :instanceid AND gf.groupingid = :grouping_id";
+
+            $data = $DB->get_record_sql($filedata, ['instanceid'=> $instance_id, 'grouping_id' =>$grouping_id]);
+            // google_doc_url is the url of the original file
+            // when dist is by group a file for the group is created and that file is the one
+            //to share with the groups members.
+            $data->google_doc_url = $data->url;
+            $data->docid = $parentfile_id;
+            $data->groupid = $group_id;
+            $data->name = $data->groupfilename; //Get the name for the group's file.
         }else{
             $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
             $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
+
         }
 
         // Generate the student file
@@ -122,7 +145,7 @@ trait create_student_file {
            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
         }else if ($data->distribution == 'dist_share_same'){
            $url = $gdrive->share_single_copy($student, $data, $role, $commenter);
-        }else{
+        }else if ($data->distribution == 'group_copy' || $data->distribution == 'grouping_copy'){
            $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
         }
 

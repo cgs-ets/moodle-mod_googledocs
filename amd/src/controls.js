@@ -30,22 +30,30 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
     /**
      * Initializes the block controls.
      */
-    function init(create, group_sharing) {
+    function init(create, group_sharing, grouping_sharing) {
         Log.debug('mod_googledocs/control: initializing controls of the mod_googledocs');
+    
+        var parentfile_id;
 
-        var parentfile_id = $('table.overviewTable').attr('data-googledoc-id');
+        if (grouping_sharing) {
+            parentfile_id = $('table.groupingTable').attr('data-parentfile-id');
+        }else{
+            parentfile_id = $('table.overviewTable').attr('data-googledoc-id');
+        }
+ 
         var instance_id = $('table.overviewTable').attr('data-instance-id');
-        var control = new GoogledocsControl(parentfile_id, create, group_sharing, instance_id);
+        var control = new GoogledocsControl(parentfile_id, create, group_sharing, instance_id, grouping_sharing);
         control.main();
     }
 
     // Constructor.
-    function GoogledocsControl( parentfile_id, create, group_sharing, instance_id) {
+    function GoogledocsControl( parentfile_id, create, group_sharing, instance_id, grouping_sharing) {
         var self = this;
         self.parentfile_id = parentfile_id;
         self.create = create;
         self.group_sharing = group_sharing;
         self.instance_id = instance_id;
+        self.grouping_sharing = grouping_sharing;
     }
 
     GoogledocsControl.prototype.main = function () {
@@ -54,11 +62,14 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
-        //when sharing by group another WS is called
-        if(!self.create && !self.group_sharing) {
+        //when sharing by group or by bygrouping other WS is called
+               
+        if(!self.create && !self.group_sharing && !self.grouping_sharing) {
             self.callStudentFileService(self.parentfile_id);
-        }else if (!self.create && self.group_sharing) {
+        }else if (!self.create && self.group_sharing && !self.grouping_sharing) {
             self.callGroupFileService();
+        }else if(!self.create && self.grouping_sharing && !self.group_sharing) {
+            self.callGroupingFileService();
         }else{
               self.initTags();
         }
@@ -75,6 +86,17 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
             tag.html('Created');
             tag.addClass('tag_doc success');
            });
+
+           if(self.grouping_sharing){
+               $('tbody.grouping-groups td.groups').each(function(){
+                $(this).find('table').each(function(){
+                    var tag = $(this).find("#file_grouping");
+                    tag.removeClass('progress_bar processing');
+                    tag.html('Created');
+                    tag.addClass('tag_doc success');
+                });
+             });
+           }
         });
 
     };
@@ -115,11 +137,11 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
 
     };
 
-    GoogledocsControl.prototype.callStudentFileService = function(parentfile_id, by_group = false, group_id = 0){
+    GoogledocsControl.prototype.callStudentFileService = function(parentfile_id){
         var self = this;
 
         $('tbody').children().each(function(e){
-            var student_id = $(this).attr('data-student-id');  
+            var student_id = $(this).attr('data-student-id');
             var student_email = $(this).attr('data-student-email');
             var student_name = $(this).attr('student-name');
             self.create_student_file(e, student_id, student_email, student_name, parentfile_id);
@@ -127,27 +149,27 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         });
     };
 
-    GoogledocsControl.prototype.callStudentFileServiceForByGroup = function(parentfile_id, group_id) {
+    GoogledocsControl.prototype.callStudentFileServiceForGroup = function(parentfile_id, group_id, grouping_id = 0) {
         var self = this;
+
         $('tbody#group-members-'+group_id).children().each(function(e){
-            
+
             var student_id = $(this).attr('data-student-id');
             var student_email = $(this).attr('data-student-email');
             var student_name = $(this).attr('student-name');
             var student_group_id = $(this).attr('student-group-id');
-            
-            console.log('student id: ' +student_id);
-            
             if(student_group_id == group_id) {
-                self.create_student_file(e, student_id, student_email, student_name, parentfile_id, true, student_group_id);
+                self.create_student_file(e, student_id, student_email, student_name, parentfile_id,
+                                         self.group_sharing, student_group_id, self.grouping_sharing, grouping_id );
             }
-
         });
 
     };
 
+
     GoogledocsControl.prototype.create_student_file = function (rownumber, student_id, student_email,student_name, parentfile_id, 
-                                                                by_group = false, student_group_id = 0) {
+                                                                by_group = false, student_group_id = 0, by_grouping = false,
+                                                                student_grouping_id = 0) {
         var self = this;
 
         if(!by_group) {
@@ -155,16 +177,21 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
         }
 
         Ajax.call([{
+
                 methodname: 'mod_googledocs_create_students_file',
+
                 args: {
                     by_group : by_group,
+                    by_grouping: by_grouping,
                     group_id : student_group_id,
+                    grouping_id: student_grouping_id,
                     instance_id : self.instance_id,
                     parentfile_id: parentfile_id,
                     student_email: student_email,
                     student_id: student_id,
                     student_name: student_name
                 },
+
                 done: function (response) {
                     Log.debug(response.url);
                     console.log("rownumber: " + rownumber );
@@ -177,6 +204,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
                         self.tagDisplay(rownumber, true);
                     }
                 },
+
                 fail: function (reason) {
                     Log.error(reason);
                     $('#file_' + rownumber).removeClass('progress_bar  processing');
@@ -201,6 +229,25 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
 
     };
 
+    GoogledocsControl.prototype.callGroupingFileService = function (){
+        
+        $('tbody.grouping-groups td.groups').each(function(){
+           $(this).find('table').each(function(){
+                ($(this).find("#file_grouping")).addClass('progress_bar processing');
+           });
+        });
+
+        var owner_email = $('table.groupingTable').attr('data-owner-email');
+
+        var self = this;
+        $('tbody').find('[data-grouping-name]').each(function(e){
+            var grouping_name = $(this).attr('data-grouping-name');
+            var grouping_id =   $(this).attr('data-grouping-id');
+            self.create_grouping_file (grouping_name, grouping_id, owner_email);
+        });
+
+    };
+
     GoogledocsControl.prototype.create_group_file = function(a_element ,owner_email, group_name, group_id){
 
         var self = this;
@@ -218,8 +265,7 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
                  // Add file's link
                 $(a_element).attr("href", response.url);
                 //Returns the ID of the file created for the group.
-                //$(this).find('div#status_col').removeClass('progress_bar processing');
-                self.callStudentFileServiceForByGroup(response.googledocid, group_id);
+                self.callStudentFileServiceForGroup(response.googledocid, group_id);
 
             },
             fail: function (reason) {
@@ -231,7 +277,52 @@ define(['jquery', 'core/log', 'core/ajax'], function ($, Log, Ajax) {
 
     };
 
-        return {
-            init: init
-        };
+    GoogledocsControl.prototype.create_grouping_file = function (grouping_name, grouping_id, owner_email) {
+        var self = this;
+        console.log("create_grouping_file. Attr:  " + grouping_name + " " + grouping_id + " " + owner_email);
+        Ajax.call([{
+            methodname: 'mod_googledocs_create_grouping_file',
+            args: {
+                grouping_name: grouping_name,
+                grouping_id: grouping_id,
+                owner_email: owner_email,
+                parentfile_id: self.parentfile_id,
+            },
+            done: function (response) {
+                console.log(response);
+                // Add file's link
+               // $(a_element).attr("href", response.url);
+                //Returns the ID of the file created for the groups.
+                //self.callStudentFileServiceForGrouping(response.googledocid, grouping_id);
+                self.callGroupingGroupFileService(response.googledocid, grouping_id, response.url); // We need to create the file for the groups
+
+            },
+            fail: function (reason) {
+                Log.error(reason);
+            }
+        }]);
+
+      //  $('table.groupingTable').removeAttr('data-googledoc-id');
+    };
+
+    GoogledocsControl.prototype.callGroupingGroupFileService = function(parentfile_id, grouping_id, url){
+        var self = this;
+
+       $('tbody.grouping-groups td.groups').each(function(){
+            $(this).find('table').each(function(){
+                var t = $(this);
+                var group_id = t.attr('data-group-id');
+                var link = (t.find('#shared_link_' + grouping_id))[0];
+                $(link).attr("href",url);
+                if(t.attr('data-grouping-id') == grouping_id) {
+                    self.callStudentFileServiceForGroup(parentfile_id, group_id, grouping_id);
+                }
+            });
+
+        });
+    };
+
+    return {
+        init: init
+    };
  });

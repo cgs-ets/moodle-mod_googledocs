@@ -38,9 +38,9 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 /**
- * Trait implementing the external function mod_googledocs_create_groups_file
+ * Trait implementing the external function mod_googledocs_create_groupings_file
  */
-trait create_group_file {
+trait create_grouping_file {
 
 
     /**
@@ -49,38 +49,29 @@ trait create_group_file {
      *
     */
 
-    public static  function create_group_file_parameters(){
+    public static  function create_grouping_file_parameters(){
         return new external_function_parameters(
             array(
-                  'group_name' => new external_value(PARAM_RAW, 'groupname'),
-                  'group_id' => new external_value(PARAM_RAW, 'group ID'),
+                  'grouping_name' => new external_value(PARAM_RAW, 'groupingname'),
+                  'grouping_id' => new external_value(PARAM_RAW, 'grouping ID'),
                   'owner_email' =>  new external_value(PARAM_RAW, 'Owner of the file email'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
             )
         );
     }
 
-    /**
-     *
-     * @global type $COURSE
-     * @global type $DB
-     * @param type $group_name
-     * @param type $group_id
-     * @param type $owner_email
-     * @param type $parentfile_id
-     * @return type
-     */
-    public static function create_group_file($group_name, $group_id, $owner_email, $parentfile_id) {
+
+    public static function create_grouping_file($grouping_name, $grouping_id, $owner_email, $parentfile_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         //Parameters validation
-        self::validate_parameters(self::create_group_file_parameters(),
+        self::validate_parameters(self::create_grouping_file_parameters(),
             array(
-                  'group_name' => $group_name,
-                  'group_id' => $group_id,
+                  'grouping_name' => $grouping_name,
+                  'grouping_id' => $grouping_id,
                   'owner_email'=> $owner_email,
                   'parentfile_id' => $parentfile_id)
         );
@@ -88,20 +79,18 @@ trait create_group_file {
         $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
         $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
 
-
-
-        // Generate the group file
+        // Generate the grouping file
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
-        $group = new \stdClass();
-        $group->id = $group_id;
-        $group->name = $group_name;
-        $group->email = $owner_email;
-        $group->type = 'user';
-        $group->isgroup = true;
+        $grouping = new \stdClass();
+        $grouping->id = $grouping_id;
+        $grouping->name = $grouping_name;
+        $grouping->email = $owner_email;
+        $grouping->type = 'user';
+        $grouping->isgrouping = true;
         $fromexisting = $data->use_document == 'new' ? false : true;
 
-        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting);
+        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
         $googledocid = $gdrive->get_file_id_from_url($url);
 
         return array(
@@ -112,11 +101,11 @@ trait create_group_file {
 
     /**
      * Describes the structure of the function return value.
-     * Returns the URL of the file for the group
+     * Returns the URL of the file for the grouping
      * @return external_single_structure
      *
      */
-    public static function create_group_file_returns(){
+    public static function create_grouping_file_returns(){
         return new external_single_structure(
                 array(
                     'googledocid' => new external_value(PARAM_RAW,'file id'),

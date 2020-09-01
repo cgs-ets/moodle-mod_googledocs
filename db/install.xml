@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/googledocs/db" VERSION="20200819" COMMENT="XMLDB file for Moodle mod/googledocs"
+<XMLDB PATH="mod/googledocs/db" VERSION="20200831" COMMENT="XMLDB file for Moodle mod/googledocs"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -21,9 +21,9 @@
         <FIELD NAME="docid" TYPE="char" LENGTH="256" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="ID of the Google document. When resource is created from an existing file, record the ID.  0 otherwise"/>
         <FIELD NAME="parentfolderid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Folder ID where the file is saved"/>
         <FIELD NAME="update_status" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="not_modified" SEQUENCE="false" COMMENT="Valid values:  modified, not_modified, updated, error.  To keep track of changes in the file.  Timemodified and timeshared are not reliable to validate. This status depends on the result from google drive."/>
-        <FIELD NAME="timeshared" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Value taken from the createdDate attribute from the Google API response"/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="group_grouping_json" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timeshared" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Value taken from the createdDate attribute from the Google API response"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -42,6 +42,7 @@
         <FIELD NAME="url" TYPE="char" LENGTH="250" NOTNULL="true" SEQUENCE="false" COMMENT="URL to the file shared"/>
         <FIELD NAME="update_status" TYPE="char" LENGTH="50" NOTNULL="false" DEFAULT="not_modified" SEQUENCE="false" COMMENT="From gdrive update."/>
         <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="groupingid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Grouping group ID"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
