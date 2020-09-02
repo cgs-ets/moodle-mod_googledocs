@@ -102,7 +102,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             foreach($types as $key => $type) {
                 $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
-               $doctype = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
+                $doctype = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
 
                if($update) {
                    $doctype->freeze();
@@ -216,6 +216,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         }
     }
+
 
     /**
      * Validates forms elements.

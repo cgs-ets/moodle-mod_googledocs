@@ -67,11 +67,11 @@ function google_filetypes() {
     return $types;
 }
 
-function get_doc_type_from_url($url) {
+function get_doc_type_from_string($str) {
 
-    if (strpos($url, 'document')) {
+    if (strpos($str, 'document')) {
         return 'document';
-    } else if (strpos($url, 'spreadsheets')) {
+    } else if (strpos($str, 'spreadsheets') || strpos($str, 'spreadsheet')) {
         return 'spreadsheets';
     } else {
         return 'presentation';
@@ -429,8 +429,10 @@ class googledrive {
 
         // Create the button HTML.
         $title = get_string('login', 'repository');
+
         $link = '<button class="btn-primary btn">'.$title.'</button>';
-        $jslink = 'window.open(\''.$url.'\', \''.$title.'\', \'width=600,height=300\'); return false;';
+        $jslink = 'window.open(\''.$url.'\', \''.$title.'\', \'width=600,height=600\'); return false;';
+
         $output = '<a href="#" onclick="'.$jslink.'">'.$link.'</a>';
 
         return $output;

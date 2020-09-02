@@ -98,7 +98,7 @@ class googledocs_rendering {
         if ($studentview) {
             $user = array_values($students);
             $extra = "onclick=\"this.target='_blank';\"";
-            $icon = $types[get_doc_type_from_url($user[0]->url)]['icon'];
+            $icon = $types[get_doc_type_from_string($user[0]->url)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
             print_string('clicktoopen', 'url', "<a href=\"{$user[0]->url}\"$extra><img class='link_icon' src='{$imgurl}'></a>");
 
@@ -137,7 +137,7 @@ class googledocs_rendering {
             ]);
 
             $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture'));
-            $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
+            $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
             $url = isset($student->url) ? $student->url : '#';
@@ -187,8 +187,9 @@ class googledocs_rendering {
         if ($this->created) { // We need the file's URL
             $groupsandmembers = $this->get_students_files_url($groupsandmembers);
         }
-
-        $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
+       // var_dump($this->googledocs); exit;
+        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+      //  var_dump($icon); exit;
         $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
@@ -249,7 +250,7 @@ class googledocs_rendering {
     private function render_table_by_grouping($types) {
         global $DB, $CFG, $OUTPUT;
 
-        $icon = $types[get_doc_type_from_url($this->googledocs->document_type)]['icon'];
+        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
         $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
@@ -281,7 +282,6 @@ class googledocs_rendering {
         }
 
         echo $OUTPUT->render_from_template('mod_googledocs/grouping_table', $data);
-        //print_object( $data); exit;
 
     }
 

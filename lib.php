@@ -129,6 +129,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             // Save new file in a COURSE Folder
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
             $folderid = $sharedlink[3];
+            $types = google_filetypes();
+            $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
 
         } else {

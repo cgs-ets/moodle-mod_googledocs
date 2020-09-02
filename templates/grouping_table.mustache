@@ -25,9 +25,36 @@
     Google docs grouping content template.
 
     Example context (json):
-
-     
-
+        {
+            "file_details": {
+            "owneremail": "vero.web.dev.practice@gmail.com",
+            "docid": "1XDq7MQPRuAN6Niaoli_yzsWPXepx4V4ukKDSXF6XN6s",
+            "instanceid": "37"
+            },
+            "groupings": [
+                            {
+                                "grouping_name": "Pares_Group",
+                                "grouping_id": "1",
+                                "fileicon": "<a target="_blank" id="shared_link_1" href="#"><img src="http://localhost/cgs/moodle/mod/googledocs/pix/spreadsheets.svg" class="link_icon" /></a>",
+                                "sharing_status": "<div id="file_grouping"></div>",
+                                "grouping_members": [
+                                                        {
+                                                            "groupid": "31",
+                                                            "group_name": "Group 2",
+                                                            "groupmembers": [
+                                                              {
+                                                                "picture": "<a href="http://localhost/cgs/moodle/user/view.php?id=28&amp;course=5"><img src="http://localhost/cgs/moodle/theme/image.php/boostcgs/core/1598839830/u/f2" class="userpicture defaultuserpic" width="35" height="35" alt="Picture of Jan Černý" title="Picture of Jan Černý" />Jan Černý</a>",
+                                                                "fullname": "Jan Černý",
+                                                                "status": "<div id="file_0"></div>",
+                                                                "student-id": "28",
+                                                                "student-email": "tool_generator_000013@example.com"
+                                                               }
+                                                            ]
+                                                        }
+                                                      ]
+                            }
+                           ]
+        }
 }}
 <div class="container-fluid table-container">
   {{#file_details}}
@@ -35,8 +62,8 @@
     data-owner-email = "{{owneremail}}" data-instance-id = "{{instanceid}}">
         <thead class="thead-light">
             <tr>
-                <th class="header ">Grouping</th>
-                <th class="header ">Groups</th>
+                <th class="header ">Grouping </th>
+                <th class="header ">Members</th>
             </tr>
         </thead>
 
@@ -86,8 +113,8 @@
                                     {{/grouping_members}}
                                 {{! Groups table finishes }}
                             </td>
-                        </tr> 
-          
+                        </tr>
+
                 </tbody>
             {{/groupings}}
     </table> {{ ! Grouping table finishes}}

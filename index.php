@@ -42,6 +42,7 @@ $event->add_record_snapshot('course', $course);
 $event->trigger();
 
 $strname = get_string('modulenameplural', 'mod_googledrive');
+
 $PAGE->set_url('/mod/googledrive/index.php', array('id' => $id));
 $PAGE->navbar->add($strname);
 $PAGE->set_title("$course->shortname: $strname");
@@ -91,7 +92,7 @@ foreach ($modinfo->instances['googledrive'] as $cm) {
                 $cm->get_formatted_name(), $class);
     $table->data[] = $row;
 }
-var_dump($table); exit;
+
 echo html_writer::table($table);
 
 echo $OUTPUT->footer();
