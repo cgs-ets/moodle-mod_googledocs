@@ -14,16 +14,18 @@ define(['jquery', 'core/ajax', 'core/log'], function($, Ajax, Log) {
     /**
      * Initializes the delete controls.
      */
-    function init(filesToDelete) {
+    function init(filesToDelete, dist_type) {
         Log.debug('mod_googledocs/delete_controls: initializing delete_controls of the mod_googledocs');
-        var control = new GoogledocsDeleteControl(filesToDelete);
+        
+        var control = new GoogledocsDeleteControl(filesToDelete, dist_type);
         control.main();
     }
 
     // Constructor
-    function GoogledocsDeleteControl (filesToDelete){
+    function GoogledocsDeleteControl (filesToDelete, dist_type){
         var self = this;
         self.filesToDelete = filesToDelete;
+        self.dist_type = dist_type;
     };
 
     GoogledocsDeleteControl.prototype.main = function() {
@@ -38,6 +40,7 @@ define(['jquery', 'core/ajax', 'core/log'], function($, Ajax, Log) {
          Ajax.call([{
             methodname: 'mod_googledocs_delete_files',
             args: {
+                dist_type: self.dist_type,
                 file_ids: self.filesToDelete
             },
             done: function (response) {

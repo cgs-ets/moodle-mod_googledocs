@@ -30,7 +30,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
     /**
      * Initializes the controls.
      */
-    function init(create, group_sharing, grouping_sharing) {
+    function init(create, group_sharing, grouping_sharing, dist_type) {
         Log.debug('mod_googledocs/control: initializing delete controls of the mod_googledocs');
 
         var parentfile_id;
@@ -44,13 +44,16 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
 
         var instance_id = $('table.overviewTable').attr('data-instance-id');
         var countCalls = 0;
-        var control = new GoogledocsControl(parentfile_id, create, group_sharing, instance_id, grouping_sharing, files_to_erase, countCalls);
-
+        
+        var control = new GoogledocsControl(parentfile_id, create, group_sharing, 
+        instance_id, grouping_sharing, files_to_erase, countCalls, dist_type);
+        
         control.main();
     }
 
     // Constructor.
-    function GoogledocsControl( parentfile_id, create, group_sharing, instance_id, grouping_sharing, files_to_erase, countCalls) {
+    function GoogledocsControl( parentfile_id, create, group_sharing, instance_id, 
+    grouping_sharing, files_to_erase, countCalls, dist_type) {
         var self = this;
         self.parentfile_id = parentfile_id;
         self.create = create;
@@ -59,6 +62,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
         self.grouping_sharing = grouping_sharing;
         self.files_to_erase = files_to_erase;
         self.countCalls = countCalls;
+        self.dist_type = dist_type;
 
     }
 
@@ -119,9 +123,10 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
             var file_to_delete = $('table.overviewTable').attr('data-googledoc-id');
             $('table.overviewTable').removeAttr('data-googledoc-id');
 
-            if (self.countCalls == totalCalls && file_to_delete != undefined && from_existing == 0){
+            if (self.countCalls == totalCalls && file_to_delete != undefined 
+                    && from_existing == 0 ){
                 self.files_to_erase.push(file_to_delete);
-                DeleteControl.init(JSON.stringify(self.files_to_erase));
+                DeleteControl.init(JSON.stringify(self.files_to_erase), self.dist_type);
                 self.countCalls = 0;
             }
             
