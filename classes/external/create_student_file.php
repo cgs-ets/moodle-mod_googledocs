@@ -97,8 +97,8 @@ trait create_student_file {
                 )
         );
 
-        if ($by_group) {
-            $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
+        if ($by_group || $by_grouping) {
+            $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
                             INNER JOIN mdl_googledocs_files AS gf
                             ON gd.id = gf.googledocid
                             WHERE gd.id = :instanceid AND gf.groupid = :group_id";
@@ -110,21 +110,8 @@ trait create_student_file {
             $data->google_doc_url = $data->url;
             $data->docid = $parentfile_id;
             $data->name = $data->groupfilename; //Get the name for the group's file.
+            $data->groupingid = $grouping_id;
 
-        }else if($by_grouping){
-             $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gd.*  FROM mdl_googledocs AS gd
-                            INNER JOIN mdl_googledocs_files AS gf
-                            ON gd.id = gf.googledocid
-                            WHERE gd.id = :instanceid AND gf.groupingid = :grouping_id";
-
-            $data = $DB->get_record_sql($filedata, ['instanceid'=> $instance_id, 'grouping_id' =>$grouping_id]);
-            // google_doc_url is the url of the original file
-            // when dist is by group a file for the group is created and that file is the one
-            //to share with the groups members.
-            $data->google_doc_url = $data->url;
-            $data->docid = $parentfile_id;
-            $data->groupid = $group_id;
-            $data->name = $data->groupfilename; //Get the name for the group's file.
         }else{
             $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
             $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
@@ -143,11 +130,14 @@ trait create_student_file {
 
         if ($data->distribution == 'std_copy') {
            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
+            $data->sharing = 1;
+            $DB->update_record('googledocs', $data);
         }else if ($data->distribution == 'dist_share_same'){
            $url = $gdrive->share_single_copy($student, $data, $role, $commenter);
         }else if ($data->distribution == 'group_copy' || $data->distribution == 'grouping_copy'){
            $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
         }
+
 
         return array(
             'url'=>$url

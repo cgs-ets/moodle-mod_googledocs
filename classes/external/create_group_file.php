@@ -52,8 +52,10 @@ trait create_group_file {
     public static  function create_group_file_parameters(){
         return new external_function_parameters(
             array(
-                  'group_name' => new external_value(PARAM_RAW, 'groupname'),
-                  'group_id' => new external_value(PARAM_RAW, 'group ID'),
+                  'group_name' => new external_value(PARAM_RAW, 'Group Name'),
+                  'group_id' => new external_value(PARAM_RAW, 'Group ID'),
+                  'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
+                  'instance_id' => new external_value(PARAM_RAW, 'Instance ID'),
                   'owner_email' =>  new external_value(PARAM_RAW, 'Owner of the file email'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
             )
@@ -70,7 +72,7 @@ trait create_group_file {
      * @param type $parentfile_id
      * @return type
      */
-    public static function create_group_file($group_name, $group_id, $owner_email, $parentfile_id) {
+    public static function create_group_file($group_name, $group_id, $grouping_id, $instance_id, $owner_email, $parentfile_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
@@ -81,13 +83,25 @@ trait create_group_file {
             array(
                   'group_name' => $group_name,
                   'group_id' => $group_id,
+                  'grouping_id' =>$grouping_id,
+                  'instance_id' => $instance_id,
                   'owner_email'=> $owner_email,
                   'parentfile_id' => $parentfile_id)
         );
 
-        $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
-        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
+        if($grouping_id > 0) {
+            $filedata = "SELECT gf.name as groupingfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
+                        INNER JOIN mdl_googledocs_files AS gf
+                        ON gd.id = gf.googledocid
+                        WHERE gd.id = :instance_id AND gf.groupingid = :grouping_id";
+            $data = $DB->get_record_sql($filedata, ['instance_id' => $instance_id,
+                                                    'grouping_id' => $grouping_id]);
 
+            $grouping_name = true;
+        }else{
+            $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
+            $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
+        }
 
 
         // Generate the group file
@@ -101,9 +115,9 @@ trait create_group_file {
         $group->isgroup = true;
         $fromexisting = $data->use_document == 'new' ? false : true;
 
-        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting);
+        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $grouping_name);
         $googledocid = $gdrive->get_file_id_from_url($url);
-
+        
         return array(
             'googledocid' => $googledocid,
             'url' => $url

@@ -431,7 +431,7 @@ class googledrive {
         $title = get_string('login', 'repository');
 
         $link = '<button class="btn-primary btn">'.$title.'</button>';
-        $jslink = 'window.open(\''.$url.'\', \''.$title.'\', \'width=600,height=600\'); return false;';
+        $jslink = 'window.open(\''.$url.'\', \''.$title.'\', \'width=600,height=800\'); return false;';
 
         $output = '<a href="#" onclick="'.$jslink.'">'.$link.'</a>';
 
@@ -730,7 +730,7 @@ class googledrive {
      */
     public function share_single_copy($student, $data, $role, $commenter) {
         global $DB;
-
+        //var_dump($data); exit;
         $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
 
         $d = new stdClass();
@@ -738,6 +738,7 @@ class googledrive {
         $d->googledocid = $data->id;
         $d->url = $data->google_doc_url;
         $d->name = $data->name;
+        $d->groupingid = $data->groupingid;
 
         $DB->insert_record('googledocs_files', $d);
 
@@ -749,11 +750,16 @@ class googledrive {
     }
 
     //Create a copy for the student called by the ws
-    public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false, $fromexisting = false){
+    public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false, $fromexisting = false, $groupingname = false){
         global $DB;
         $url = url_templates();
+        if ($groupingname) {
+            $docname = $fromexisting ? ($this->getFile($data->docid))->getTitle() : $data->groupingfilename;
+        }else{
+            $docname = $fromexisting ? ($this->getFile($data->docid))->getTitle() : $data->name;
 
-        $docname = $fromexisting ? ($this->getFile($data->docid))->getTitle() : $data->name;
+
+        }
         $copyname = $docname .'_'.$student->name;
         $copiedfile = new \Google_Service_Drive_DriveFile();
         $copiedfile->setTitle($copyname);
@@ -781,6 +787,7 @@ class googledrive {
             $studentfiledata->groupingid =  $student->id;
         }else{
             $studentfiledata->userid = $student->id;
+            
         }
 
         //Save in DB
@@ -798,16 +805,16 @@ class googledrive {
 
     // Each group gets a copy. function called by the WS.
     public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false ) {
-       // print_object($data); exit;
+
         $groupmembers = groups_get_members($data->groupid, $fields='u.id');
         $groupmembersids = array_column($groupmembers, 'id');
 
         if(in_array($student->id, $groupmembersids)){
-          // $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
-           //return $data->google_doc_url;
+
            return $this->share_single_copy($student, $data, $role, $commenter);
         }
     }
+
 
     /**
      * Update status in googledocs and  googledocs_work_task tables
@@ -824,6 +831,7 @@ class googledrive {
        $d = new StdClass();
        $d->creation_status = 1;
 
+
        if (!$id) {
         $d->id = $id;
         $DB->update_record('googledocs_work_task', $d);
@@ -835,11 +843,7 @@ class googledrive {
         $DB->insert_record (googledocs_work_task, $d);
        }
 
-
-       $gd = new StdClass();
-       $gd->id = $data->id;
-       $gd->sharing = 1;
-       $DB->update_record('googledocs', $gd);
+       //Update sharing status
 
     }
 
@@ -1325,14 +1329,14 @@ class googledrive {
     }
     /**
      * Delete file.
-     * The class curlio.php in google folder, doesnt have the DELETE option
+     * The class curlio.php in google folder, doesn't have the DELETE option
      * therefor $service->files->delete throws a coding exception.
      * That is why this function exists.
      * @param type $fileId
      * @return type
      * @throws Exception
      */
-    private function delete_file_request($fileId) {
+    public function delete_file_request($fileId) {
 
         try {
             $token = $this->refresh_token();
@@ -1440,6 +1444,44 @@ class googledrive {
         } catch (Exception $ex) {
             print($ex->getMessage());
         }
+    }
+
+    /**
+     * When distributing by group or grouping. The original file is deleted
+     * we need to update the url of the googledocs table in order to display
+     * have a valid link after.
+     * @global type $DB
+     * @param type $data
+     * @param type $url
+     */
+    public function update_shared_url($url, $instance_id){
+
+        global $DB;
+//        print_object($data);
+//        print_object($this->instanceid);
+
+     /*   $q = "SELECT gf.url FROM mdl_googledocs_files as gf
+             INNER JOIN mdl_googledocs as gd
+              ON gd.id = gf.googledocid
+             WHERE gd.id = :instanceid  and groupid = (SELECT  gg.groupid FROM mdl_groupings as g
+                                                        INNER JOIN mdl_groupings_groups as gg ON g.id = gg.groupingid
+                                                        WHERE g.id = :grouping_id
+                                                        LIMIT 1);";
+        $conditions =['instanceid' => $instance_id, 'grouping_id' => $data->groupingid];
+        $url =  $DB->get_records_sql($q, $conditions);*/
+
+        $params =['googledocid' => $this->instanceid, 'groupingid' => $data->groupingid];
+        $id =  $DB->get_field('googledocs_files', 'id', $params,  IGNORE_MISSING);
+
+        print_object($id); exit;
+
+        $gd = new StdClass();
+        foreach($url as $u) {
+            $gd->url = $u->url;
+        }
+        $gd->id = $id;
+
+        $DB->update_record('googledocs_files', $gd);
     }
 
     public function create_dummy_folders() {

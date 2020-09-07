@@ -73,7 +73,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-        //var_dump($mform->get_submitted_data()); exit;
+       // var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);

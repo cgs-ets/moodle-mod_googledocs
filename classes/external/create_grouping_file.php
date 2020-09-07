@@ -89,7 +89,7 @@ trait create_grouping_file {
         $grouping->type = 'user';
         $grouping->isgrouping = true;
         $fromexisting = $data->use_document == 'new' ? false : true;
-
+        
         $url= $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
         $googledocid = $gdrive->get_file_id_from_url($url);
 

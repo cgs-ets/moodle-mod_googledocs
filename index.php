@@ -93,6 +93,7 @@ foreach ($modinfo->instances['googledrive'] as $cm) {
     $table->data[] = $row;
 }
 
+
 echo html_writer::table($table);
 
 echo $OUTPUT->footer();

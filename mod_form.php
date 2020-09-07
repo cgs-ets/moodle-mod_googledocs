@@ -225,7 +225,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-
+       // var_dump($data); exit;
         if($data['use_document'] != 'new') {
             if(empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
@@ -238,21 +238,43 @@ class mod_googledocs_mod_form extends moodleform_mod {
             }
         }
 
-        // Group val.
-        if(isset($data['groups'])){
 
+        // Group val.
+        if($data['distribution'] == 'group_copy'){
+          $errors = $this->group_validation($data, $errors);
+        }
+        //Grouping val.
+        if($data['distribution'] == 'grouping_copy') {
+           $errors =  $this->grouping_validation($data, $errors);
+        }
+
+
+        return $errors;
+    }
+
+    private function grouping_validation($data, $errors) {
+
+       
+        if(isset($data['groupings']) && !empty ($data['groupings'])) {
+            if (in_array('0', $data['groupings']) && (count($data['groupings']) > 1) ) {
+              $errors['groupings'] = get_string('groupingsinvalid', 'googledocs');
+            }
+        }else{
+            $errors['groupings'] = get_string('groupingsinvalidselection', 'googledocs');
+        }
+
+        return $errors;
+
+    }
+
+    private function group_validation($data, $errors){
+
+        if(isset($data['groups']) && !empty($data['groups'])){
             if (in_array('0', $data['groups']) && (count($data['groups']) > 1) ) {
                 $errors['groups'] = get_string('groupsinvalid', 'googledocs');
             }
-
-        }
-          // Grouping val.
-        if(isset($data['groupings'])) {
-
-        if (in_array('0', $data['groupings']) && (count($data['groupings']) > 1) ) {
-            $errors['groupings'] = get_string('groupingsinvalid', 'googledocs');
-        }
-
+        }else{
+             $errors['groups'] = get_string('groupsinvalidselection', 'googledocs');
         }
 
         return $errors;
