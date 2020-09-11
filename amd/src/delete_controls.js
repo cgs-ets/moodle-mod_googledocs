@@ -16,7 +16,8 @@ define(['jquery', 'core/ajax', 'core/log'], function($, Ajax, Log) {
      */
     function init(filesToDelete, dist_type) {
         Log.debug('mod_googledocs/delete_controls: initializing delete_controls of the mod_googledocs');
-        
+        Log.debug(filesToDelete);
+         Log.debug(dist_type);
         var control = new GoogledocsDeleteControl(filesToDelete, dist_type);
         control.main();
     }
