@@ -84,18 +84,42 @@ trait create_grouping_file {
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
         $grouping = new \stdClass();
         $grouping->id = $grouping_id;
-        $grouping->name = $grouping_name;
+
         $grouping->email = $owner_email;
         $grouping->type = 'user';
         $grouping->isgrouping = true;
         $fromexisting = $data->use_document == 'new' ? false : true;
-        
-        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
-        $googledocid = $gdrive->get_file_id_from_url($url);
+
+        $q = "SELECT gg.groupid, g.name FROM mdl_groupings_groups  as gg "
+            . "INNER JOIN mdl_groups as g ON gg.groupid = g.id "
+            . "WHERE gg.groupingid = :grouping_id";
+
+        $groups = $DB->get_records_sql($q, ["grouping_id" => $grouping_id]);
+
+        //Create the copies for the groups in the grouping
+        $i = 0;
+        foreach($groups as $group){
+            $grouping->groupid = $group->groupid;
+            $grouping->name =  $group ->name;
+            $url = $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
+            $group_members = groups_get_members($group->groupid, "u.id, u.email");
+            $docid =  $gdrive->get_file_id_from_url($url);
+
+            $gdrive->make_file_copy_for_group_in_grouping($group_members, $docid, $role, $commenter, $fromexisting);
+            $urls[$i] = $url;
+
+            $i++;
+
+          }
+
+          //Files created andn shared. Time to update
+            $data->sharing = 1;
+            $DB->update_record('googledocs', $data);
 
         return array(
-            'googledocid' => $googledocid,
-            'url' => $url
+            'googledocid' => $parentfile_id , //parent file to delete
+            'urls' => json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK)
+
         );
     }
 
@@ -108,8 +132,8 @@ trait create_grouping_file {
     public static function create_grouping_file_returns(){
         return new external_single_structure(
                 array(
-                    'googledocid' => new external_value(PARAM_RAW,'file id'),
-                     'url' => new external_value(PARAM_RAW,'File URL '),
+                    'googledocid' => new external_value(PARAM_RAW,'file id to delete'),
+                    'urls' => new external_value(PARAM_RAW,'urls created for the groups')
                  )
       );
     }

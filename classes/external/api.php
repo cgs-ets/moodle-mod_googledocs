@@ -38,7 +38,9 @@ class api extends external_api {
     use create_student_file;
     use create_group_file;
     use create_grouping_file;
+    use create_group_folder_struct;
     use delete_files;
+
 
 
 }

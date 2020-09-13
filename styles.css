@@ -7,7 +7,7 @@
 
 /*Group and Grouping  elements*/
 select#id_groups  {
-    width: 22%;
+    width: 70%;
 }
 
 select#id_groupings  {
@@ -29,8 +29,8 @@ td.status-link-column {
 td.grouping_name_cell {
     display: table-cell;
     vertical-align: middle !important;
+    width: 20%;
 }
-   
 
 
 
@@ -77,16 +77,21 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
 .progress_bar.processing {
     display: inline-block;;
 }
+
+.spinner-border.color{
+    color:#3498db;
+}
+/*
 .progress_bar {
   width: 70px;
   max-width:80%;
   height: 15px;
   box-shadow: 0px 0px 4px #ffffffd1;
 /*  border-radius: 20px;*/
-  position: relative;
+/*  position: relative;
   overflow: hidden;
   display: none;
-}
+}*
 .progress_bar:before {
     content: '';
     width: 200%;
@@ -101,7 +106,7 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
     75% {left: -5%;}
     85% {left: -5%;}
     95% {left: 0;}
-}
+}*/
 .success {
     color: #fff;
     background-color: rgba(17,119,209,.75);

@@ -59,13 +59,11 @@ echo $OUTPUT->header();
 //echo $OUTPUT->render_from_template('mod_googledocs/group_grouping_table', $coursecontext);
 
 $created = ($googledocs->sharing == 1);
-$bygroup = ($googledocs->distribution == 'group_copy');
-$bygrouping = ($googledocs->distribution == 'grouping_copy');
 
-$t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created, $bygroup, $bygrouping);
+$t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created);
 $t->render_table();
 
 
-$PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $bygroup, $bygrouping));
+$PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.
 echo $OUTPUT->footer();

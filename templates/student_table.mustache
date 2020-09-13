@@ -57,6 +57,9 @@
             <tr>
                 <th class="checkbox-column"></th>
                 <th class ="table-student-columns">Full name</th>
+                 {{#show_group}}
+                  <th class ="table-student-columns">Group</th>
+                 {{/show_group}}
                 <th class ="table-student-columns">Links</th>
                 <th class ="table-student-columns">Status</th>
 
@@ -65,11 +68,16 @@
 
         <tbody  class = "table-striped">
             {{#students}}
-                <tr  data-student-id ="{{student-id}}" data-student-email="{{student-email}}" student-name="{{fullname}}">
-                    <td>{{{checkbox}}}</td>
+                <tr data-student-id ="{{student-id}}" data-student-email="{{student-email}}" student-name="{{fullname}}"
+                    student-group-id ="{{student-groupid}}">
+                    <td>{{{checkbox}}}</td> 
+                    
                     <td  class="fullname-column">{{{picture}}}</td>
+                     {{#show_group}}
+                        <td>{{groupname}}</td>
+                     {{/show_group}}
                     <td>{{{link}}}</td>
-                    <td>{{{status}}}</td
+                    <td>{{{status}}}</td>
                 </tr>
             {{/students}}
         </tbody>

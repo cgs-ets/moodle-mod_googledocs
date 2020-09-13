@@ -35,79 +35,66 @@ use external_single_structure;
 
 require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
-require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 /**
- * Trait implementing the external function mod_googledocs_delete_files
+ * This service creates group folders.
  */
-trait delete_files {
+trait create_group_folder_struct {
 
 
     /**
      * Returns description of method parameters
      * @return external_function_parameters
-
+     *
     */
 
-    public static  function delete_files_parameters(){
-         return new external_function_parameters(
-             array(
-                 'dist_type' => new external_value(PARAM_RAW, 'Distribution type'),
-                 'file_ids' => new external_value(PARAM_RAW, 'File ID'),
-                 )
-
+    public static  function create_group_folder_struct_parameters(){
+        return new external_function_parameters(
+            array( 'instance_id' => new external_value(PARAM_RAW, 'instance ID'))
         );
     }
 
-
-    public static function delete_files($dist_type, $file_ids) {
+ /**
+  * Create the folder for the group(s)
+  * @global type $COURSE
+  * @global type $DB
+  * @param int $instance_id
+  * @return array
+  */
+    public static function create_group_folder_struct($instance_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         //Parameters validation
-        self::validate_parameters(self::delete_files_parameters(),
-            array('dist_type' => $dist_type,
-                  'file_ids' => $file_ids)
+        self::validate_parameters(self::create_group_folder_struct_parameters(),
+            array( 'instance_id' => $instance_id)
         );
 
-        $file_ids = json_decode($file_ids);
+        $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
+        $data = $DB->get_record_sql($filedata, ['id'=> $instance_id]);
 
+        // Generate the student file
         $gdrive = new \googledrive($context->id, false, false, true);
-        $http_codes = [];
-
-        foreach($file_ids as $i=> $id) {
-
-            if($dist_type != "dist_share_same"){  //Only delete those files that are copies.
-                $http_codes[$i] = $gdrive->delete_file_request($id);
-            }
-            
-            // At this stage the files are being shared. Update the sharing status
-            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id]);
-            $d = new \stdClass();
-            $d->id = $id;
-            $d->sharing = 1;
-            $DB->update_record('googledocs', $d);
-        }
+        $ids = $gdrive->make_group_folder($data);
 
 
         return array(
-            'results' => json_encode($http_codes)
-
+            'group_folder_ids'=> json_encode($ids, JSON_UNESCAPED_UNICODE  | JSON_NUMERIC_CHECK)
         );
     }
 
     /**
-     * Describes the structure of the function return value.
-     * Returns the URL of the file for the grouping
+     * Returns the folders ids generate by google drive.
+     *
      * @return external_single_structure
      *
      */
-    public static function delete_files_returns(){
+    public static function create_group_folder_struct_returns(){
         return new external_single_structure(
                 array(
-                    'results' => new external_value(PARAM_RAW,'http code'),
+                    'group_folder_ids' => new external_value(PARAM_RAW,'folder and group id')
                  )
       );
     }

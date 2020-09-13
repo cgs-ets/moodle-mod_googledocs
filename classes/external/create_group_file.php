@@ -117,7 +117,7 @@ trait create_group_file {
 
         $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $grouping_name);
         $googledocid = $gdrive->get_file_id_from_url($url);
-        
+
         return array(
             'googledocid' => $googledocid,
             'url' => $url

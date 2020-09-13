@@ -39,14 +39,13 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 /**
  * Trait implementing the external function mod_googledocs_create_students_file
  * This service performs differently depending on the distribution
- * dist = std_copy: Create a file for each student in the course
- * dist = dist_share_same Creates one file and assign the permissions to all students
- * dist = group_copy: Creates a copy for each group, then assign permission to the group members.
- * dist = grouping_copy: Creates a copy for each groping, then makes a copy for each group inside the grouping
- *        finally, assign permissions to the groups members.
- * For the rest of the distribution there are other services created.
+ * dist = std_copy_group_copy. Each student from a given group gets its own copy
+ * dist = std_copy_grouping_copy.  Each student from a given grouping gets its own copy
+ * dist = dist_share_same_group_copy
+ * dist = dist_share_same_grouping_copy
+ *
  */
-trait create_student_file {
+trait create_student_in_group_file {
 
 
     /**
@@ -55,12 +54,9 @@ trait create_student_file {
      *
     */
 
-    public static  function create_student_file_parameters(){
+    public static  function create_student_in_group_file_parameters(){
         return new external_function_parameters(
-            array(
-                  'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID'),
-                  'group_id' => new external_value(PARAM_RAW, 'Group ID'),
-                  'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
+            array('group_id' => new external_value(PARAM_RAW, 'Group ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
                   'student_email' =>  new external_value(PARAM_RAW, 'student email'),
@@ -78,19 +74,17 @@ trait create_student_file {
      *         int $nav represents a nav direction, 0: Backward, 1: Forward.
      * @return a timetable for a user.$by_group, $by_grouping, $group_id, $grouping_id,
      */
-    public static function create_student_file($folder_group_id, $group_id, $grouping_id,
-                                               $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
+    public static function create_student_in_group_file($group_id, $instance_id, $parentfile_id, $student_email, $student_id,
+        $student_name) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         //Parameters validation
-        self::validate_parameters(self::create_student_file_parameters(),
+        self::validate_parameters(self::create_student_in_group_file_parameters(),
             array(
-                  'folder_group_id' => $folder_group_id,
                   'group_id' => $group_id,
-                  'grouping_id' => $grouping_id,
                   'instance_id' => $instance_id,
                   'parentfile_id' => $parentfile_id,
                   'student_email'=> $student_email,
@@ -102,23 +96,6 @@ trait create_student_file {
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
         $data = $DB->get_record_sql($filedata, ['id'=> $instance_id]);
 
-        if ($data->distribution == 'group_copy') {
-            $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
-                            INNER JOIN mdl_googledocs_files AS gf
-                            ON gd.id = gf.googledocid
-                            WHERE gd.id = :instanceid AND gf.groupid = :group_id";
-
-            $data = $DB->get_record_sql($filedata, ['instanceid'=> $instance_id, 'group_id' =>$group_id]);
-            // google_doc_url is the url of the original file
-            // when dist is by group a file for the group is created and that file is the one
-            //to share with the groups members.
-            $data->google_doc_url = $data->url;
-            $data->docid = $parentfile_id;
-            $data->name = $data->groupfilename; //Get the name for the group's file.
-            $data->groupingid = $grouping_id;
-
-        }
-
         // Generate the student file
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
@@ -129,35 +106,29 @@ trait create_student_file {
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
 
+
         switch ($data->distribution) {
-            case 'std_copy':
-                $url= $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role, $commenter, $fromexisting);
-                $data->sharing = 1;
-                $DB->update_record('googledocs', $data);
-                break;
-            case 'dist_share_same':
-                   $url = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
-                break;
-            case 'group_copy' :
-                  $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
-                break;
-            case 'std_copy_group_copy' :
-                $url  = $gdrive->make_file_copy($data, $folder_group_id, $student, $role, $commenter);
-                break;
+            case 'std_copy_group_copy':
 
-            default:
-                break;
+
+            break;
+
+            case 'std_copy_grouping_copy':
+
+
+            break;
+
+            case 'dist_share_same_group_copy':
+
+
+            break;
+
+            case 'dist_share_same_grouping_copy':
+
+
+            break;
+
         }
-      /*  if ($data->distribution == 'std_copy') {
-           $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
-            $data->sharing = 1;
-            $DB->update_record('googledocs', $data);
-        }else if ($data->distribution == 'dist_share_same'){
-           $url = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
-        }else if ($data->distribution == 'group_copy'){
-           $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
-        }*/
-
 
         return array(
             'url'=>$url
@@ -170,7 +141,7 @@ trait create_student_file {
      * @return external_single_structure
      *
      */
-    public static function create_student_file_returns(){
+    public static function create_student_in_group_file_returns(){
         return new external_single_structure(
                 array(
                     'url' => new external_value(PARAM_RAW,'File URL '),

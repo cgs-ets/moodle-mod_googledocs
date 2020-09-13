@@ -73,7 +73,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-       // var_dump($mform->get_submitted_data()); exit;
+        //var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
@@ -88,23 +88,19 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
 
-        $groups=[];
+        $group_grouping=[];
+        $dist = '';
 
         if(!empty(($mform->get_submitted_data())->groups)) {
-            $groups = prepare_group_json( ($mform->get_submitted_data())->groups, $googledocs->course);
+            list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
         }
 
-        $grouping = [];
-        if(!empty(($mform->get_submitted_data())->groupings)) {
-            $grouping = prepare_grouping_json(($mform->get_submitted_data())->groupings, $googledocs->course);
-        }
+        list($dist, $owncopy) = distribution_type($mform->get_submitted_data(), $dist);
 
-        //var_dump($grouping); exit;
 
-        if (!empty($groups) || !empty($grouping)){
 
-            $group_grouping = array_merge($groups, $grouping);
-            //var_dump($group_grouping); exit;
+        if (!empty($group_grouping)){
+
             $jsongroup = new stdClass();
             $jsongroup->c = $group_grouping;
 
@@ -118,11 +114,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
            throw new exception ('No Students provided. The file was not created');
         }
 
-        $owncopy = false;
-        $dist = ($mform->get_submitted_data())->distribution;
-        if ($dist == 'std_copy' || $dist == 'group_copy' || $dist =='grouping_copy') {
-            $owncopy = true;
-        }
 
         // Use existing doc.
         if (($mform->get_submitted_data())->use_document == 'existing') {
@@ -131,27 +122,24 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $folderid = $sharedlink[3];
             $types = google_filetypes();
             $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];
-            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid);
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
 
         } else {
             // Save new file in a new folder.
-            // $gdrive->create_dummy_folders();
             $folderid = $gdrive->get_file_id($googledocs->namedoc);
 
             if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->namedoc, $author);
             }
 
-            $sharedlink = $gdrive->create_file($googledocs->namedoc, $googledocs->document_type ,
-                $author, $students, $folderid);
-
-            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy);
+            $sharedlink = $gdrive->create_file($googledocs->namedoc, $googledocs->document_type , $author, $students, $folderid);
+            //var_dump($dist); exit;
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
 
             if($dist == 'std_copy') {
                 $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
             }
         }
-
 
         return $googledocs->id;
 

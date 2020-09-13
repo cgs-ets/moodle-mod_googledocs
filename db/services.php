@@ -56,11 +56,21 @@ $functions = [
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
 
-     'mod_googledocs_delete_files' => [
+    'mod_googledocs_delete_files' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
         'methodname' =>'delete_files', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for a grouping ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true    // Is this service available to 'internal' ajax calls.
+    ],
+
+    'mod_create_group_folder_struct' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' =>'create_group_folder_struct', // External function name.
+        'classpath' => '',
+        'description' => 'Create groups folders ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.

@@ -85,17 +85,22 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
-            $use_document = $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
+            $use_document = $mform->addGroup($radioarray, 'document_choice',
+                get_string('use_document', 'googledocs'), array(' '), false);
              $mform->setDefault('use_document', 'new');
             // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
-            $mform->addElement('text', 'namedoc', get_string('document_name', 'googledocs'), array('size' => '64'));
+            $name_doc = $mform->addElement('text', 'namedoc', get_string('document_name', 'googledocs'), array('size' => '64'));
+           // var_dump($use_document); exit;
             $mform->setType('namedoc', PARAM_TEXT);
             $mform->hideif('namedoc', 'use_document', 'eq', 'existing');
-            $mform->disabledIf('namedoc', 'use_document', 'eq', 'existing');
             $mform->addRule('namedoc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+           // $mform->addRule('namedoc', get_string('error'), 'required', 'client');
+            $mform->disabledIf('namedoc', 'use_document', 'eq', 'existing');
+
 
             if($update != 0) {
                 $use_document->freeze();
+                $name_doc->freeze();
             }
             $types = google_filetypes();
             $typesarray = array();
@@ -133,19 +138,12 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
-            if(!empty($course_groups) && !empty($course_grouping) ){
-                $distribution = array(
-                'std_copy' => get_string('dist_student_copy', 'googledocs'),
-                'group_copy' => get_string('dist_group_copy', 'googledocs'),
-                'grouping_copy' => get_string('dist_grouping_copy', 'googledocs'),
-                'group_grouping_copy' => get_string('dist_group_grouping_copy', 'googledocs'),
-                'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
-            }else if(!empty($course_groups)){
+            if(!empty($course_groups) || !empty($course_grouping) ){
                 $distribution = array(
                 'std_copy' => get_string('dist_student_copy', 'googledocs'),
                 'group_copy' => get_string('dist_group_copy', 'googledocs'),
                 'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
-            }else{
+            }else {
                 $distribution = array(
                 'std_copy' => get_string('dist_student_copy', 'googledocs'),
                 'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
@@ -153,68 +151,53 @@ class mod_googledocs_mod_form extends moodleform_mod {
             }
 
             $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'), $distribution);
-           // $mform->setDefault('distribution', 'std_copy');
+
 
             if($update != 0 ) {
                 $distselect->freeze();
             }
 
             // Groups
-            $groups = array('0' => 'All Groups');
+            $groups = array('0_group' => 'All Groups');
 
             foreach($course_groups as $g) {
                 // skip empty groups.
                 if(!groups_get_members($g->id, 'u.id')) {
                     continue;
                 }
-                 $groups[$g->id] = $g->name;
-            }
-
-            if(!empty($course_groups)){
-                $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
-                //$mform->setDefault('groups','0');
-                $selectgroups->setMultiple(true);
+                 $groups[$g->id.'_group'] = $g->name;
             }
 
             //Only display if the dist. selected is by group.
-            $mform->hideif('groups', 'distribution', 'eq', 'std_copy');
-            $mform->hideif('groups', 'distribution', 'eq', 'grouping_copy');
-            $mform->hideif('groups', 'distribution', 'eq', 'dist_share_same');
+          //  $mform->hideif('groups', 'distribution', 'eq', 'std_copy');
+          //  $mform->hideif('groups', 'distribution', 'eq', 'dist_share_same');
 
 
             // Grouping.
-            $grouping = array('0' => 'All Groupings');
+            if(!empty($course_grouping)){
+                $grouping = array(count($groups) .'_grouping' => 'All Groupings');
+                $groups['0_grouping'] = 'All Groupings';
+            }
 
             foreach($course_grouping as $g) {
                 // Only list those groupings with groups in it.
                 if(empty(groups_get_grouping_members($g->id))){
                     continue;
                 }
-                $grouping[$g->id] = $g->name;
+                 $groups[$g->id.'_grouping'] = $g->name;
             }
 
-            if(!empty($course_grouping)){
-                $selectgrouping = $mform->addElement('select', 'groupings', get_string('groupings', 'googledocs'), $grouping);
-                //$mform->setDefault('groupings', '0');
-                $selectgrouping->setMultiple(true);
-                //$selectgrouping->freeze();
+            if(!empty($course_groups)){
+                $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
+                $mform->setDefault('groups', '0_group');
+                $selectgroups->setMultiple(true);
             }
-
-            //Only display if the dist. selected is by grouping.
-            $mform->hideif('groupings', 'distribution', 'eq', 'std_copy');
-            $mform->hideif('groupings', 'distribution', 'eq', 'group_copy');
-            $mform->hideif('groupings', 'distribution', 'eq', 'dist_share_same');
-
-
 
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null,false);
-
-
-
-
         }
+
     }
 
 
@@ -254,7 +237,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
     private function grouping_validation($data, $errors) {
 
-       
+
         if(isset($data['groupings']) && !empty ($data['groupings'])) {
             if (in_array('0', $data['groupings']) && (count($data['groupings']) > 1) ) {
               $errors['groupings'] = get_string('groupingsinvalid', 'googledocs');
@@ -268,16 +251,27 @@ class mod_googledocs_mod_form extends moodleform_mod {
     }
 
     private function group_validation($data, $errors){
-
+       // var_dump(in_array('0_group', $data['groups'])); ; exit;
         if(isset($data['groups']) && !empty($data['groups'])){
-            if (in_array('0', $data['groups']) && (count($data['groups']) > 1) ) {
+            if (in_array('0_group', $data['groups'])
+                && in_array('0_grouping', $data['groups'])
+                && (count($data['groups']) > 2) ) {
                 $errors['groups'] = get_string('groupsinvalid', 'googledocs');
+            }else if(in_array('0_group', $data['groups'])
+                && !in_array('0_grouping', $data['groups'])
+                && (count($data['groups']) > 1)){
+                  $errors['groups'] = get_string('groupsinvalid', 'googledocs');
+            }else if(!in_array('0_group', $data['groups'])
+                && in_array('0_grouping', $data['groups'])
+                && (count($data['groups']) > 1)){
+                  $errors['groups'] = get_string('groupsinvalid', 'googledocs');
             }
         }else{
              $errors['groups'] = get_string('groupsinvalidselection', 'googledocs');
         }
 
         return $errors;
+       // exit;
     }
 
 
