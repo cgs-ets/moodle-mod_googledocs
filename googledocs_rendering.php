@@ -101,8 +101,6 @@ class googledocs_rendering {
         $this->render($types, $is_student);
 
 
-       // return  $this->coursestudents;
-
     }
 
     //Helper function
@@ -121,6 +119,7 @@ class googledocs_rendering {
         break;
 
         case 'std_copy_grouping_copy':
+            $this->render_work_in_progress();
 
         break;
 
@@ -128,10 +127,12 @@ class googledocs_rendering {
               $this->render_table_by_students($types, $hasgroup, $students);
         break;
 
-        case 'dist_share_same_group_copy':
+        case 'dist_share_same__group_copy':
+            $this->render_work_in_progress();
         break;
 
         case 'dist_share_same_grouping_copy':
+            $this->render_work_in_progress();
         break;
 
         case 'group_copy':
@@ -154,13 +155,17 @@ class googledocs_rendering {
         break;
 
         case 'group_grouping_copy':
-            //Combinacion
+           $this->render_work_in_progress();
         break;
 
         }
     }
 
 
+    private function render_work_in_progress(){
+        global $OUTPUT;
+        echo $OUTPUT->render_from_template('mod_googledocs/work_in_progress', '');
+    }
     private function render_files_for_students($types, $usergroups){
        global $CFG, $DB;
        $a =$usergroups[0]; // Has all the groups this user belongs to

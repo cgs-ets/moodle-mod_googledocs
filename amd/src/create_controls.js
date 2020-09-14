@@ -83,7 +83,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
                 if (!self.create) {
                     self.callStudentFileService(self.parentfile_id);
                 }
-            
+
                 break;
 
             case 'group_copy' :
@@ -434,17 +434,18 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
     *
     */
     GoogledocsControl.prototype.callGroupingGroupFileService = function(grouping_id, urls){
-
-        var links = JSON.parse(urls);
-        Log.debug(links.length);
-
+        var  self = this;
+        var  links = JSON.parse(urls);
+        
        $('tbody.grouping-groups td.groups').each(function(e){
           
             $(this).find('table').each(function(){
                 var t = $(this);
-
+                var group_id = t.attr('data-group-id');
                 var link = (t.find('#shared_link_' + grouping_id))[0];
-                $(link).attr("href","#");
+                var url = self.get_grouping_url(group_id, links);
+                      
+                $(link).attr("href",url);
 
             });
 
@@ -482,6 +483,18 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], fu
         }
 
     };
+
+     GoogledocsControl.prototype.get_grouping_url = function (group_id, urls) {
+         Log.debug("get_grouping_url");
+         Log.debug(group_id);
+         for(var i= 0; i< urls.length; i++) {
+             if(urls[i].group_id == group_id){
+                 return urls[i].url;
+                 break; 
+             }
+
+         }
+     }
 
 
     return {

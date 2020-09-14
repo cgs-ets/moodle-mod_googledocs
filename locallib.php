@@ -942,6 +942,12 @@ class googledrive {
             }
         }
 
+        // Remove empty groups.
+        foreach($group_id_name as $group => $g) {
+            if (!groups_get_members($g->id, 'u.id')) {
+                unset($group_id_name[$group]);
+            }
+        }
         //Remove duplicates
         $groups = array_map('json_encode', $group_id_name);
         $groups = array_unique($groups);

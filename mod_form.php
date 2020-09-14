@@ -168,11 +168,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
                  $groups[$g->id.'_group'] = $g->name;
             }
 
-            //Only display if the dist. selected is by group.
-          //  $mform->hideif('groups', 'distribution', 'eq', 'std_copy');
-          //  $mform->hideif('groups', 'distribution', 'eq', 'dist_share_same');
-
-
             // Grouping.
             if(!empty($course_grouping)){
                 $grouping = array(count($groups) .'_grouping' => 'All Groupings');

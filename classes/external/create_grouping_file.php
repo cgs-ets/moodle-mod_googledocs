@@ -97,8 +97,10 @@ trait create_grouping_file {
         $groups = $DB->get_records_sql($q, ["grouping_id" => $grouping_id]);
 
         //Create the copies for the groups in the grouping
-        $i = 0;
+
+        $groups_details = [];
         foreach($groups as $group){
+
             $grouping->groupid = $group->groupid;
             $grouping->name =  $group ->name;
             $url = $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
@@ -106,10 +108,10 @@ trait create_grouping_file {
             $docid =  $gdrive->get_file_id_from_url($url);
 
             $gdrive->make_file_copy_for_group_in_grouping($group_members, $docid, $role, $commenter, $fromexisting);
-            $urls[$i] = $url;
-
-            $i++;
-
+            $group_detail = new \stdClass();
+            $group_detail->group_id =  $group->groupid;
+            $group_detail->url = $url;
+            $groups_details[] = $group_detail;
           }
 
           //Files created andn shared. Time to update
@@ -118,7 +120,7 @@ trait create_grouping_file {
 
         return array(
             'googledocid' => $parentfile_id , //parent file to delete
-            'urls' => json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK)
+            'urls' => json_encode($groups_details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK)
 
         );
     }
