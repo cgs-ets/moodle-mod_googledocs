@@ -106,16 +106,24 @@ class googledocs_rendering {
     //Helper function
     private function render($types, $is_student) {
         global $USER;
-       list($hasgroup, $students) = $this->query_db();
+        list($hasgroup, $students) = $this->query_db();
         $usergroups =  groups_get_user_groups($this->courseid, $USER->id);
+
       switch ($this->googledocs->distribution) {
         case 'std_copy':
-            $this->render_table_by_students($types,  $students);
+            if ($this->created && $is_student) {
+                 $this->render_work_in_progress();
+            }else{
+                $this->render_table_by_students($types,  $students);
+            }
         break;
 
         case 'std_copy_group_copy':
-
-            $this->render_table_by_students($types,  $students, $this->googledocs->distribution);
+            if ($this->created && $is_student) {
+               $this->render_work_in_progress();
+            }else{
+               $this->render_table_by_students($types,  $students, $this->googledocs->distribution);
+            }
         break;
 
         case 'std_copy_grouping_copy':
@@ -124,7 +132,11 @@ class googledocs_rendering {
         break;
 
         case 'dist_share_same':
+             if ($this->created && $is_student) {
+                $this->render_work_in_progress();
+            }else{
               $this->render_table_by_students($types, $hasgroup, $students);
+            }
         break;
 
         case 'dist_share_same__group_copy':
@@ -136,9 +148,9 @@ class googledocs_rendering {
         break;
 
         case 'group_copy':
-
+           
             if ($this->created && $is_student) {
-               $this->render_files_for_students($types, $usergroups);
+              $this->render_work_in_progress();
             }else{
                 $this->render_table_by_group($types);
             }
@@ -166,7 +178,7 @@ class googledocs_rendering {
         global $OUTPUT;
         echo $OUTPUT->render_from_template('mod_googledocs/work_in_progress', '');
     }
-    private function render_files_for_students($types, $usergroups){
+    private function render_files_for_students($types, $usergroups = null){
        global $CFG, $DB;
        $a =$usergroups[0]; // Has all the groups this user belongs to
 
@@ -375,12 +387,12 @@ class googledocs_rendering {
         global $DB, $USER;
         $picturefields = user_picture::fields('u');
         $countgroups = $this->get_course_group_number($this->courseid);
-       // $student = false;
+
 
         if (has_capability('mod/googledocs:view', $this->context) &&
             is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
-            && !has_capability('mod/googledocs:viewall', $this->context)) {
-          //  $student = true;
+            && !has_capability('mod/googledocs:viewall', $this->context) && $this->googledocs->distribution = 'std_copy') {
+
             list($rawdata, $params) = $this->query_student_file_view($picturefields);
 
         }else {
@@ -572,6 +584,7 @@ class googledocs_rendering {
     private function queries_get_students_list_created($picturefields){
         global $DB;
         $countgroups = $this->get_course_group_number($this->courseid);
+        var_dump($countgroups); exit;
         $j = json_decode($this->googledocs->group_grouping_json);
         if ($countgroups > 0 || !(empty($j->c))) {
             $rawdata = "SELECT  DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.url, gd.name, gm.groupid,
