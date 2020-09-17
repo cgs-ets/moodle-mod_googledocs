@@ -97,8 +97,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         list($dist, $owncopy) = distribution_type($mform->get_submitted_data(), $dist);
 
-
-
         if (!empty($group_grouping)){
 
             $jsongroup = new stdClass();
@@ -128,9 +126,9 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             // Save new file in a new folder.
             $folderid = $gdrive->get_file_id($googledocs->namedoc);
 
-            if ($folderid == null) {
+           // if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->namedoc, $author);
-            }
+            //}
 
             $sharedlink = $gdrive->create_file($googledocs->namedoc, $googledocs->document_type , $author, $students, $folderid);
             //var_dump($dist); exit;
@@ -242,6 +240,7 @@ function googledocs_delete_instance($id) {
     $DB->delete_records('googledocs', array('id' => $googledocs->id));
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
+    $DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
     //googledocs_grade_item_delete($googledocs);
     return true;
 }

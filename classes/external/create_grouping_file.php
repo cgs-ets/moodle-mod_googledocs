@@ -114,7 +114,7 @@ trait create_grouping_file {
             $groups_details[] = $group_detail;
           }
 
-          //Files created andn shared. Time to update
+          //Files created and shared. Time to update
             $data->sharing = 1;
             $DB->update_record('googledocs', $data);
 

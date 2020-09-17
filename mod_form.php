@@ -90,7 +90,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
              $mform->setDefault('use_document', 'new');
             // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
             $name_doc = $mform->addElement('text', 'namedoc', get_string('document_name', 'googledocs'), array('size' => '64'));
-           // var_dump($use_document); exit;
+
             $mform->setType('namedoc', PARAM_TEXT);
             $mform->hideif('namedoc', 'use_document', 'eq', 'existing');
             $mform->addRule('namedoc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
@@ -138,7 +138,30 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
-            if(!empty($course_groups) || !empty($course_grouping) ){
+            // Groups
+            if(!empty($course_groups)) {
+                $groups = array('0_group' => 'All Groups');
+
+            }
+
+            $count_empty = 0;
+            foreach($course_groups as $g) {
+                // skip empty groups.
+                if(!groups_get_members($g->id, 'u.id')) {
+                   $count_empty++;
+                    continue;
+                }
+
+                $groups[$g->id.'_group'] = $g->name;
+            }
+
+            $not_show = false;
+
+            if($count_empty == count($course_groups)) {
+                $not_show = true;
+            }
+
+            if( (!empty($course_groups) || !empty($course_grouping)) && !$not_show){
                 $distribution = array(
                 'std_copy' => get_string('dist_student_copy', 'googledocs'),
                 'group_copy' => get_string('dist_group_copy', 'googledocs'),
@@ -157,16 +180,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $distselect->freeze();
             }
 
-            // Groups
-            $groups = array('0_group' => 'All Groups');
-
-            foreach($course_groups as $g) {
-                // skip empty groups.
-                if(!groups_get_members($g->id, 'u.id')) {
-                    continue;
-                }
-                 $groups[$g->id.'_group'] = $g->name;
-            }
 
             // Grouping.
             if(!empty($course_grouping)){
@@ -182,7 +195,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                  $groups[$g->id.'_grouping'] = $g->name;
             }
 
-            if(!empty($course_groups)){
+            if(!empty($course_groups) && !$not_show){
                 $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
                 $mform->setDefault('groups', '0_group');
                 $selectgroups->setMultiple(true);
@@ -266,7 +279,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
         }
 
         return $errors;
-       // exit;
+
     }
 
 

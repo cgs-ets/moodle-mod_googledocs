@@ -58,7 +58,7 @@ trait create_student_file {
     public static  function create_student_file_parameters(){
         return new external_function_parameters(
             array(
-                  'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID'),
+                  'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID', PARAM_DEFAULT, 0),
                   'group_id' => new external_value(PARAM_RAW, 'Group ID'),
                   'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
@@ -128,39 +128,45 @@ trait create_student_file {
         $student->email = $student_email;
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
-
+        // var_dump($data); exit;
         switch ($data->distribution) {
             case 'std_copy':
-                $url= $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role, $commenter, $fromexisting);
+                $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role, $commenter, $fromexisting);
                 $data->sharing = 1;
                 $DB->update_record('googledocs', $data);
                 break;
             case 'dist_share_same':
-                   $url = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
+                $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
                 break;
             case 'group_copy' :
-                  $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
+                $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
                 break;
             case 'std_copy_group_copy' :
-                $url  = $gdrive->make_file_copy($data, $folder_group_id, $student, $role, $commenter);
+                $groups = $gdrive->get_groups_details($data);
+                $group_ids = [];
+
+                foreach($groups as $g) {
+                    $group_ids [] = $g->id;
+                }
+                $folder_group_ids = get_folder_id_reference($student->id, $data->course, $data->id);
+                foreach($folder_group_ids as $folder ){
+
+                    if(!in_array($folder->group_id, $group_ids)){
+                        continue;
+                    }
+                    $url [] = $gdrive->make_file_copy($data, $folder->folder_id, $student, $role,
+                        $commenter, $fromexisting, $folder->group_id );
+                }
                 break;
 
             default:
                 break;
         }
-      /*  if ($data->distribution == 'std_copy') {
-           $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
-            $data->sharing = 1;
-            $DB->update_record('googledocs', $data);
-        }else if ($data->distribution == 'dist_share_same'){
-           $url = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
-        }else if ($data->distribution == 'group_copy'){
-           $url = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
-        }*/
+
 
 
         return array(
-            'url'=>$url
+            'url'=> json_encode($url, JSON_UNESCAPED_UNICODE  | JSON_NUMERIC_CHECK)
         );
     }
 
