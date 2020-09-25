@@ -52,7 +52,7 @@ trait create_group_file {
     public static  function create_group_file_parameters(){
         return new external_function_parameters(
             array(
-                  'group_name' => new external_value(PARAM_RAW, 'Group Name'),
+                  'group_name' => new external_value(PARAM_RAW, 'Group Name', PARAM_DEFAULT, ''),
                   'group_id' => new external_value(PARAM_RAW, 'Group ID'),
                   'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'Instance ID'),
@@ -97,8 +97,8 @@ trait create_group_file {
             $data = $DB->get_record_sql($filedata, ['instance_id' => $instance_id,
                                                     'grouping_id' => $grouping_id]);
 
-            $grouping_name = true;
         }else{
+
             $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
             $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
         }
@@ -107,16 +107,50 @@ trait create_group_file {
         // Generate the group file
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
-        $group = new \stdClass();
-        $group->id = $group_id;
-        $group->name = $group_name;
-        $group->email = $owner_email;
-        $group->type = 'user';
-        $group->isgroup = true;
-        $fromexisting = $data->use_document == 'new' ? false : true;
 
-        $url= $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $grouping_name);
-        $googledocid = $gdrive->get_file_id_from_url($url);
+        $group = new \stdClass();
+
+        if($data->distribution == 'dist_share_same_group_copy'
+            || $data->distribution == 'dist_share_same_grouping_copy'
+            || $data->distribution == 'dist_share_same_group_grouping_copy') {
+            $group_ids =  explode("-", $group_id); // Get the  group ids to iterate.
+            $urls = [];
+            foreach($group_ids as $id) {
+                $group->id = $id;
+                //$group->name = $data->name;
+                $group->email = $owner_email;
+                $group->type = 'user';
+                $group->isgroup = true;
+                $fromexisting = $data->use_document == 'new' ? false : true;
+
+                $result = new \stdClass();
+                $result->group_id = $id;
+
+                 $sql = "SELECT folder_id FROM mdl_googledocs_folders
+                         WHERE group_id  = :id AND googledocid = :instanceid";
+
+                $folder = $DB->get_record_sql($sql, ['id' => $id, 'instanceid' => $data->id]);
+
+                $result->url = $gdrive->make_file_copy($data, $folder->folder_id, $group,
+                                        $role, $commenter, $fromexisting, $id);
+                $urls [] = $result;
+
+            }
+            $url = json_encode($urls, JSON_UNESCAPED_UNICODE  | JSON_NUMERIC_CHECK);
+
+        }else{
+
+            $group->id = $group_id;
+            $group->name = $group_name;
+            $group->email = $owner_email;
+            $group->type = 'user';
+            $group->isgroup = true;
+            $fromexisting = $data->use_document == 'new' ? false : true;
+
+            $url = $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $group_id);
+            $googledocid = $gdrive->get_file_id_from_url($url);
+
+        }
 
         return array(
             'googledocid' => $googledocid,

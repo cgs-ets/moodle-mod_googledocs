@@ -39,6 +39,7 @@ $id = required_param('id', PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
 $googledocs = $DB->get_record('googledocs', array('id'=> $cm->instance), '*', MUST_EXIST);
+//var_dump($googledocs); exit;
 $coursecontext = context_course::instance($course->id);
 $PAGE->set_context($coursecontext); //Every page needs a context.
 

@@ -124,7 +124,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         } else {
             // Save new file in a new folder.
-            $folderid = $gdrive->get_file_id($googledocs->namedoc);
+            //$folderid = $gdrive->get_file_id($googledocs->namedoc);
 
            // if ($folderid == null) {
                 $folderid = $gdrive->create_folder($googledocs->namedoc, $author);

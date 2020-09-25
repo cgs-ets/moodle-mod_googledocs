@@ -102,7 +102,7 @@ trait create_student_file {
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
         $data = $DB->get_record_sql($filedata, ['id'=> $instance_id]);
 
-        if ($data->distribution == 'group_copy') {
+        if ($data->distribution == 'group_copy' || $data->distribution == 'group_grouping_copy') {
             $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
                             INNER JOIN mdl_googledocs_files AS gf
                             ON gd.id = gf.googledocid
@@ -128,7 +128,7 @@ trait create_student_file {
         $student->email = $student_email;
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
-        // var_dump($data); exit;
+
         switch ($data->distribution) {
             case 'std_copy':
                 $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role, $commenter, $fromexisting);
@@ -142,21 +142,16 @@ trait create_student_file {
                 $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
                 break;
             case 'std_copy_group_copy' :
-                $groups = $gdrive->get_groups_details($data);
-                $group_ids = [];
-
-                foreach($groups as $g) {
-                    $group_ids [] = $g->id;
-                }
-                $folder_group_ids = get_folder_id_reference($student->id, $data->course, $data->id);
-                foreach($folder_group_ids as $folder ){
-
-                    if(!in_array($folder->group_id, $group_ids)){
-                        continue;
-                    }
-                    $url [] = $gdrive->make_file_copy($data, $folder->folder_id, $student, $role,
-                        $commenter, $fromexisting, $folder->group_id );
-                }
+                 $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
+                break;
+            case 'std_copy_grouping_copy':
+                $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
+                break;
+            case 'std_copy_group_grouping_copy':
+                $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
+                break;
+            case 'group_grouping_copy':
+                 $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
                 break;
 
             default:

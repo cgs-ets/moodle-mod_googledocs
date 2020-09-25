@@ -162,7 +162,12 @@ function get_group_grouping_members_ids($conditionsjson){
     $j = json_decode($conditionsjson);
 
     $groupmembers = array();
+    $groups = get_groups_details_from_json($j);
+    foreach($groups as $group) {
 
+       $groupmembers = array_merge($groupmembers, groups_get_members($group->id, $fields='u.id'));
+    }
+    /*
     foreach($j->c as $c =>$condition) {
         if ($condition->type == 'group'){
             $groupmembers = array_merge($groupmembers, groups_get_members($condition->id, $fields='u.id'));
@@ -171,26 +176,11 @@ function get_group_grouping_members_ids($conditionsjson){
         if ($condition->type == 'grouping') {
             $groupmembers = array_merge($groupmembers, groups_get_grouping_members($condition->id, $fields='u.id'));
         }
-    }
+    }*/
     $groupmembers = array_column($groupmembers, 'id');
 
     return $groupmembers;
 }
-
-function get_group_ids_from_json($conditionsjson) {
-
-    $j = json_decode($conditionsjson);
-    $ids = [];
-    foreach($j->c as $c ) {
-        if($c->type == 'group') {
-            $ids[] = $c->id;
-        }else{
-
-        }
-    }
-
-}
-
 
 /**
  * Generate an array with stdClass object that has the format
@@ -270,11 +260,11 @@ function distribution_type($data_submmited, $dist) {
 
 
     if(!empty($data_submmited->groups) && $dist != '' && $data_submmited->distribution == 'std_copy'){
-        return  array('std_copy'.'_'.$dist, true);
+        return  array('std_copy_'.$dist, true);
     }
 
     if(!empty($data_submmited->groups) &&  $dist != '' && $data_submmited->distribution == 'dist_share_same'){
-        return  array('dist_share_same_' .'_'.$dist, false);
+        return  array('dist_share_same_'.$dist, false);
     }
 
     if ($dist == '' &&  $data_submmited->distribution == 'std_copy' )  {
@@ -327,7 +317,55 @@ function get_folder_id_reference($userid, $courseid, $instanceid) {
 
     return $r;
 }
+/**
+     * Filter the group grouping data to just groups without duplicates
+     * @global type $DB
+     * @param type $data
+     * @return type
+     */
+function get_groups_details_from_json($data) {
+        global $DB;
+      //Get the Groups names
+        $group_id_name = [];
 
+        foreach($data->c as $c) {
+
+        if ($c->type == 'group'){
+            $g = new stdClass();
+            $g->id = $c->id;
+            $g->name = groups_get_group_name($c->id);
+            $group_id_name[] = $g;
+
+        }else{
+
+            $sql = "SELECT  g.id, g.name FROM mdl_groupings_groups as gg
+                     INNER JOIN mdl_groups as g
+                     ON gg.groupid = g.id
+                     WHERE groupingid = :grouping_id";
+
+            $groups  =  $DB->get_records_sql($sql, ["grouping_id" => $c->id]);
+
+            foreach ($groups as $group) {
+                $group_id_name[] = $group;
+
+            }
+        }
+    }
+
+    // Remove empty groups.
+    foreach($group_id_name as $group => $g) {
+        if (!groups_get_members($g->id, 'u.id')) {
+            unset($group_id_name[$group]);
+        }
+    }
+    //Remove duplicates
+    $groups = array_map('json_encode', $group_id_name);
+    $groups = array_unique($groups);
+    $groups = array_map('json_decode', $groups);
+
+
+    return $groups;
+}
 /**
  * Google Docs Plugin
  *
@@ -847,7 +885,8 @@ class googledrive {
     }
 
     //Create a copy for the student called by the ws
-    public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false, $fromexisting = false, $groupid = 0){
+    public function make_file_copy($data, $parentdirid, $student, $permission, $commenter = false,
+        $fromexisting = false, $groupid = 0){
         global $DB;
         $url = url_templates();
 
@@ -857,7 +896,13 @@ class googledrive {
         $copiedfile = new \Google_Service_Drive_DriveFile();
         $copiedfile->setTitle($copyname);
 
-        if($fromexisting || $data->distribution == 'std_copy_group_copy') {
+        if($fromexisting || $data->distribution == 'std_copy_group_copy'
+            ||  $data->distribution == 'dist_share_same_group_copy'
+            ||  $data->distribution == 'dist_share_same_grouping_copy'
+            ||  $data->distribution == 'dist_share_same_group_grouping_copy'
+            ||  $data->distribution == 'std_copy_grouping_copy'
+            ||  $data->distribution == 'std_copy_group_grouping_copy' ) {
+
             $parent = new Google_Service_Drive_ParentReference();
             $parent->setId($parentdirid);
             $copiedfile->setParents(array($parent));
@@ -876,31 +921,53 @@ class googledrive {
 
         switch ($data->distribution) {
             case 'group_copy':
-                 $studentfiledata->groupid =  $student->id;
+                    $studentfiledata->groupid =  $student->id;
                 break;
             case 'grouping_copy':
-                $studentfiledata->groupingid =  $student->id;
-                $studentfiledata->groupid = $student->groupid;
+                    $studentfiledata->groupingid =  $student->id;
+                    $studentfiledata->groupid = $student->groupid;
                 break;
             case 'std_copy_group_copy' :
-                $studentfiledata->userid = $student->id;
-                $studentfiledata->groupid = $groupid;
-                break;
+                    $studentfiledata->userid = $student->id;
+                    $studentfiledata->groupid = $groupid;
+                    break;
             case 'std_copy' :
-                 $studentfiledata->userid = $student->id;
+                    $studentfiledata->userid = $student->id;
                 break;
+            case 'dist_share_same_group_copy' :
+                    $studentfiledata->groupid = $groupid;
+                    $group_members = groups_get_members($groupid, "u.id, u.email");
+                    //Give access to the students in the group.
+                    $this->permission_for_members_in_groups($group_members, $copyid->id, $permission, $commenter);
+                break;
+            case  'dist_share_same_grouping_copy':
+                    $studentfiledata->groupid = $groupid;
+                    $group_members = groups_get_members($groupid, "u.id, u.email");
+                    //Give access to the students in the group.
+                    $this->permission_for_members_in_groups($group_members, $copyid->id, $permission, $commenter);
+                break;
+            case 'std_copy_grouping_copy':
+                    $studentfiledata->userid = $student->id;
+                    $studentfiledata->groupid = $groupid;
+                break;
+            case 'std_copy_group_grouping_copy' :
+                    $studentfiledata->userid = $student->id;
+                    $studentfiledata->groupid = $groupid;
+                break;
+            case 'group_grouping_copy':
+                    $studentfiledata->groupid =  $student->id;
+                break;
+            case 'dist_share_same_group_grouping_copy' :
+                    $studentfiledata->groupid = $groupid;
+                    $group_members = groups_get_members($groupid, "u.id, u.email");
+                    //Give access to the students in the group.
+                    $this->permission_for_members_in_groups($group_members, $copyid->id, $permission, $commenter);
+                break;
+
             default:
                 break;
         }
 
-        /*if ($data->distribution == 'group_copy'){
-            $studentfiledata->groupid =  $student->id;
-        }else if($data->distribution == 'grouping_copy'){
-            $studentfiledata->groupingid =  $student->id;
-            $studentfiledata->groupid =$student->groupid;
-        }else{
-            $studentfiledata->userid = $student->id;
-        } */
 
         //Save in DB
         $DB->insert_record('googledocs_files', $studentfiledata);
@@ -915,6 +982,27 @@ class googledrive {
        return $link;
     }
 
+    //Distribution = std_copy_grouping_copy or std_copy_group_copy. Called by WS
+    public function std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive) {
+        $groups = get_groups_details_from_json(json_decode($data->group_grouping_json));
+        $group_ids = [];
+        $url;
+
+        foreach($groups as $g) {
+            $group_ids [] = $g->id;
+        }
+        $folder_group_ids = get_folder_id_reference($student->id, $data->course, $data->id);
+
+        foreach($folder_group_ids as $folder ){
+            if(!in_array($folder->group_id, $group_ids)){
+                continue;
+            }
+            $url [] = $gdrive->make_file_copy($data, $folder->folder_id, $student, $role,
+                $commenter, $fromexisting, $folder->group_id );
+            }
+        return $url;
+    }
+
     // Each group gets a copy. function called by the WS.
     public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false ) {
 
@@ -925,9 +1013,16 @@ class googledrive {
            return $this->share_single_copy($student, $data, $role, $commenter);
         }
     }
-    //Each grouping gets a copy dist. At this stage the file for the group in the grouping was created
-    //This function gives permission (access) to the student
-    public function make_file_copy_for_group_in_grouping($group_members, $docid, $role, $commenter = false,
+
+    /**
+     * Give permission to group members to access (aka permission) file.
+     * @param type $group_members
+     * @param type $docid
+     * @param type $role
+     * @param type $commenter
+     * @param type $fromexisting
+     */
+    public function permission_for_members_in_groups($group_members, $docid, $role, $commenter = false,
         $fromexisting = false) {
 
         foreach($group_members as $member) {
@@ -964,7 +1059,7 @@ class googledrive {
      */
     public function make_group_folder ($data){
         global $DB;
-        $groups = $this->get_groups_details($data);
+        $groups = get_groups_details_from_json(json_decode($data->group_grouping_json));
         $parentRef = new Google_Service_Drive_ParentReference();
         $parentRef->setId($data->parentfolderid);
         $ids = [];
@@ -980,58 +1075,6 @@ class googledrive {
         return $ids;
 
     }
-
-    /**
-     * Filter the group grouping data to just groups without duplicates
-     * @global type $DB
-     * @param type $data
-     * @return type
-     */
-    public function get_groups_details($data) {
-        global $DB;
-      //Get the Groups names
-        $j = json_decode($data->group_grouping_json);
-        $group_id_name = [];
-
-        foreach($j->c as $c) {
-
-            if ($c->type == 'group'){
-                $g = new stdClass();
-                $g->id = $c->id;
-                $g->name = groups_get_group_name($c->id);
-                $group_id_name[] = $g;
-
-            }else{
-
-                $sql = "SELECT  g.id, g.name FROM mdl_groupings_groups as gg
-                        INNER JOIN mdl_groups as g
-                        ON gg.groupid = g.id
-                        WHERE groupingid = :grouping_id";
-
-                $groups  =  $DB->get_records_sql($sql, ["grouping_id" => $c->id]);
-
-                foreach ($groups as $group) {
-                    $group_id_name[] = $group;
-
-                }
-            }
-        }
-
-        // Remove empty groups.
-        foreach($group_id_name as $group => $g) {
-            if (!groups_get_members($g->id, 'u.id')) {
-                unset($group_id_name[$group]);
-            }
-        }
-        //Remove duplicates
-        $groups = array_map('json_encode', $group_id_name);
-        $groups = array_unique($groups);
-        $groups = array_map('json_decode', $groups);
-
-
-        return $groups;
-    }
-
 
     /**
      * Update status in googledocs and  googledocs_work_task tables
@@ -1572,7 +1615,7 @@ class googledrive {
             curl_exec($ch);
 
             $r = (curl_getinfo($ch))['http_code'] === 204;
-
+           // $r = curl_getinfo($ch);
         } catch (Exception $ex) {
                 print ($ex->getMessage());
         } finally {

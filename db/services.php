@@ -66,6 +66,16 @@ $functions = [
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
 
+     'mod_googledocs_update_sharing' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' =>'update_sharing', // External function name.
+        'classpath' => '',
+        'description' => 'Update sharing status ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true    // Is this service available to 'internal' ajax calls.
+    ],
+
     'mod_create_group_folder_struct' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
         'methodname' =>'create_group_folder_struct', // External function name.

@@ -81,32 +81,7 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
 .spinner-border.color{
     color:#3498db;
 }
-/*
-.progress_bar {
-  width: 70px;
-  max-width:80%;
-  height: 15px;
-  box-shadow: 0px 0px 4px #ffffffd1;
-/*  border-radius: 20px;*/
-/*  position: relative;
-  overflow: hidden;
-  display: none;
-}*
-.progress_bar:before {
-    content: '';
-    width: 200%;
-    height: 100%;
-    position: absolute;
-    animation: progress-anime 10s ease-out infinite;
-    background: linear-gradient(to right,#79a7c1 0%,#60a9d9 50%,#d2d2d2 50%,#d2d2d2 100%);
-}
 
-@keyframes progress-anime {
-    0% {left: -100%;}
-    75% {left: -5%;}
-    85% {left: -5%;}
-    95% {left: 0;}
-}*/
 .success {
     color: #fff;
     background-color: rgba(17,119,209,.75);

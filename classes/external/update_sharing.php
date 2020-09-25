@@ -38,9 +38,9 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 /**
- * Trait implementing the external function mod_googledocs_delete_files
+ * Trait implementing the external function mod_googledocs_update_sharing
  */
-trait delete_files {
+trait update_sharing {
 
 
     /**
@@ -49,51 +49,41 @@ trait delete_files {
 
     */
 
-    public static  function delete_files_parameters(){
+    public static  function update_sharing_parameters(){
          return new external_function_parameters(
              array(
-                 'dist_type' => new external_value(PARAM_RAW, 'Distribution type'),
-                 'file_ids' => new external_value(PARAM_RAW, 'File ID'),
+                   'file_ids' => new external_value(PARAM_RAW, 'File ID'),
                  )
 
         );
     }
 
 
-    public static function delete_files($dist_type, $file_ids) {
+    public static function update_sharing($file_ids) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         //Parameters validation
-        self::validate_parameters(self::delete_files_parameters(),
-            array('dist_type' => $dist_type,
-                  'file_ids' => $file_ids)
+        self::validate_parameters(self::update_sharing_parameters(),
+            array('file_ids' => $file_ids)
         );
 
         $file_ids = json_decode($file_ids);
-
-        $gdrive = new \googledrive($context->id, false, false, true);
-        $http_result = [];
-
+        $r = [];
         foreach($file_ids as $i=> $id) {
 
-            if($dist_type != "dist_share_same"){  //Only delete those files that are copies.
-                $http_result[$i] = $gdrive->delete_file_request($id);
-            }
-
-            // At this stage the files are being shared. Update the sharing status
             $id =  $DB->get_field('googledocs', 'id', ['docid' => $id]);
             $d = new \stdClass();
             $d->id = $id;
             $d->sharing = 1;
-            $DB->update_record('googledocs', $d);
+            $r [] = $DB->update_record('googledocs', $d);
         }
 
 
         return array(
-            'results' => json_encode($http_result)
+            'results' => json_encode($r)
 
         );
     }
@@ -104,10 +94,10 @@ trait delete_files {
      * @return external_single_structure
      *
      */
-    public static function delete_files_returns(){
+    public static function update_sharing_returns(){
         return new external_single_structure(
                 array(
-                    'results' => new external_value(PARAM_RAW,'http code'),
+                    'results' => new external_value(PARAM_RAW,'DB update result'),
                  )
       );
     }

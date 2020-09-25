@@ -9,7 +9,7 @@
   * @module mod_googledocs/delete_controls
   * define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls'], function ($, Log, Ajax, DeleteControl)
   */
-define(['jquery', 'core/ajax', 'core/log'], function($, Ajax, Log) {
+define(['core/ajax', 'core/log'], function(Ajax, Log) {
   'use strict';
     /**
      * Initializes the delete controls.
@@ -17,7 +17,7 @@ define(['jquery', 'core/ajax', 'core/log'], function($, Ajax, Log) {
     function init(filesToDelete, dist_type) {
         Log.debug('mod_googledocs/delete_controls: initializing delete_controls of the mod_googledocs');
         Log.debug(filesToDelete);
-         Log.debug(dist_type);
+        Log.debug(dist_type);
         var control = new GoogledocsDeleteControl(filesToDelete, dist_type);
         control.main();
     }
