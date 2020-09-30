@@ -1,6 +1,6 @@
 # moodle-mod_googledocs
 
-Googledocs is an activity module to distribute G Suite files to students enrolled in a course.
+Googledocs is an activity module to create and distribute G Suite files to students enrolled in a course.
 
 # Authors
 Michael de Raadt  
