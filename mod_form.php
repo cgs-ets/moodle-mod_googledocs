@@ -92,7 +92,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->setType('name', PARAM_TEXT);
             $mform->hideif('name', 'use_document', 'eq', 'existing');
             $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-
+            $mform->setDefault('name', '.');
             $mform->disabledIf('name', 'use_document', 'eq', 'existing');
 
 
