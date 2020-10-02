@@ -73,9 +73,11 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-        //var_dump($mform->get_submitted_data()); exit;
+
+      // var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
+
         $gdrive = new googledrive($context->id);
 
         if (!$gdrive->check_google_login()) {
@@ -84,19 +86,23 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             throw new Exception('Error - not authenticated with Google!');
         }
 
+
+
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
+        $teachers = $gdrive->get_enrolled_teachers($googledocs->course);
 
         $group_grouping=[];
         $dist = '';
 
-        if(!empty(($mform->get_submitted_data())->groups)) {
+
+        if(!empty(($mform->get_submitted_data())->groups) && !everyone(($mform->get_submitted_data())->groups)) {
             list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
         }
 
         list($dist, $owncopy) = distribution_type($mform->get_submitted_data(), $dist);
-
+       // var_dump($dist); exit;
         if (!empty($group_grouping)){
 
             $jsongroup = new stdClass();
@@ -106,12 +112,20 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
                 $googledocs->group_grouping_json = json_encode($jsongroup);
                 $students = get_students_by_group($coursestudents, json_encode($jsongroup), $googledocs->course);
             }
+
+            $course_groups = count(groups_get_all_groups($googledocs->course));
+            $selected_groups  =  count(get_groups_details_from_json($jsongroup));
+
+            if(($dist == 'std_copy_group_copy' || $dist == 'std_copy_grouping_copy'
+                || $dist == 'std_copy_group_grouping_copy')
+                && $course_groups == $selected_groups){
+                $dist ='std_copy';
+            }
         }
 
         if ($students == null) {
            throw new exception ('No Students provided. The file was not created');
         }
-
 
         // Use existing doc.
         if (($mform->get_submitted_data())->use_document == 'existing') {
@@ -124,14 +138,9 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         } else {
             // Save new file in a new folder.
-            //$folderid = $gdrive->get_file_id($googledocs->namedoc);
+            $folderid = $gdrive->create_folder($googledocs->name, $author);
+            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type , $author, $students, $folderid);
 
-           // if ($folderid == null) {
-                $folderid = $gdrive->create_folder($googledocs->namedoc, $author);
-            //}
-
-            $sharedlink = $gdrive->create_file($googledocs->namedoc, $googledocs->document_type , $author, $students, $folderid);
-            //var_dump($dist); exit;
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
 
             if($dist == 'std_copy') {
@@ -241,6 +250,7 @@ function googledocs_delete_instance($id) {
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
+    //$DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
     //googledocs_grade_item_delete($googledocs);
     return true;
 }

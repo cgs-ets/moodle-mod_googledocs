@@ -639,7 +639,9 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
             }
 
         });
-    }
+    };
+    
+    
 
     return {
         init: init

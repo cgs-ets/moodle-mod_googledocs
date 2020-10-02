@@ -38,24 +38,24 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
     function init() {
         Log.debug('mod_googledocs/processing_control');
         var saveAndDisplay = '#id_submitbutton';
-        var selectGroup = '#id_groups';
-        var selectGrouping = '#id_groupings'
-        var control = new GoogledocsProcessingControl(saveAndDisplay, selectGroup, selectGrouping);
+        var selectGroup = '#id_groups';    
+        var selectDistribution = "#id_distribution";
+        var control = new GoogledocsProcessingControl(saveAndDisplay, selectGroup, selectDistribution);
         control.main();
     }
 
     // Constructor.
-    function GoogledocsProcessingControl(saveAndDisplay,  selectGroup, selectGrouping) {
+    function GoogledocsProcessingControl(saveAndDisplay,  selectGroup, selectDistribution) {
         var self = this;
         self.saveAndDisplay = saveAndDisplay;
         self.selectGroup = selectGroup;
-        self.selectGrouping = selectGrouping;
-
+        self.selectDistribution = selectDistribution;
     };
 
     GoogledocsProcessingControl.prototype.main = function () {
         var self = this;
         self.processingMessageDisplay();
+        self.change();
     };
 
     GoogledocsProcessingControl.prototype.processingMessageDisplay = function() {
@@ -74,23 +74,27 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
 
             });
     };
-    GoogledocsProcessingControl.prototype.toggle = function(){
+
+    GoogledocsProcessingControl.prototype.change = function(){
       var self = this;
 
-      $(self.selectGroup).on('change', function() {
-        var ids = [];
-        $( "select#id_groups option:selected" ).each(function(ids) {
-            ids.push($(this)[0].value );
-            if ($(this)[0].value == 0) {
-                return false;
+        $(self.selectDistribution).change(function () {
+            var optionSelected = $(this).find("option:selected");
+            var valueSelected  = optionSelected.val();
+
+            if(valueSelected === 'group_copy') {
+                $('#id_groups option:eq(0)').attr('disabled', 'disabled');
+                $('#id_groups option:eq(0)').hide();
+            }else if(valueSelected === 'std_copy'  ||
+                    valueSelected === 'dist_share_same') {
+                 $('#id_groups option:eq(0)').removeAttr('disabled');
+                 $('#id_groups option:eq(0)').show();
             }
 
-        });
-        
-        console.log(ids);
 
-    });
+         });
     };
+
 
     return {
          init: init

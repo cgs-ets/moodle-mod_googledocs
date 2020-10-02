@@ -97,7 +97,7 @@ trait create_grouping_file {
         $groups = $DB->get_records_sql($q, ["grouping_id" => $grouping_id]);
 
         //Create the copies for the groups in the grouping
-        
+
         $groups_details = [];
         foreach($groups as $group){
 
@@ -105,7 +105,7 @@ trait create_grouping_file {
             $grouping->name =  $group ->name;
             $url = $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
             $group_members = groups_get_members($group->groupid, "u.id, u.email");
-            $docid =  $gdrive->get_file_id_from_url($url);
+            $docid =  get_file_id_from_url($url);
 
             $gdrive->permission_for_members_in_groups($group_members, $docid, $role, $commenter, $fromexisting);
             $group_detail = new \stdClass();

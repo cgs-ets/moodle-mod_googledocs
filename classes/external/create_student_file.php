@@ -128,6 +128,7 @@ trait create_student_file {
         $student->email = $student_email;
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
+        //$teachers = $gdrive->get_enrolled_teachers($data->course);
 
         switch ($data->distribution) {
             case 'std_copy':

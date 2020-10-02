@@ -148,7 +148,7 @@ trait create_group_file {
             $fromexisting = $data->use_document == 'new' ? false : true;
 
             $url = $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $group_id);
-            $googledocid = $gdrive->get_file_id_from_url($url);
+            $googledocid = get_file_id_from_url($url);
 
         }
 

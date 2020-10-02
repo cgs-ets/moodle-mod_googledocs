@@ -62,6 +62,12 @@ function google_filetypes() {
             'mimetype' => 'application/vnd.google-apps.presentation',
             'icon'     => 'presentation.svg',
         ),
+        /*
+        'folder' => array(
+            'name' => get_string('google_folder', 'mod_googledocs'),
+            'mimetype' =>'application/vnd.google-apps.folder',
+            'icon' =>'folder.svg',
+        ) */
     );
 
     return $types;
@@ -127,6 +133,29 @@ function googledocs_appears_valid_url($url) {
     }
 }
 
+    /**
+     * Helper function to get the file id from a given URL.
+     * @param type $url
+     * @param type $doctype
+     * @return type
+     */
+function get_file_id_from_url($url) {
+
+    if (strpos($url, 'document')) {
+        $doctype = 'document';
+    } else if (strpos($url, 'spreadsheets')) {
+        $doctype = 'spreadsheets';
+    } else {
+        $doctype ='presentation';
+    }
+
+    if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit/', $url, $match) == 1) {
+        $fileid = $match[1] ;
+    }
+        return $fileid;
+    }
+
+
 function oauth_ready() {
 
 }
@@ -150,6 +179,22 @@ function get_students_by_group($coursestudents, $conditionsjson, $courseid){
     return $students;
 }
 
+    /**
+     * Return the number of groups for a particular course
+     * @global type $DB
+     * @param type $courseid
+     * @return type
+     */
+     function get_course_group_number($courseid){
+        global $DB;
+        $sql =" SELECT count(*)
+                FROM  mdl_groups AS gr
+                INNER JOIN mdl_googledocs as gd on gr.courseid = gd.course
+                WHERE gd.course = :courseid;";
+
+        return $DB->count_records_sql($sql, array('courseid' => $courseid));
+    }
+
  /**
    * Return the ids of the students from
    * all the groups  and grouping groups the file has to be created for
@@ -167,21 +212,15 @@ function get_group_grouping_members_ids($conditionsjson){
 
        $groupmembers = array_merge($groupmembers, groups_get_members($group->id, $fields='u.id'));
     }
-    /*
-    foreach($j->c as $c =>$condition) {
-        if ($condition->type == 'group'){
-            $groupmembers = array_merge($groupmembers, groups_get_members($condition->id, $fields='u.id'));
-        }
-
-        if ($condition->type == 'grouping') {
-            $groupmembers = array_merge($groupmembers, groups_get_grouping_members($condition->id, $fields='u.id'));
-        }
-    }*/
     $groupmembers = array_column($groupmembers, 'id');
 
     return $groupmembers;
 }
+function everyone($data) {
+    list($id, $type) = explode('_',current($data));
 
+    return $type == 'everyone';
+}
 /**
  * Generate an array with stdClass object that has the format
  * needed to generate the JSON
@@ -453,7 +492,7 @@ class googledrive {
         $this->client->setClientId($this->issuer->get('clientid'));
         $this->client->setClientSecret($this->issuer->get('clientsecret'));
         $this->client->setAccessType('offline');
-       // $this->client->setApprovalPrompt('force');
+        $this->client->setApprovalPrompt('force');
 
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
@@ -623,7 +662,7 @@ class googledrive {
 
             $document_type =  $mform->document_type;
             $url = $mform->google_doc_url;
-            $fileid = $this->get_file_id_from_url($url);
+            $fileid = get_file_id_from_url($url);
 
             $file = $this->service->files->get($fileid);
             $permissiontype = $mform->permissions;
@@ -781,7 +820,7 @@ class googledrive {
 
             if (!empty($this->author)) {
                 $this->author['type'] = 'user';
-                $this->author['role'] = 'owner'; //writer
+                $this->author['role'] = 'owner';
                 $this->insert_permission( $this->service, $file->id ,$this->author['emailAddress'],
                     $this->author['type'], $this->author['role']);
             }
@@ -805,14 +844,14 @@ class googledrive {
     private function make_copy( $file, $parent, $students, $studentpermissions, $commenter = false){
 
         //Make a copy of the original file in folder inside the course folder
-        //$url = url_templates();
+
         $copiedfile = new \Google_Service_Drive_DriveFile();
         $copiedfile->setTitle($file->title);
         $copiedfile->setParents(array($parent));
         $copy = $this->service->files->copy($file->id,$copiedfile);
 
         $links = array ();
-        //$linktoshare = $copy->selfLink;
+
         // Insert the permission to the shared file.
         foreach ($students as $student) {
             $this->insert_permission($this->service, $copy->id,
@@ -865,6 +904,7 @@ class googledrive {
 
         $this->insert_permission($this->service, $data->docid, $student->email, 'user', $role, $commenter);
 
+
         $d = new stdClass();
         $d->userid = $student->id;
         $d->googledocid = $data->id;
@@ -880,7 +920,6 @@ class googledrive {
         $this->update_creation_and_sharing_status($data, $student);
 
         return $data->google_doc_url;
-
 
     }
 
@@ -913,6 +952,12 @@ class googledrive {
         $link = sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id);
 
         $this->insert_permission($this->service, $copyid->id, $student->email, $student->type, $permission, $commenter);
+        //Give access to other teachers in the course.
+      /*  if (!empty($teachers)) {
+            foreach($teachers as $teacher) {
+                $this->insert_permission($this->service, $copyid->id, $teacher->email, $student->type, 'writer', $commenter, true);
+            }
+        } */
 
         $studentfiledata = new stdClass();
         $studentfiledata->googledocid = $data->id;
@@ -1214,7 +1259,7 @@ class googledrive {
 
         foreach($result as $r=>$i) {
 
-            $fileid = $this->get_file_id_from_url($i->url);
+            $fileid = get_file_id_from_url($i->url);
             $newdata->id = $i->id;
             $newdata->name = $details->name .'_'. ($students[$j])['displayName'];
             $resultdetailsupdate  = $this->update_file_request($fileid, $newdata);
@@ -1237,7 +1282,7 @@ class googledrive {
                                     ['name' => '%'.$DB->sql_like_escape($filename).'%']);
 
            foreach ($results as $result =>$r) {
-               $fileid = $this->get_file_id_from_url($r->url);
+               $fileid = get_file_id_from_url($r->url);
                $this->update_permissions($fileid, $details, $instance);
            }
         }
@@ -1283,7 +1328,7 @@ class googledrive {
      */
     public function get_file_id($filename) {
 
-        $p = ['q' => "mimeType = '" . GDRIVEFILETYPE_FOLDER . "' and title = '$filename' and trashed  = false" ,
+        $p = ['q' => "mimeType = '" . GDRIVEFILETYPE_FOLDER . "' and title = '$filename' and trashed  = false and 'me' in owners" ,
               'corpus' => 'DEFAULT',
               'maxResults' => 1,
               'fields' => 'items'
@@ -1305,7 +1350,7 @@ class googledrive {
      * @param type $url
      * @param type $doctype
      * @return type
-     */
+
     public function get_file_id_from_url($url) {
 
         if (strpos($url, 'document')) {
@@ -1316,11 +1361,11 @@ class googledrive {
             $doctype ='presentation';
         }
 
-        if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit\b\?/', $url, $match) == 1) {
+        if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit/', $url, $match) == 1) {
             $fileid = $match[1] ;
         }
         return $fileid;
-    }
+    }  */
 
 
 
@@ -1343,6 +1388,29 @@ class googledrive {
     }
 
     /**
+     * Get editing and non-editing teachers in the course except for the teacher
+     * that is creating the activity
+     * Role id = 3 --> Editing Teacher
+     * Role id = 4 --> Non editing teacher
+     * @param type $courseid
+     */
+    public function get_enrolled_teachers($courseid) {
+        global $USER;
+
+        $context = \context_course::instance($courseid);
+        $teachers = [];
+        $courseteachers = get_role_users([3,4], $context, false, 'ra.id, u.email, u.lastname, u.firstname, u.id ',
+            null, true, '','', '');
+
+        foreach($courseteachers as $teacher) {
+
+            if($teacher->id != $USER->id) {
+                $teachers [] = array('id' => $teacher->id, 'emailAddress' => $teacher->email);
+            }
+        }
+        return $teachers;
+    }
+    /**
      * Insert a new permission to a given file
      * @param Google_Service_Drive $service Drive API service instance.
      * @param String $fileId ID of the file to insert permission for.
@@ -1350,7 +1418,7 @@ class googledrive {
      * @param String $type The value "user", "group", "domain" or "default".
      * @param String $role The value "owner", "writer" or "reader".
      */
-    function insert_permission($service, $fileId, $value, $type, $role, $commenter = false) {
+    function insert_permission($service, $fileId, $value, $type, $role, $commenter = false, $is_teacher = false) {
         $newPermission = new Google_Service_Drive_Permission();
         $newPermission->setValue($value);
         $newPermission->setRole($role);
@@ -1361,12 +1429,17 @@ class googledrive {
             $newPermission->setAdditionalRoles(array('commenter'));
         }
         try {
-            return $service->permissions->insert($fileId, $newPermission);
+            if($is_teacher) { //Give permission but don't send notification.
+              return $service->permissions->insert($fileId, $newPermission,['sendNotificationEmails' => false]);
+            }else{
+                return $service->permissions->insert($fileId, $newPermission);
+            }
         } catch (Exception $e) {
             print "An error occurred: " . $e->getMessage();
         }
         return null;
     }
+
 
     /**
     * Retrieve a list of permissions.
@@ -1689,7 +1762,7 @@ class googledrive {
 
             foreach($result as $r=>$i) {
 
-                $fileId = $this->get_file_id_from_url($i->url);
+                $fileId =get_file_id_from_url($i->url);
                 $permissionlist =  $this->get_permissions($fileId);
 
                 foreach ($permissionlist as $pl => $l) {

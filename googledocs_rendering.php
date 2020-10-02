@@ -109,7 +109,6 @@ class googledocs_rendering {
        $students = $this->query_db();
        $usergroups =  groups_get_user_groups($this->courseid, $USER->id);
 
-
       switch ($this->googledocs->distribution) {
         case 'std_copy':
             if ($this->created && $is_student) {
@@ -297,7 +296,7 @@ class googledocs_rendering {
         global $OUTPUT, $CFG, $DB;
 
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
-      
+
         //We need all the group ids
         $group_ids='';
         if($dist == 'dist_share_same_group_copy' || $dist == 'dist_share_same_grouping_copy'
@@ -559,7 +558,7 @@ class googledocs_rendering {
 
         global $DB, $USER;
         $picturefields = user_picture::fields('u');
-        $countgroups = $this->get_course_group_number($this->courseid);
+
         $studentrecords ='';
 
         if (has_capability('mod/googledocs:view', $this->context) &&
@@ -578,7 +577,7 @@ class googledocs_rendering {
                     $studentrecords = $DB->get_records_sql($rawdata, $params);
                 }
             }else{
-               $studentrecords = $this->queries_get_students_list_processing($countgroups);
+               $studentrecords = $this->queries_get_students_list_processing();
                return array($studentrecords);
             }
         }
@@ -798,7 +797,7 @@ class googledocs_rendering {
             default:
                 break;
         }
-        //var_dump($rawdata); exit;
+
         return array($rawdata, $params);
 
     }
@@ -850,19 +849,17 @@ class googledocs_rendering {
                     INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
                     WHERE gf.googledocid = ?
                     GROUP BY u.id";
-
-            /**
-             * SQL SERVER QUERY: DONT DELETE
-             * SELECT u.id, u.firstname,  url = STUFF((
+        /*
+        $rawdata =  "SELECT DISTINCT $picturefields, u.id, u.firstname,  url = STUFF((
                                                     SELECT ',' + f.url
                                                     FROM mdl_googledocs_files f
 
-                                                    WHERE  f.userid = u.id
+                                                    WHERE  f.userid = u.id AND f.googledocid = ?
                                                     FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '')
                 FROM mdl_user as u
                 INNER JOIN  mdl_googledocs_files as gf
-                ON u.id = gf.userid;
-             */
+                ON u.id = gf.userid";
+          */
 
 
 
@@ -878,6 +875,15 @@ class googledocs_rendering {
                     INNER JOIN mdl_googledocs_files as gf ON gf.groupid = gm.groupid
                     WHERE gf.googledocid = ?
                     GROUP BY u.id;";
+       /*
+        $rawdata = "SELECT DISTINCT $picturefileds, gm.groupid,  url = STUFF(( SELECT ',' + f.url FROM mdl_googledocs_files f
+                                           WHERE  f.groupid = gm.groupid AND f.googledocid = ?
+                                           FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '')
+                FROM mdl_groups_members as gm
+                INNER JOIN  mdl_googledocs_files as gf ON gf.groupid = gm.groupid
+                INNER JOIN mdl_user as u on u.id = gf.userid";
+       */
+        
         $params = array($this->instanceid);
 
         return array($rawdata, $params);
@@ -889,17 +895,16 @@ class googledocs_rendering {
      * @param type $countgroups
      * @return type
      */
-    private function queries_get_students_list_processing($countgroups) {
+    private function queries_get_students_list_processing() {
 
        $j = json_decode($this->googledocs->group_grouping_json);
+       $countgroups = $this->get_course_group_number($this->courseid);
 
        if($countgroups == 0 || empty($j->c)) {
            return  $this->coursestudents;
        }else{
-          $students = $this->get_students_by_group($this->coursestudents, $this->googledocs->group_grouping_json,
-                $this->googledocs->course);
-
-            return $students;
+        $students = $this->get_students_by_group($this->coursestudents, $this->googledocs->group_grouping_json, $this->googledocs->course);
+        return $students;
        }
     }
 

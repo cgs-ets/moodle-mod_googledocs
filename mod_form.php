@@ -85,25 +85,26 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
             $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
-            $use_document = $mform->addGroup($radioarray, 'document_choice',
-                get_string('use_document', 'googledocs'), array(' '), false);
-             $mform->setDefault('use_document', 'new');
-            // $mform->addHelpButton('document_choice', 'document_choice_help', 'googledocs');
-            $name_doc = $mform->addElement('text', 'namedoc', get_string('document_name', 'googledocs'), array('size' => '64'));
+            $use_document = $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
+            $mform->setDefault('use_document', 'new');
+            $name_doc = $mform->addElement('text', 'name', get_string('document_name', 'googledocs'), array('size' => '64'));
 
-            $mform->setType('namedoc', PARAM_TEXT);
-            $mform->hideif('namedoc', 'use_document', 'eq', 'existing');
-            $mform->addRule('namedoc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-           // $mform->addRule('namedoc', get_string('error'), 'required', 'client');
-            $mform->disabledIf('namedoc', 'use_document', 'eq', 'existing');
+            $mform->setType('name', PARAM_TEXT);
+            $mform->hideif('name', 'use_document', 'eq', 'existing');
+            $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+
+            $mform->disabledIf('name', 'use_document', 'eq', 'existing');
 
 
             if($update != 0) {
+              //  $name_doc->_attributes['name'] = 'name';
                 $use_document->freeze();
+
                 $name_doc->freeze();
             }
             $types = google_filetypes();
             $typesarray = array();
+
             foreach($types as $key => $type) {
                 $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
@@ -119,7 +120,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->setDefault('document_type', $types['document']['mimetype']);
 
             $mform->hideif('document_type', 'use_document', 'eq', 'existing');
-            // $mform->addHelpButton('document_type', 'document_type_help', 'googledocs');
+
 
             if($update != 0) {
                 $doctype->freeze();
@@ -128,7 +129,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->setType('google_doc_url', PARAM_RAW_TRIMMED);
             $mform->addRule('google_doc_url', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->hideif('google_doc_url', 'use_document', 'eq', 'new');
-            //$mform->addRule('externalurl', null, 'required', null, 'client');
+
 
             $permissions = array(
                 'edit' => get_string('edit', 'googledocs'),
@@ -140,8 +141,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             // Groups
             if(!empty($course_groups)) {
-                $groups = array('0_group' => 'All Groups');
-
+                $groups = array('00_everyone' => get_string('everyone', 'googledocs'),
+                                '0_group' =>  get_string('all_groups', 'googledocs'));
             }
 
             $count_empty = 0;
@@ -173,7 +174,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             }
 
-            $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'), $distribution);
+            $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'),
+                $distribution);
 
 
             if($update != 0 ) {
@@ -197,9 +199,16 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             if(!empty($course_groups) && !$not_show){
                 $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
-                $mform->setDefault('groups', '0_group');
+                $mform->setDefault('groups', '00_everyone');
                 $selectgroups->setMultiple(true);
+                $mform->addHelpButton('groups', 'group_select', 'googledocs');
+
+                if($update!=0){
+                    $selectgroups->freeze();
+                }
             }
+
+
 
             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
@@ -213,77 +222,40 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Validates forms elements.
      */
     function validation($data, $files) {
-
+        #var_dump($data); exit;
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-       // var_dump($data); exit;
+
         if($data['use_document'] != 'new') {
             if(empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
-            } else if (!googledocs_appears_valid_url($data['google_doc_url'])) {
+            } else if (!googledocs_appears_valid_url($data['google_doc_url']) || get_file_id_from_url($data['google_doc_url']) == null) {
                 $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
             }
         }else{
-            if (empty($data['namedoc'])){
-                $errors['namedoc'] = get_string('docnameinvalid', 'googledocs');
+            if (empty($data['name'])){
+                $errors['name'] = get_string('docnameinvalid', 'googledocs');
             }
         }
 
 
-        // Group val.
-        if($data['distribution'] == 'group_copy'){
-          $errors = $this->group_validation($data, $errors);
+        if(isset($data['groups']) && $this->group_validation($data)) {
+            $errors['groups'] = get_string('std_invalid_selection', 'googledocs');
         }
-        //Grouping val.
-        if($data['distribution'] == 'grouping_copy') {
-           $errors =  $this->grouping_validation($data, $errors);
-        }
-
-
         return $errors;
     }
 
-    private function grouping_validation($data, $errors) {
+    private function group_validation($data){
 
+        $all_groups_all_groupings = in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
+            && count($data['groups']) > 2;
+        $all_groups_a_group = in_array('0_group', $data['groups']) && !in_array('0_grouping', $data['groups'])
+            && (count($data['groups']) > 1);
+        $all_grouping_a_grouping = !in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
+                && (count($data['groups']) > 1);
+        $everyone_group_grouping = in_array('00_everyone', $data['groups']) && count($data['groups']) > 1;
 
-        if(isset($data['groupings']) && !empty ($data['groupings'])) {
-            if (in_array('0', $data['groupings']) && (count($data['groupings']) > 1) ) {
-              $errors['groupings'] = get_string('groupingsinvalid', 'googledocs');
-            }
-        }else{
-            $errors['groupings'] = get_string('groupingsinvalidselection', 'googledocs');
-        }
-
-        return $errors;
-
-    }
-
-    private function group_validation($data, $errors){
-       // var_dump(in_array('0_group', $data['groups'])); ; exit;
-        if(isset($data['groups']) && !empty($data['groups'])){
-            if (in_array('0_group', $data['groups'])
-                && in_array('0_grouping', $data['groups'])
-                && (count($data['groups']) > 2) ) {
-                $errors['groups'] = get_string('groupsinvalid', 'googledocs');
-            }else if(in_array('0_group', $data['groups'])
-                && !in_array('0_grouping', $data['groups'])
-                && (count($data['groups']) > 1)){
-                  $errors['groups'] = get_string('groupsinvalid', 'googledocs');
-            }else if(!in_array('0_group', $data['groups'])
-                && in_array('0_grouping', $data['groups'])
-                && (count($data['groups']) > 1)){
-                  $errors['groups'] = get_string('groupsinvalid', 'googledocs');
-            }
-        }else{
-             $errors['groups'] = get_string('groupsinvalidselection', 'googledocs');
-        }
-
-        return $errors;
+       return  $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping ||$everyone_group_grouping;
 
     }
-
-
-
-
-
 }
