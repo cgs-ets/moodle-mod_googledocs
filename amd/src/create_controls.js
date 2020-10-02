@@ -187,11 +187,11 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
            // don't delete originals created with the "Create from existing" option.
            //For group and students distribution is the same process.
             var totalCalls = $('tbody').children().length;
-          //  var from_existing = $('table.overviewTable').attr('data-from-existing');
+        
             var file_to_delete = $('table.overviewTable').attr('data-googledoc-id');
-            Log.debug("file_to_delete " + file_to_delete);
-            Log.debug('totalCalls ' + totalCalls);
-            Log.debug('countCalls ' + self.countCalls);
+            //Log.debug("file_to_delete " + file_to_delete);
+            //Log.debug('totalCalls ' + totalCalls);
+            //Log.debug('countCalls ' + self.countCalls);
             $('table.overviewTable').removeAttr('data-googledoc-id');
             
             if(from_existing == 1 && self.countCalls == totalCalls
