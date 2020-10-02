@@ -222,10 +222,15 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Validates forms elements.
      */
     function validation($data, $files) {
-        #var_dump($data); exit;
+       # var_dump($data); exit;
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-
+        if($data['use_document'] == 'new') {
+            if (empty($data['name'])){
+                $data['name'] = '.';
+                $errors['name'] = get_string('docnameinvalid', 'googledocs');
+            }
+        }
         if($data['use_document'] != 'new') {
             if(empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
