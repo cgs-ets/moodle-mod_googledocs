@@ -42,178 +42,168 @@ require_once($CFG->dirroot.'/course/lib.php');
  */
 class mod_googledocs_mod_form extends moodleform_mod {
 
-
-   /* public function __construct($current, $section, $cm, $course) {
-       parent::__construct($current, $section, $cm, $course);
-       moodleform::__construct('fileprocessingtableview.php');
-    }*/
     /**
      * Defines forms elements.
      */
     public function definition() {
-       global $CFG, $PAGE;
+        global $CFG, $PAGE;
 
-       // Add the javascript required to enhance this mform.
-       $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
+        // Add the javascript required to enhance this mform.
+        $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
 
-       $update = optional_param('update', 0, PARAM_INT);
-       $course_groups = groups_get_all_groups($PAGE->course->id);
-       $course_grouping = groups_get_all_groupings($PAGE->course->id);
+        $update = optional_param('update', 0, PARAM_INT);
+        $course_groups = groups_get_all_groups($PAGE->course->id);
+        $course_grouping = groups_get_all_groupings($PAGE->course->id);
 
-      // Start the instance config form.
-       $mform = $this->_form;
-       $mform->addElement('header', 'general', get_string('general', 'form'));
+        // Start the instance config form.
+         $mform = $this->_form;
+         $mform->addElement('header', 'general', get_string('general', 'form'));
 
-       // Get the Google Drive object.
-       $client = new googledrive($this->context->id);
+         // Get the Google Drive object.
+         $client = new googledrive($this->context->id);
 
-       // Check whether the user is logged into their Google account.
-        if (!$client->check_google_login()) {
+         // Check whether the user is logged into their Google account.
+            if (!$client->check_google_login()) {
 
-            // Print the login button.
-            $button = $client->display_login_button();
-            $mform->addElement('static', '', '', $button);
+              // Print the login button.
+              $button = $client->display_login_button();
+              $mform->addElement('static', '', '', $button);
 
-            // Add empty standard elements with only a cancel button.
-            $this->standard_hidden_coursemodule_elements();
-            $mform->addElement('hidden', 'completionunlocked', 0);
-            $mform->setType('completionunlocked', PARAM_INT);
-            $this->add_action_buttons(true, false, false);
+              // Add empty standard elements with only a cancel button.
+              $this->standard_hidden_coursemodule_elements();
+              $mform->addElement('hidden', 'completionunlocked', 0);
+              $mform->setType('completionunlocked', PARAM_INT);
+              $this->add_action_buttons(true, false, false);
 
-        } else {
+            } else {
 
-            $radioarray = array();
-            $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('create_new', 'googledocs'), 'new');
-            $radioarray[] = $mform->createElement('radio', 'use_document', '', get_string('use_existing', 'googledocs'), 'existing');
-            $use_document = $mform->addGroup($radioarray, 'document_choice', get_string('use_document', 'googledocs'), array(' '), false);
-            $mform->setDefault('use_document', 'new');
-            $name_doc = $mform->addElement('text', 'name', get_string('document_name', 'googledocs'), array('size' => '64'));
+              $radioarray = array();
+              $radioarray[] = $mform->createElement('radio', 'use_document', '',
+                  get_string('create_new', 'googledocs'), 'new');
+              $radioarray[] = $mform->createElement('radio', 'use_document', '',
+                  get_string('use_existing', 'googledocs'), 'existing');
+              $use_document = $mform->addGroup($radioarray, 'document_choice',
+                  get_string('use_document', 'googledocs'), array(' '), false);
+              $mform->setDefault('use_document', 'new');
+              $name_doc = $mform->addElement('text', 'name_doc', get_string('document_name', 'googledocs'), array('size' => '64'));
 
-            $mform->setType('name', PARAM_TEXT);
-            $mform->hideif('name', 'use_document', 'eq', 'existing');
-            $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-            $mform->setDefault('name', '.');
-            $mform->disabledIf('name', 'use_document', 'eq', 'existing');
+              $mform->setType('name_doc', PARAM_TEXT);
+              $mform->hideif('name_doc', 'use_document', 'eq', 'existing');
+              $mform->addRule('name_doc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+              $mform->setDefault('name_doc', '');
+              $mform->disabledIf('name_doc', 'use_document', 'eq', 'existing');
 
-
-            if($update != 0) {
-              //  $name_doc->_attributes['name'] = 'name';
+            if ($update != 0) {
                 $use_document->freeze();
-
                 $name_doc->freeze();
             }
+
             $types = google_filetypes();
             $typesarray = array();
 
-            foreach($types as $key => $type) {
+            foreach ($types as $key => $type) {
                 $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
                 $doctype = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
 
-               if($update) {
-                   $doctype->freeze();
-               }
+                if ($update) {
+                    $doctype->freeze();
+                }
                 $typesarray[] = $doctype;
             }
 
-            $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
-            $mform->setDefault('document_type', $types['document']['mimetype']);
+              $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
+              $mform->setDefault('document_type', $types['document']['mimetype']);
 
-            $mform->hideif('document_type', 'use_document', 'eq', 'existing');
+              $mform->hideif('document_type', 'use_document', 'eq', 'existing');
 
-
-            if($update != 0) {
+            if( $update != 0) {
                 $doctype->freeze();
             }
-            $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size'=>'64'));
+
+            $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size' => '64'));
             $mform->setType('google_doc_url', PARAM_RAW_TRIMMED);
             $mform->addRule('google_doc_url', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->hideif('google_doc_url', 'use_document', 'eq', 'new');
 
-
             $permissions = array(
-                'edit' => get_string('edit', 'googledocs'),
-                'comment' => get_string('comment', 'googledocs'),
-                'view' => get_string('view', 'googledocs'),
-            );
+                  'edit' => get_string('edit', 'googledocs'),
+                  'comment' => get_string('comment', 'googledocs'),
+                  'view' => get_string('view', 'googledocs'),
+                );
+
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
-            // Groups
-            if(!empty($course_groups)) {
+              // Groups.
+            if (!empty($course_groups)) {
                 $groups = array('00_everyone' => get_string('everyone', 'googledocs'),
-                                '0_group' =>  get_string('all_groups', 'googledocs'));
+                                '0_group' => get_string('all_groups', 'googledocs'));
             }
 
             $count_empty = 0;
-            foreach($course_groups as $g) {
-                // skip empty groups.
-                if(!groups_get_members($g->id, 'u.id')) {
-                   $count_empty++;
+            foreach ($course_groups as $g) {
+                // Skip empty groups.
+                if (!groups_get_members($g->id, 'u.id')) {
+                    $count_empty++;
                     continue;
                 }
 
                 $groups[$g->id.'_group'] = $g->name;
             }
 
-            $not_show = false;
+              $not_show = false;
 
-            if($count_empty == count($course_groups)) {
+            if ($count_empty == count($course_groups)) {
                 $not_show = true;
             }
 
-            if( (!empty($course_groups) || !empty($course_grouping)) && !$not_show){
+            if ((!empty($course_groups) || !empty($course_grouping)) && !$not_show) {
                 $distribution = array(
                 'std_copy' => get_string('dist_student_copy', 'googledocs'),
                 'group_copy' => get_string('dist_group_copy', 'googledocs'),
                 'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
-            }else {
+            } else {
                 $distribution = array(
                 'std_copy' => get_string('dist_student_copy', 'googledocs'),
                 'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
-
             }
 
             $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'),
                 $distribution);
 
-
-            if($update != 0 ) {
+            if ($update != 0 ) {
                 $distselect->freeze();
             }
 
-
             // Grouping.
-            if(!empty($course_grouping)){
-                $grouping = array(count($groups) .'_grouping' => 'All Groupings');
+            if(!empty($course_grouping)) {
+                #$grouping = array(count($groups) .'_grouping' => 'All Groupings');
                 $groups['0_grouping'] = 'All Groupings';
             }
 
-            foreach($course_grouping as $g) {
+            foreach ($course_grouping as $g) {
                 // Only list those groupings with groups in it.
-                if(empty(groups_get_grouping_members($g->id))){
+                if (empty(groups_get_grouping_members($g->id))) {
                     continue;
                 }
-                 $groups[$g->id.'_grouping'] = $g->name;
+                $groups[$g->id.'_grouping'] = $g->name;
             }
 
-            if(!empty($course_groups) && !$not_show){
+            if (!empty($course_groups) && !$not_show) {
                 $selectgroups = $mform->addElement('select', 'groups', get_string('groups', 'googledocs'), $groups);
                 $mform->setDefault('groups', '00_everyone');
                 $selectgroups->setMultiple(true);
                 $mform->addHelpButton('groups', 'group_select', 'googledocs');
 
-                if($update!=0){
+                if ($update != 0) {
                     $selectgroups->freeze();
                 }
             }
-
-
-
-            // Add standard buttons, common to all modules.
+             // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
-            $this->add_action_buttons(true, null,false);
-        }
+            $this->add_action_buttons(true, null, false);
+            }
 
     }
 
@@ -221,32 +211,28 @@ class mod_googledocs_mod_form extends moodleform_mod {
     /**
      * Validates forms elements.
      */
-    function validation($data, $files) {
-       # var_dump($data); exit;
+    private function validation($data, $files) {
+
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-        if($data['use_document'] == 'new') {
-            if (empty($data['name'])){
-                $data['name'] = '.';
-                $errors['name'] = get_string('docnameinvalid', 'googledocs');
-            }
-        }
-        if($data['use_document'] != 'new') {
-            if(empty($data['google_doc_url'])) {
+
+        if ($data['use_document'] != 'new') {
+            if (empty($data['google_doc_url'])) {
                 $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
-            } else if (!googledocs_appears_valid_url($data['google_doc_url']) || get_file_id_from_url($data['google_doc_url']) == null) {
+            } else if (!googledocs_appears_valid_url($data['google_doc_url']) ||
+                get_file_id_from_url($data['google_doc_url']) == null) {
                 $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
             }
-        }else{
-            if (empty($data['name'])){
-                $errors['name'] = get_string('docnameinvalid', 'googledocs');
+        } else {
+            if (empty($data['name_doc'])) {
+               $errors['name_doc'] = get_string('docnameinvalid', 'googledocs');
             }
         }
 
-
-        if(isset($data['groups']) && $this->group_validation($data)) {
+        if (isset($data['groups']) && $this->group_validation($data)) {
             $errors['groups'] = get_string('std_invalid_selection', 'googledocs');
         }
+
         return $errors;
     }
 
@@ -260,7 +246,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 && (count($data['groups']) > 1);
         $everyone_group_grouping = in_array('00_everyone', $data['groups']) && count($data['groups']) > 1;
 
-       return  $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping ||$everyone_group_grouping;
+         return  $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping || $everyone_group_grouping;
 
     }
 }
