@@ -73,7 +73,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-      // var_dump($mform->get_submitted_data()); exit;
+       #var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
 
@@ -134,9 +134,9 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
         } else {
             // Save new file in a new folder.
-            $folderid = $gdrive->create_folder($googledocs->name, $author);
-            $sharedlink = $gdrive->create_file($googledocs->name, $googledocs->document_type , $author, $students, $folderid);
-
+            $folderid = $gdrive->create_folder($googledocs->name_doc, $author);
+            $sharedlink = $gdrive->create_file($googledocs->name_doc, $googledocs->document_type , $author, $students, $folderid);
+            $googledocs->name = $googledocs->name_doc;
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
 
             if($dist == 'std_copy') {
