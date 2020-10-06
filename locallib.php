@@ -656,7 +656,7 @@ class googledrive {
      * @param array $students
      * @return array
      */
-    public function share_existing_file(stdClass $mform , $owncopy, $students) {
+    public function share_existing_file(stdClass $mform , $owncopy, $students, $dist = '') {
 
         try {
 
@@ -691,7 +691,7 @@ class googledrive {
                $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
-                $links = $this->make_copy($file, $parent,$students, $studentpermissions, $commenter);
+                $links = $this->make_copy($file, $parent,$students, $studentpermissions, $commenter, $dist);
                 $sharedfile = array($links[0], $links[1], $links[2], $parentdirid);
             }
 
@@ -841,7 +841,7 @@ class googledrive {
      * Make a copy in the the course folder with the name of the file
      * provide access (permission) to the students.
      */
-    private function make_copy( $file, $parent, $students, $studentpermissions, $commenter = false){
+    private function make_copy( $file, $parent, $students, $studentpermissions, $commenter = false, $dist = ''){
 
         //Make a copy of the original file in folder inside the course folder
 
@@ -852,14 +852,17 @@ class googledrive {
 
         $links = array ();
 
-        // Insert the permission to the shared file.
-        foreach ($students as $student) {
-            $this->insert_permission($this->service, $copy->id,
-            $student['emailAddress'], 'user', $studentpermissions, $commenter);
-            $links[$student['id']] = array($copy->alternateLink, 'filename' => $file->title);
-        }
-        $copy_details = array ($copy, $copy->alternateLink, $links);
+        if ($dist != "dist_share_same_group_copy") {
+            // Insert the permission to the shared file.
+            foreach ($students as $student) {
+                $this->insert_permission($this->service, $copy->id,
+                $student['emailAddress'], 'user', $studentpermissions, $commenter);
+                $links[$student['id']] = array($copy->alternateLink, 'filename' => $file->title);
+            }
 
+        }
+
+        $copy_details = array ($copy, $copy->alternateLink, $links);
 
         return $copy_details;
 

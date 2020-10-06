@@ -211,7 +211,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
     /**
      * Validates forms elements.
      */
-    private function validation($data, $files) {
+    public function validation($data, $files) {
 
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
@@ -236,7 +236,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
         return $errors;
     }
 
-    private function group_validation($data){
+    public function group_validation($data){
 
         $all_groups_all_groupings = in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
             && count($data['groups']) > 2;

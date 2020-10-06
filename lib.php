@@ -73,7 +73,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-
       // var_dump($mform->get_submitted_data()); exit;
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
@@ -86,8 +85,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             throw new Exception('Error - not authenticated with Google!');
         }
 
-
-
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
@@ -96,13 +93,12 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $group_grouping=[];
         $dist = '';
 
-
         if(!empty(($mform->get_submitted_data())->groups) && !everyone(($mform->get_submitted_data())->groups)) {
             list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
         }
 
         list($dist, $owncopy) = distribution_type($mform->get_submitted_data(), $dist);
-       // var_dump($dist); exit;
+
         if (!empty($group_grouping)){
 
             $jsongroup = new stdClass();
@@ -130,7 +126,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         // Use existing doc.
         if (($mform->get_submitted_data())->use_document == 'existing') {
             // Save new file in a COURSE Folder
-            $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students);
+            $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students, $dist);
             $folderid = $sharedlink[3];
             $types = google_filetypes();
             $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];

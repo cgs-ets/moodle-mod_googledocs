@@ -98,7 +98,6 @@ trait create_group_file {
                                                     'grouping_id' => $grouping_id]);
 
         }else{
-
             $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
             $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
         }
