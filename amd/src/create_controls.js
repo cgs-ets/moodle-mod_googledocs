@@ -397,8 +397,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
                 fail: function (reason) {
                     Log.error(reason);
-                    $('#file_' + rownumber).removeClass('spinner-border color');
-                    $('#file_' + rownumber).addClass('failed');
+                    $('#file_' + rownumber).removeClass('spinner-border color');                   
                     self.failedTag(rownumber);
                 }
             }]);

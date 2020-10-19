@@ -133,7 +133,7 @@ trait create_student_file {
         switch ($data->distribution) {
             case 'std_copy':
                 $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
-                    $commenter, $fromexisting, $teachers);
+                    $commenter, $fromexisting);
                 $data->sharing = 1;
                 $DB->update_record('googledocs', $data);
                 break;
@@ -160,10 +160,8 @@ trait create_student_file {
                 break;
         }
 
-
-
         return array(
-            'url'=> json_encode($url, JSON_UNESCAPED_UNICODE  | JSON_NUMERIC_CHECK)
+            'url'=> json_encode($url, JSON_UNESCAPED_UNICODE)
         );
     }
 
