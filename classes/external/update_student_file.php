@@ -92,11 +92,11 @@ trait update_student_file {
         $student->id = $student_id;
         $student->name = $student_name;
         $student->email = $student_email;
-        $student->type = 'user'; //$type; TODO: AGregar una columna  a la tabla de la instancia indicando que tipo es.
-
+        $student->type = 'user';
+        $teachers = $gdrive->get_enrolled_teachers($data->course);
         if ($data->distribution == 'each_gets_own') {
             $fromexisting = $data->use_document == 'new' ? false : true;
-            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting);
+            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting, $teachers);
         }else{
             $gdrive->share_single_copy($student, $data, $role, $commenter);
             $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);

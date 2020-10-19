@@ -56,42 +56,43 @@ class mod_googledocs_mod_form extends moodleform_mod {
         $course_grouping = groups_get_all_groupings($PAGE->course->id);
 
         // Start the instance config form.
-         $mform = $this->_form;
-         $mform->addElement('header', 'general', get_string('general', 'form'));
+        $mform = $this->_form;
+        $mform->addElement('header', 'general', get_string('general', 'form'));
 
-         // Get the Google Drive object.
-         $client = new googledrive($this->context->id);
+        // Get the Google Drive object.
+        $client = new googledrive($this->context->id);
 
-         // Check whether the user is logged into their Google account.
-            if (!$client->check_google_login()) {
+        // Check whether the user is logged into their Google account.
+        if (!$client->check_google_login()) {
 
-              // Print the login button.
-              $button = $client->display_login_button();
-              $mform->addElement('static', '', '', $button);
+            // Print the login button.
+            $button = $client->display_login_button();
+            $mform->addElement('static', '', '', $button);
 
-              // Add empty standard elements with only a cancel button.
-              $this->standard_hidden_coursemodule_elements();
-              $mform->addElement('hidden', 'completionunlocked', 0);
-              $mform->setType('completionunlocked', PARAM_INT);
-              $this->add_action_buttons(true, false, false);
+            // Add empty standard elements with only a cancel button.
+            $this->standard_hidden_coursemodule_elements();
+            $mform->addElement('hidden', 'completionunlocked', 0);
+            $mform->setType('completionunlocked', PARAM_INT);
+            $this->add_action_buttons(true, false, false);
 
             } else {
 
-              $radioarray = array();
-              $radioarray[] = $mform->createElement('radio', 'use_document', '',
-                  get_string('create_new', 'googledocs'), 'new');
-              $radioarray[] = $mform->createElement('radio', 'use_document', '',
-                  get_string('use_existing', 'googledocs'), 'existing');
-              $use_document = $mform->addGroup($radioarray, 'document_choice',
-                  get_string('use_document', 'googledocs'), array(' '), false);
-              $mform->setDefault('use_document', 'new');
-              $name_doc = $mform->addElement('text', 'name_doc', get_string('document_name', 'googledocs'), array('size' => '64'));
+            $radioarray = array();
+            $radioarray[] = $mform->createElement('radio', 'use_document', '',
+                get_string('create_new', 'googledocs'), 'new');
+            $radioarray[] = $mform->createElement('radio', 'use_document', '',
+                get_string('use_existing', 'googledocs'), 'existing');
+            $use_document = $mform->addGroup($radioarray, 'document_choice',
+                get_string('use_document', 'googledocs'), array(' '), false);
+            $mform->setDefault('use_document', 'new');
 
-              $mform->setType('name_doc', PARAM_TEXT);
-              $mform->hideif('name_doc', 'use_document', 'eq', 'existing');
-              $mform->addRule('name_doc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-              $mform->setDefault('name_doc', '');
-              $mform->disabledIf('name_doc', 'use_document', 'eq', 'existing');
+            $name_doc = $mform->addElement('text', 'name_doc',
+                get_string('document_name', 'googledocs'), array('size' => '64'));
+            $mform->setType('name_doc', PARAM_TEXT);
+            $mform->hideif('name_doc', 'use_document', 'eq', 'existing');
+            $mform->addRule('name_doc', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+            $mform->setDefault('name_doc', '');
+            $mform->disabledIf('name_doc', 'use_document', 'eq', 'existing');
 
             if ($update != 0) {
                 $use_document->freeze();
@@ -112,10 +113,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $typesarray[] = $doctype;
             }
 
-              $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
-              $mform->setDefault('document_type', $types['document']['mimetype']);
+            $mform->addGroup($typesarray, 'document_type', get_string('document_type', 'googledocs'), array(' '), false);
+            $mform->setDefault('document_type', $types['document']['mimetype']);
 
-              $mform->hideif('document_type', 'use_document', 'eq', 'existing');
+            $mform->hideif('document_type', 'use_document', 'eq', 'existing');
 
             if( $update != 0) {
                 $doctype->freeze();
@@ -127,18 +128,17 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->hideif('google_doc_url', 'use_document', 'eq', 'new');
 
             $permissions = array(
-                  'edit' => get_string('edit', 'googledocs'),
-                  'comment' => get_string('comment', 'googledocs'),
-                  'view' => get_string('view', 'googledocs'),
-                );
+                'edit' => get_string('edit', 'googledocs'),
+                'comment' => get_string('comment', 'googledocs'),
+                'view' => get_string('view', 'googledocs'),
+            );
 
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
               // Groups.
             if (!empty($course_groups)) {
-                $groups = array('00_everyone' => get_string('everyone', 'googledocs'),
-                                '0_group' => get_string('all_groups', 'googledocs'));
+                $groups = array('00_everyone' => get_string('everyone', 'googledocs'));
             }
 
             $count_empty = 0;
@@ -152,7 +152,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $groups[$g->id.'_group'] = $g->name;
             }
 
-              $not_show = false;
+            $not_show = false;
 
             if ($count_empty == count($course_groups)) {
                 $not_show = true;
@@ -177,9 +177,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
             }
 
             // Grouping.
-            if(!empty($course_grouping)) {
-                #$grouping = array(count($groups) .'_grouping' => 'All Groupings');
-                $groups['0_grouping'] = 'All Groupings';
+            if (!empty($course_grouping)) {
+                $groups['0_grouping'] = get_string('groupings', 'googledocs');
             }
 
             foreach ($course_grouping as $g) {
@@ -200,6 +199,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
                     $selectgroups->freeze();
                 }
             }
+
+            //    // Grade settings.
+            $this->standard_grading_coursemodule_elements();
+
              // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null, false);
@@ -238,15 +241,15 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
     public function group_validation($data){
 
-        $all_groups_all_groupings = in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
-            && count($data['groups']) > 2;
-        $all_groups_a_group = in_array('0_group', $data['groups']) && !in_array('0_grouping', $data['groups'])
-            && (count($data['groups']) > 1);
-        $all_grouping_a_grouping = !in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
-                && (count($data['groups']) > 1);
+//        $all_groups_all_groupings = in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
+//            && count($data['groups']) > 2;
+//        $all_groups_a_group = in_array('0_group', $data['groups']) && !in_array('0_grouping', $data['groups'])
+//            && (count($data['groups']) > 1);
+//        $all_grouping_a_grouping = !in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
+//                && (count($data['groups']) > 1);
         $everyone_group_grouping = in_array('00_everyone', $data['groups']) && count($data['groups']) > 1;
-
-         return  $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping || $everyone_group_grouping;
+// $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping ||
+         return $everyone_group_grouping;
 
     }
 }

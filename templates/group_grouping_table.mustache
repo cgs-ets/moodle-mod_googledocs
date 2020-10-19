@@ -20,42 +20,45 @@
 }}
 
 {{!
-    @template mod_googledocs/grouping_table
+    @template mod_googledocs/group_grouping_table
 
-    Google docs grouping content template.
+    Google docs group and grouping content template.
 
-    Example context (json):
-       
 }}
 <div class="container-fluid table-container table-responsive">
-  <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover grouping_group_table ">
-       <thead class="thead-light">
+
+    <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover"
+           data-googledocs-id = "{{docid}}" data-owner-email = "{{owneremail}}"
+           data-instance-id = "{{instanceid}}" data-from-existing = "{{from_existing}}" >
+        <thead class="thead-light">
             <tr>
                 <th class="header ">Groups - Groupings</th>
                 <th class="header ">Members</th>
-                <th class="header ">Link</th>
-                <th class="header ">Status</th>
+                <th class="header">Link</th>
+                <th class="header">Status</th>
             </tr>
         </thead>
         <tbody >
-            
-            <tr>
-                <td>
-                   <span>Group Grouping Name<span>
-                </td>
-                <td>Caritas</td>
-                <td id="shared-link-group-id-{{groupid}}"class="status-link-column">Icon</td>
-                <td  class="status-link-column">Sharing</td>
+            {{#group_grouping}}
+            {{#ggdetails}}
+                <tr id = "g_{{gid}}"  aria-expanded = "false" aria-controls = "g-{{gid}}" 
+                    data-g-name = "{{gname}}" data-g-id = "{{gid}}" data-g-type = "{{gtype}}">
+                    <td class="group-name-column" >
+                        <span >{{gname}}<span>
+                    </td>
+                    <td>{{{memberspictures}}}</td>
+                    <td id = "shared-link-g-id-{{g}}" class = "status-link-column">
+                        {{{fileicon}}}
+                    </td>
+                    <td class="status-link-column">
+                        {{{sharingstatus}}}
+                    </td>
                 </tr>
-            
+            {{/ggdetails}}
         </tbody>
-            <tbody class = "table-striped collapse" id ="group-members-{{groupid}}">
-                    <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}">
-                        <td class="pic-name">{{{picture}}}</td>
-                        <td class="status-link-column invisible">{{{link}}}</td>
-                        <td class="status-link-column invisible">{{{status}}}</td>
-                    </tr>
-            </tbody>
-  </table>
 
+     {{/group_grouping}}
+    </table>
 </div>
+
+

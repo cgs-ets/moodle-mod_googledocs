@@ -37,8 +37,9 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
      */
     function init() {
         Log.debug('mod_googledocs/processing_control');
+        
         var saveAndDisplay = '#id_submitbutton';
-        var selectGroup = '#id_groups';    
+        var selectGroup = '#id_groups';
         var selectDistribution = "#id_distribution";
         var control = new GoogledocsProcessingControl(saveAndDisplay, selectGroup, selectDistribution);
         control.main();
@@ -54,6 +55,7 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
 
     GoogledocsProcessingControl.prototype.main = function () {
         var self = this;
+        $(self.selectGroup).find("option[value = 0_grouping]").attr('disabled', 'disabled'); // Disable the grouping title in the select.
         self.processingMessageDisplay();
         self.change();
     };

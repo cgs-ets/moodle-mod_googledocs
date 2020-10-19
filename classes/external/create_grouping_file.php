@@ -51,77 +51,58 @@ trait create_grouping_file {
 
     public static  function create_grouping_file_parameters(){
         return new external_function_parameters(
-            array(
-                  'grouping_name' => new external_value(PARAM_RAW, 'groupingname'),
-                  'grouping_id' => new external_value(PARAM_RAW, 'grouping ID'),
-                  'owner_email' =>  new external_value(PARAM_RAW, 'Owner of the file email'),
-                  'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
+            array( 'owneremail' => new external_value(PARAM_RAW, 'Owner of the file email'),
+                  'parentfileid' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
             )
         );
     }
 
 
-    public static function create_grouping_file($grouping_name, $grouping_id, $owner_email, $parentfile_id) {
+    public static function create_grouping_file($owneremail, $parentfileid) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-        //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::create_grouping_file_parameters(),
-            array(
-                  'grouping_name' => $grouping_name,
-                  'grouping_id' => $grouping_id,
-                  'owner_email'=> $owner_email,
-                  'parentfile_id' => $parentfile_id)
+            array('owneremail'=> $owneremail,
+                  'parentfileid' => $parentfileid)
         );
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
-        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
+        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfileid]);
 
-        // Generate the grouping file
+        // Generate the grouping file.
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
-        $grouping = new \stdClass();
-        $grouping->id = $grouping_id;
+        $gids = get_grouping_ids_from_json(json_decode($data->group_grouping_json));
+        $groupingurls = [];
+        $teachers = $gdrive->get_enrolled_teachers($data->course);
 
-        $grouping->email = $owner_email;
-        $grouping->type = 'user';
-        $grouping->isgrouping = true;
-        $fromexisting = $data->use_document == 'new' ? false : true;
+        // Create the files for each grouping.
 
-        $q = "SELECT gg.groupid, g.name FROM mdl_groupings_groups  as gg "
-            . "INNER JOIN mdl_groups as g ON gg.groupid = g.id "
-            . "WHERE gg.groupingid = :grouping_id";
+        foreach ($gids as $id) {
+            $grouping = new \stdClass();
+            $grouping->id = $id;
+            $grouping->name = groups_get_grouping_name($id);
+            $grouping->email = $owneremail;
+            $grouping->type = 'user';
+            $grouping->isgrouping = true;
+            $fromexisting = $data->use_document == 'new' ? false : true;
 
-        $groups = $DB->get_records_sql($q, ["grouping_id" => $grouping_id]);
-
-        //Create the copies for the groups in the grouping
-
-        $groups_details = [];
-        foreach($groups as $group){
-
-            $grouping->groupid = $group->groupid;
-            $grouping->name =  $group ->name;
-            $url = $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting);
-            $group_members = groups_get_members($group->groupid, "u.id, u.email");
-            $docid =  get_file_id_from_url($url);
-
-            $gdrive->permission_for_members_in_groups($group_members, $docid, $role, $commenter, $fromexisting);
-            $group_detail = new \stdClass();
-            $group_detail->group_id =  $group->groupid;
-            $group_detail->url = $url;
-            $groups_details[] = $group_detail;
-          }
-
-          //Files created and shared. Time to update
-            $data->sharing = 1;
-            $DB->update_record('googledocs', $data);
+            $url = $gdrive->make_file_copy($data, $data->parentfolderid, $grouping, $role, $commenter, $fromexisting, $id, $teachers);
+            $details = new \stdClass();
+            $details->gid = $id;
+            $details->url = $url;
+            $groupingurls[] = $details;
+        }
+       //Files created and shared. Time to update
+        $data->sharing = 1;
+        $DB->update_record('googledocs', $data);
 
         return array(
-            'googledocid' => $parentfile_id , //parent file to delete
-            'urls' => json_encode($groups_details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK)
-
+            'groupingsurl' => json_encode($groupingurls, JSON_UNESCAPED_UNICODE)
         );
     }
 
@@ -134,9 +115,8 @@ trait create_grouping_file {
     public static function create_grouping_file_returns(){
         return new external_single_structure(
                 array(
-                    'googledocid' => new external_value(PARAM_RAW,'file id to delete'),
-                    'urls' => new external_value(PARAM_RAW,'urls created for the groups')
-                 )
+                    'groupingsurl' => new external_value(PARAM_RAW, 'urls created for the groupingss')
+                )
       );
     }
 }

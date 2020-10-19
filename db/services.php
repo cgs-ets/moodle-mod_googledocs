@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 $functions = [
     'mod_googledocs_create_students_file' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'create_student_file', // External function name.
+        'methodname' => 'create_student_file', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for students', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
@@ -38,7 +38,7 @@ $functions = [
 
     'mod_googledocs_create_group_file' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'create_group_file', // External function name.
+        'methodname' => 'create_group_file', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for a group', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
@@ -48,42 +48,48 @@ $functions = [
 
     'mod_googledocs_create_grouping_file' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'create_grouping_file', // External function name.
+        'methodname' => 'create_grouping_file', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for a grouping ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
-
+    'mod_googledocs_create_group_grouping_file' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' => 'create_group_grouping_file', // External function name.
+        'classpath' => '',
+        'description' => 'Create ggoledoc file for a group and grouping ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true    // Is this service available to 'internal' ajax calls.
+    ],
     'mod_googledocs_delete_files' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'delete_files', // External function name.
+        'methodname' => 'delete_files', // External function name.
         'classpath' => '',
         'description' => 'Create googledoc file for a grouping ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
-
-     'mod_googledocs_update_sharing' => [
+    'mod_googledocs_update_sharing' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'update_sharing', // External function name.
+        'methodname' => 'update_sharing', // External function name.
         'classpath' => '',
         'description' => 'Update sharing status ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true    // Is this service available to 'internal' ajax calls.
     ],
-
     'mod_create_group_folder_struct' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' =>'create_group_folder_struct', // External function name.
+        'methodname' => 'create_group_folder_struct', // External function name.
         'classpath' => '',
         'description' => 'Create groups folders ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
-        'ajax' => true    // Is this service available to 'internal' ajax calls.
+        'ajax' => true  // Is this service available to 'internal' ajax calls.
     ]
 
 ];

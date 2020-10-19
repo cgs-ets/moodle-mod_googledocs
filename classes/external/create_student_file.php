@@ -19,7 +19,7 @@
  *
  * @package   mod_googledocs
  * @category
- * @copyright 2020 Veronica Bermegui, Canberra Grammar School <veronica.bermegui@cgs.act.edu.au>
+ * @copyright 2020 Veronica Bermegui
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -132,7 +132,8 @@ trait create_student_file {
 
         switch ($data->distribution) {
             case 'std_copy':
-                $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role, $commenter, $fromexisting);
+                $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
+                    $commenter, $fromexisting, $teachers);
                 $data->sharing = 1;
                 $DB->update_record('googledocs', $data);
                 break;
@@ -142,13 +143,13 @@ trait create_student_file {
             case 'group_copy' :
                 $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
                 break;
-            case 'std_copy_group_copy' :
+            case 'std_copy_group' :
                  $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
                 break;
-            case 'std_copy_grouping_copy':
+            case 'std_copy_grouping':
                 $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
                 break;
-            case 'std_copy_group_grouping_copy':
+            case 'std_copy_group_grouping':
                 $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
                 break;
             case 'group_grouping_copy':

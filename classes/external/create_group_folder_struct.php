@@ -37,7 +37,7 @@ require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
- * This service creates group folders.
+ * This service creates group or grouping folders.
  */
 trait create_group_folder_struct {
 
@@ -50,38 +50,36 @@ trait create_group_folder_struct {
 
     public static  function create_group_folder_struct_parameters(){
         return new external_function_parameters(
-            array( 'instance_id' => new external_value(PARAM_RAW, 'instance ID'))
-        );
+            array( 'instanceid' => new external_value(PARAM_RAW, 'instance ID')
+                ));
     }
 
  /**
   * Create the folder for the group(s)
   * @global type $COURSE
   * @global type $DB
-  * @param int $instance_id
+  * @param int $instanceid
   * @return array
   */
-    public static function create_group_folder_struct($instance_id) {
+    public static function create_group_folder_struct($instanceid) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-        //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::create_group_folder_struct_parameters(),
-            array( 'instance_id' => $instance_id)
-        );
+            array('instanceid' => $instanceid));
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
-        $data = $DB->get_record_sql($filedata, ['id'=> $instance_id]);
+        $data = $DB->get_record_sql($filedata, ['id'=> $instanceid]);
 
-        // Generate the student file
+        // Generate the student file.
         $gdrive = new \googledrive($context->id, false, false, true);
         $ids = $gdrive->make_group_folder($data);
 
-
         return array(
-            'group_folder_ids'=> json_encode($ids, JSON_UNESCAPED_UNICODE  | JSON_NUMERIC_CHECK)
+            'group_folder_ids' => json_encode($ids, JSON_UNESCAPED_UNICODE)
         );
     }
 
@@ -94,8 +92,8 @@ trait create_group_folder_struct {
     public static function create_group_folder_struct_returns(){
         return new external_single_structure(
                 array(
-                    'group_folder_ids' => new external_value(PARAM_RAW,'folder and group id')
-                 )
+                    'group_folder_ids' => new external_value(PARAM_RAW, 'folder and group id')
+                )
       );
     }
 }

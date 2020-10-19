@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -17,55 +16,54 @@
 
 /**
  *
- *
  * @package    mod_googledocs
  * @copyright  2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->dirroot . '/user/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
-defined('MOODLE_INTERNAL') || die;
-
 class googledocs_rendering {
-
     /*
      * @var int $courseid The course id
      */
+
     protected $courseid;
+
     /**
      * @var int instance
      */
     protected $instanceid;
+
     /**
      * @var \stdClass $course The course details.
      */
     protected $course;
+
     /**
      * @var  $context The course context.
      */
     protected $context;
-  /**
-   *
-   * @var stdClass
-   */
+
+    /**
+     * @var stdClass
+     */
     protected $googledocs;
+
     /**
      * @var array
      */
     protected $coursestudents;
+
     /**
-     *
      * @var boolean
      */
     protected $created;
-
     protected $picturefields;
 
-
-   public function __construct($courseid, $selectall, $context, $instanceid, $googledocs, $created = true){
-
+    public function __construct($courseid, $selectall, $context, $instanceid, $googledocs, $created = true) {
         $this->selectall = $selectall;
         $this->context = $context;
         $this->courseid = $courseid;
@@ -75,11 +73,8 @@ class googledocs_rendering {
         $this->googledocs = $googledocs;
         $this->created = $created;
         $this->picturefields = user_picture::fields('u');
-
-        $this->coursestudents = get_role_users(5, $this->context, false,'u.*');
-
-   }
-
+        $this->coursestudents = get_role_users(5, $this->context, false, 'u.*');
+    }
 
     /**
      * Renders table with all files already created.
@@ -88,138 +83,142 @@ class googledocs_rendering {
      * @global type $PAGE
      */
     public function render_table() {
-        global  $USER;
+        global $USER;
 
         $types = google_filetypes();
-        $is_student = false;
+        $isstudent = false;
 
         if (has_capability('mod/googledocs:view', $this->context) &&
             is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
-            && !has_capability('mod/googledocs:viewall', $this->context) ) {
-            $is_student = true;
+            && !has_capability('mod/googledocs:viewall', $this->context)) {
+            $isstudent = true;
         }
 
-        $this->render($types, $is_student);
-
+        $this->render($types, $isstudent);
     }
 
-    //Helper function
-    private function render($types, $is_student) {
-       global $USER;
-       $students = $this->query_db();
-       $usergroups =  groups_get_user_groups($this->courseid, $USER->id);
+    // Helper function.
+    private function render($types, $isstudent) {
+        global $USER;
+        $students = $this->query_db();
+        $usergroups = groups_get_user_groups($this->courseid, $USER->id);
 
-      switch ($this->googledocs->distribution) {
-        case 'std_copy':
-            if ($this->created && $is_student) {
-                $this->render_files_for_student($types);
-            }else if(!$this->created){
-                $this->render_table_by_students_files_processing($types,  $students, $this->googledocs->distribution);
-            }else{
-                $this->render_table_by_students_files_created($types,  $students, $this->googledocs->distribution);
-            }
-        break;
+        switch ($this->googledocs->distribution) {
 
-        case 'std_copy_group_copy':
-            if ($this->created && $is_student) {
-              $this->render_files_for_student($types);
-            }else if(!$this->created){
-               $this->render_table_by_students_files_processing($types,  $students, $this->googledocs->distribution);
-            }else{
-               $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+            case 'std_copy' :
 
-        case 'std_copy_grouping_copy':
-            if ($this->created && $is_student) {
-                $this->render_files_for_student($types);
-            }else if(!$this->created){
-                $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-                $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_student($types);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
 
-        case 'dist_share_same':
-            if ($this->created && $is_student) {
-               $this->render_files_for_student($types);
-            }else if(!$this->created){
-              $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-               $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+                break;
 
-        case 'dist_share_same_group_copy':
-            if ($this->created && $is_student) {
-                $this->render_files_for_students_in_groups($types, $usergroups);
-            }else if(!$this->created){
-              $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-                $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+            case 'std_copy_group' :
 
-        case 'dist_share_same_grouping_copy':
-            if($this->created && $is_student){
-                $this->render_files_for_students_in_groups($types, $usergroups);
-            }else if(!$this->created){
-               $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-               $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_student($types);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
 
-        case 'group_copy':
+                break;
 
-            if ($this->created && $is_student) {
-               $this->render_files_for_students_in_groups($types, $usergroups);
-            }else{
-                $this->render_table_by_group($types);
-            }
-        break;
+            case 'std_copy_grouping' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_student($types);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
 
-        case 'grouping_copy':
-            if($this->created && $is_student) {
-                $this->render_files_for_students_in_groups($types, $usergroups);
-            }else{
-                $this->render_table_by_grouping($types);
-            }
-        break;
+                break;
 
-        case 'group_grouping_copy':
-           if ($this->created && $is_student) {
-               $this->render_files_for_students_in_groups($types, $usergroups);
-            }else{
-                $this->render_table_by_group($types);
-            }
-            break;
+            case 'dist_share_same' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_student($types);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
 
-        case 'std_copy_group_grouping_copy':
-            if($this->created && $is_student) {
-                $this->render_files_for_student_by_group_grouping($types, $usergroups);
-            }else if(!$this->created){
-                $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-                $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-        break;
+                break;
 
-        case 'dist_share_same_group_grouping_copy' :
-            if ($this->created && $is_student) {
-                $this->render_files_for_students_in_groups($types, $usergroups);
-            }else if(!$this->created){
-              $this->render_table_by_students_files_processing($types, $students, $this->googledocs->distribution);
-            }else{
-                $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
-            }
-            break;
+            case 'dist_share_same_group' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
 
+                break;
+
+            case 'dist_share_same_grouping':
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else if (!$this->created) {
+                    $this->render_grouping_student_table($types, $students);
+                } else {
+                    $this->render_grouping_student_table($types);
+                }
+                break;
+
+            case 'group_copy':
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else {
+                    $this->render_table_by_group($types);
+                }
+                break;
+
+            case 'grouping_copy':
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else {
+                    $this->render_table_by_grouping($types);
+                }
+                break;
+
+            case 'group_grouping_copy' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else {
+                    $this->render_table_by_group_grouping($types);
+                }
+                break;
+
+            case 'std_copy_group_grouping' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_student_by_group_grouping($types, $usergroups);
+                } else if (!$this->created) {
+                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                }
+                break;
+
+            case 'dist_share_same_group_grouping' :
+                if ($this->created && $isstudent) {
+                    $this->render_files_for_students_in_groups($types, $usergroups);
+                } else if (!$this->created) {
+                    $this->render_table_by_group_grouping($types, $students, $this->googledocs->distribution);
+                } else {
+                    $this->render_table_by_group_grouping($types, $students, $this->googledocs->distribution);
+                }
+                break;
+        }
     }
-   }
 
-
-    private function render_work_in_progress(){
+    private function render_work_in_progress() {
         global $OUTPUT;
         echo $OUTPUT->render_from_template('mod_googledocs/work_in_progress', '');
     }
@@ -232,22 +231,22 @@ class googledocs_rendering {
 
         $result = $DB->get_records_sql($sql, $params);
 
-          foreach($result as $r) {
+        foreach ($result as $r) {
             $extra = "onclick=\"this.target='_blank';\"";
             $icon = $types[get_doc_type_from_string($r->url)]['icon'];
-            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             print_string('clicktoopen', 'url', "<a href=\"{$r->url}\"$extra><img class='link_icon'src='{$imgurl}'></a>");
             echo '<br>';
         }
-
     }
+
     /**
-     * When dist. is by group, the record doesnt keep a 1 to 1 relationship with the user id
+     * When dist. is by group, the record doesn't keep a 1 to 1 relationship with the user id
      */
     private function render_files_for_student_by_group_grouping($types, $usergroups) {
         global $DB, $USER, $CFG;
-         global $CFG, $DB;
-        $a = $usergroups[0]; // Has all the groups this user belongs to
+
+        $a = $usergroups[0]; // Has all the groups this user belongs to.
 
         list($insql, $inparams) = $DB->get_in_or_equal($a);
 
@@ -256,17 +255,18 @@ class googledocs_rendering {
 
         $result = $DB->get_records_sql($sql, $inparams);
 
-        foreach($result as $r) {
+        foreach ($result as $r) {
             $extra = "onclick=\"this.target='_blank';\"";
             $icon = $types[get_doc_type_from_string($r->url)]['icon'];
-            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             print_string('clicktoopen', 'url', "<a href=\"{$r->url}\"$extra><img class='link_icon'src='{$imgurl}'></a>");
             echo '<br>';
         }
     }
-    private function render_files_for_students_in_groups($types, $usergroups = null){
-       global $CFG, $DB;
-       $a = $usergroups[0]; // Has all the groups this user belongs to
+
+    private function render_files_for_students_in_groups($types, $usergroups = null) {
+        global $CFG, $DB;
+        $a = $usergroups[0]; // Has all the groups this user belongs to.
 
         list($insql, $inparams) = $DB->get_in_or_equal($a);
 
@@ -275,10 +275,10 @@ class googledocs_rendering {
 
         $result = $DB->get_records_sql($sql, $inparams);
 
-        foreach($result as $r) {
+        foreach ($result as $r) {
             $extra = "onclick=\"this.target='_blank';\"";
             $icon = $types[get_doc_type_from_string($r->url)]['icon'];
-            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             print_string('clicktoopen', 'url', "<a href=\"{$r->url}\"$extra><img class='link_icon'src='{$imgurl}'></a>");
             echo '<br>';
         }
@@ -292,70 +292,145 @@ class googledocs_rendering {
      * @param array $students
      * @param string $dist
      */
-    private function render_table_by_students_files_processing($types, $students, $dist = ''){
+    private function render_student_table_processing($types, $students, $dist = '') {
         global $OUTPUT, $CFG, $DB;
 
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
 
-        //We need all the group ids
-        $group_ids='';
-        if($dist == 'dist_share_same_group_copy' || $dist == 'dist_share_same_grouping_copy'
-            || $dist == 'dist_share_same_group_grouping_copy') {
-            $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
-            foreach($groups as $group) {
-                $group_ids .= '-' . $group->id;
-            }
+        // We need all the group.
+        $groupids = '';
 
-           $group_ids = ltrim($group_ids, '-');
+        if ($dist == 'dist_share_same_group') {
+            $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
+            foreach ($groups as $group) {
+                $groupids .= '-' . $group->id;
+            }
+            $groupids = ltrim($groupids, '-');
         }
 
         $data = ['googledocid' => $this->googledocs->docid,
-                 'instanceid' => $this->googledocs->id,
-                 'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false ,
-                 'members' => array(),
-                 'show_group' => false,
-                 'owneremail' => $owneremail->email,
-                 'all_groups' => $group_ids
-                ];
+            'instanceid' => $this->googledocs->id,
+            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
+            'members' => array(),
+            'owneremail' => $owneremail->email,
+            'all_groups' => $groupids
+        ];
         $i = 0;
 
-        foreach($students as $st) {
+        foreach ($students as $st) {
+            foreach ($st as $student) {
 
-           foreach($st as $student) {
+                $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
+                    'classes' => 'usercheckbox m-1',
+                    'id' => 'user' . $student->id,
+                    'name' => 'user' . $student->id,
+                    'checked' => false,
+                    'label' => get_string('selectitem', 'moodle', $student->firstname),
+                    'labelclasses' => 'accesshide',
+                ]);
 
-             $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
+                $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
+                    'includefullname' => true, 'class' => 'userpicture'));
+                $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+                $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
+                $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+                $links = html_writer::link('#', $image, array('target' => '_blank',
+                        'id' => 'link_file_' . $i));
+
+                $data['students'][] = ['checkbox' => $OUTPUT->render($checkbox),
+                    'picture' => $picture,
+                    'fullname' => fullname($student),
+                    'student-id' => $student->id,
+                    'student-email' => $student->email,
+                    'link' => $links,
+                    'student-groupid' => isset($student->groupid) ? $student->groupid : '',
+                    'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div()
+                ];
+
+                $i++;
+            }
+        }
+        echo $OUTPUT->render_from_template('mod_googledocs/student_table', $data);
+    }
+
+    /**
+     * Dist = dist_share_same_grouping
+     */
+    private function render_grouping_student_table($types) {
+        global $DB, $OUTPUT, $CFG;
+
+        $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
+        $studentsdetails = [];
+
+        $groupingids = get_grouping_ids_from_json(json_decode($this->googledocs->group_grouping_json));
+
+        foreach ($groupingids as $id) {
+            $studentsdetails = array_merge($studentsdetails, groups_get_grouping_members($id));
+        }
+
+        // Remove duplicates.
+        $students = array_map('json_encode', $studentsdetails);
+        $students = array_unique($students);
+        $students = array_map('json_decode', $students);
+
+        $groupingids = implode("-", $groupingids);
+
+        $data = ['googledocid' => $this->googledocs->docid,
+            'instanceid' => $this->googledocs->id,
+            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
+            'members' => array(),
+            'owneremail' => $owneremail->email,
+            'all_groupings' => $groupingids
+        ];
+        $i = 0;
+        foreach ($students as $j => $student) {
+
+            $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
                 'classes' => 'usercheckbox m-1',
                 'id' => 'user' . $student->id,
-                'name' => 'user' .$student->id,
+                'name' => 'user' . $student->id,
                 'checked' => false,
                 'label' => get_string('selectitem', 'moodle', $student->firstname),
                 'labelclasses' => 'accesshide',
             ]);
 
             $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
-                'includefullname' => true, 'class' =>'userpicture'));
+                'includefullname' => true, 'class' => 'userpicture'));
             $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
-            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
-            $links =  html_writer::link('#', $image, array('target' => '_blank',
-                              'id'=>'link_file_'. $i));
 
-            $student->group = $this->get_students_group_names($student->id, $this->courseid);
+            $studentgroupingids = array_keys(groups_get_user_groups($this->courseid, $student->id));
+            unset($studentgroupingids[array_key_last($studentgroupingids)]);
+            $student->grouping = implode('-', $studentgroupingids);
+
+            if ($this->created) {
+                $urls = $this->get_grouping_file_url($student->id);
+                $links = '';
+                foreach ($urls as $url) {
+                    $links .= html_writer::link($url->url, $image, array('target' => '_blank', 'id' => 'link_file_' . $i));
+                    $status = html_writer::start_div('', ["id" => 'file_' . $i]) . 'Created' . html_writer::end_div();
+                }
+            } else {
+                $links = html_writer::link('#', $image, array('target' => '_blank', 'id' => 'link_file_' . $i));
+                $status = html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div();
+            }
 
             $data['students'][] = ['checkbox' => $OUTPUT->render($checkbox),
-                                   'picture' => $picture,
-                                   'fullname' =>  fullname($student),
-                                   'student-id' => $student->id,
-                                   'student-email'=>$student->email,
-                                   'link' => $links,
-                                   'student-groupid' => isset($student->groupid) ? $student->groupid : '',
-                                   'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div()
-                ];
+                'picture' => $picture,
+                'fullname' => fullname($student),
+                'student-id' => $student->id,
+                'student-email' => $student->email,
+                'link' => $links,
+                'student-groupingid' => isset($student->grouping) ? $student->grouping : '',
+                'status' => $status
+            ];
 
-                $i++;
+            $i++;
+            $links = '';
         }
-    }
-        echo $OUTPUT->render_from_template('mod_googledocs/student_table', $data);
+
+        echo $OUTPUT->render_from_template('mod_googledocs/grouping_student_table', $data);
     }
 
     /**
@@ -366,74 +441,73 @@ class googledocs_rendering {
      * @param array $students
      * @param type $dist
      */
-    private function render_table_by_students_files_created($types, $students, $dist = ''){
+    private function render_table_by_students_files_created($types, $students, $dist = '') {
         global $OUTPUT, $CFG, $DB;
-       $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
+        $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
 
-        //We need all the group ids
-        $group_ids='';
-        if($dist == 'dist_share_same_group_copy' || $dist == 'dist_share_same_grouping_copy') {
+        // We need all the group ids.
+        $group_ids = '';
+
+        if ($dist == 'dist_share_same_group' || $dist == 'dist_share_same_grouping') {
+
             $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
-            foreach($groups as $group) {
+            foreach ($groups as $group) {
                 $group_ids .= '-' . $group->id;
             }
 
-           $group_ids = ltrim($group_ids, '-');
+            $group_ids = ltrim($group_ids, '-');
         }
 
         $data = ['googledocid' => $this->googledocs->docid,
-                 'instanceid' => $this->googledocs->id,
-                 'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false ,
-                 'members' => array(),
-                 'show_group' => false,
-                 'owneremail' => $owneremail->email,
-                 'all_groups' => $group_ids
-                ];
+            'instanceid' => $this->googledocs->id,
+            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
+            'members' => array(),
+            'show_group' => false,
+            'owneremail' => $owneremail->email,
+            'all_groups' => $group_ids
+        ];
         $i = 0;
-        foreach($students as $student) {
+
+        foreach ($students as $student) {
 
             $checkbox = new \core\output\checkbox_toggleall('students-file-table', false, [
                 'classes' => 'usercheckbox m-1',
                 'id' => 'user' . $student->id,
-                'name' => 'user' .$student->id,
+                'name' => 'user' . $student->id,
                 'checked' => false,
                 'label' => get_string('selectitem', 'moodle', $student->firstname),
                 'labelclasses' => 'accesshide',
             ]);
 
-            $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture'));
+            $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
+                'includefullname' => true, 'class' => 'userpicture'));
             $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
-            $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+            $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
-
-            $student->group = $this->get_students_group_names($student->id, $this->courseid);
-            // If a student belongs to more than one group, it can get more than one file. render all
-
+            // If a student belongs to more than one group, it can get more than one file. render all.
             $urls = explode(",", $student->url);
             $links = '';
-            foreach($urls as $url ){
+            foreach ($urls as $url) {
                 $links .= html_writer::link($url, $image, array('target' => '_blank',
-                              'id'=>'link_file_'. $i));
+                        'id' => 'link_file_' . $i));
             }
 
             $data['students'][] = ['checkbox' => $OUTPUT->render($checkbox),
-                                   'picture' => $picture,
-                                   'fullname' =>  fullname($student),
-                                   'student-id' => $student->id,
-                                   'student-email'=>$student->email,
-                                   'link' => $links,
-                                   'student-groupid' => isset($student->groupid) ? $student->groupid : '',
-                                   'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div()
-                ];
+                'picture' => $picture,
+                'fullname' => fullname($student),
+                'student-id' => $student->id,
+                'student-email' => $student->email,
+                'link' => $links,
+                'student-groupid' => isset($student->groupid) ? $student->groupid : '',
+                'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div()
+            ];
 
-                $i++;
+            $i++;
         }
 
         echo $OUTPUT->render_from_template('mod_googledocs/student_table', $data);
     }
-
-
 
     /**
      *
@@ -441,63 +515,62 @@ class googledocs_rendering {
      * @global type $CFG
      * @param type $types
      */
-    private function render_table_by_group ($types){
+    private function render_table_by_group($types) {
 
         global $OUTPUT, $CFG, $DB;
         $groupsandmembers = $this->get_groups_and_members();
 
         $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
-
-        $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
+        $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
-        //Get teacher email. Is the owner of the copies that are going to be created for each group.
+        // Get teacher email. Is the owner of the copies that are going to be created for each group.
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
 
         $data = [
-            'groups' =>array(),
+            'groups' => array(),
             'googledocid' => '',
-            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false ,
+            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
             'owneremail' => $owneremail->email,
-
         ];
 
         $data['googledocid'] = $this->googledocs->docid;
         $data['instanceid'] = $this->googledocs->id;
 
-        $urlshared =  '#';
+        $urlshared = '#';
 
         $i = 0;
 
-        foreach($groupsandmembers as $groupmember=> $members) {
+        foreach ($groupsandmembers as $groupmember => $members) {
 
-            $conditions =['googledocid' => $this->instanceid, 'groupid' => $members['groupid']];
-            $urlshared =  $DB->get_field('googledocs_files', 'url', $conditions,  IGNORE_MISSING);
+            $conditions = ['googledocid' => $this->instanceid, 'groupid' => $members['groupid']];
+            $urlshared = $DB->get_field('googledocs_files', 'url', $conditions, IGNORE_MISSING);
 
             $data['groups'][] = ['groupid' => $members['groupid'],
-                                  'groupname' => $groupmember,
-                                  'user_pictures' => $members['user_pictures'],
-                                  'fileicon' => html_writer::link($urlshared, $iconimage, array('target' => '_blank','id'=>'shared_link_url_'. $members['groupid'])),
-                                  'sharing_status' => html_writer::start_div('', ["id"=>'status_col']).html_writer::end_div(),
-                                 ];
+                'groupname' => $groupmember,
+                'user_pictures' => $members['user_pictures'],
+                'fileicon' => html_writer::link($urlshared, $iconimage,
+                    array('target' => '_blank', 'id' => 'shared_link_url_' . $members['groupid'])),
+                'sharing_status' => html_writer::start_div('', ["id" => 'status_col']) . html_writer::end_div(),
+            ];
 
-            foreach($members['groupmembers'] as $member) {
+            foreach ($members['groupmembers'] as $member) {
 
                 $url = isset($member->url) ? $member->url : '#';
 
-                $data['groups'][] =  ['fullname' =>  fullname($member),
-                                      'link' => html_writer::link($url, $iconimage, array('target' => '_blank','id'=>'link_file_'. $i)),
-                                      'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div(),
-                                      'student-id' =>$member->id,
-                                      'student-email'=>$member->email,
-                                      'groupid' => $members['groupid'],
-
-                    ];
+                $data['groups'][] = ['fullname' => fullname($member),
+                    'link' => html_writer::link($url, $iconimage,
+                        array('target' => '_blank', 'id' => 'link_file_' . $i)),
+                    'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
+                    'student-id' => $member->id,
+                    'student-email' => $member->email,
+                    'groupid' => $members['groupid']
+                ];
                 $i++;
             }
         }
-        echo $OUTPUT->render_from_template('mod_googledocs/group_table', $data);
 
+        echo $OUTPUT->render_from_template('mod_googledocs/group_table', $data);
     }
 
     /**
@@ -508,93 +581,174 @@ class googledocs_rendering {
      * @param type $types
      */
     private function render_table_by_grouping($types) {
-        global $DB, $CFG, $OUTPUT;
-
-        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
-        $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$icon);
-        $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+        global $DB, $OUTPUT;
 
         $j = json_decode($this->googledocs->group_grouping_json);
-        //Get teacher email. Is the owner of the copies that are going to be created for each group.
+        // Get teacher email. Is the owner of the copies that are going to be created for each group.
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
+        $data['docid'] = $this->googledocs->docid;
+        $data['instanceid'] = $this->instanceid;
+        $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
+        $data['owneremail'] = $owneremail->email;
 
-        $data['file_details'] = [ 'owneremail' => $owneremail->email,
-                                  'docid' =>$this->googledocs->docid,
-                                  'instanceid' =>$this->instanceid,
-                                  'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false ,
-                                ];
+        foreach ($j->c as $c => $condition) {
+            if ($condition->type == 'grouping') {
+                $groupingprops = groups_get_grouping($condition->id, 'id, name');
+                $groupingdetails = $this->grouping_details_helper_function($types, $groupingprops);
 
-        foreach($j->c as $c =>$condition) {
-            if ($condition->type == 'grouping'){
-                $groupingdetails = groups_get_grouping($condition->id, 'id, name' );
-                $members = $this->get_grouping_groups_and_members($groupingdetails->id);
-
-                if (!empty($members)) {
-
-                    $data['groupings'][] = ['grouping_name' => $groupingdetails->name,
-                                            'grouping_id' => $groupingdetails->id,
-                                            'fileicon' => $iconimage ,
-                                            'sharing_status' => html_writer::start_div('', ["id"=>'file_grouping']).html_writer::end_div(),
-                                            'grouping_members' => $members];
-
+                foreach ($groupingdetails as $gg) {
+                    $data['groupings']['groupingdetails'][] = ['groupingid' => $gg['groupingid'],
+                        'groupingdname' => $gg['groupingdname'],
+                        'memberspictures' => $gg['memberspictures'],
+                        'fileicon' => $gg['fileicon'],
+                        'sharingstatus' => html_writer::start_div('',
+                            ["id" => 'status_col_' . $gg['groupingid']]) . html_writer::end_div()
+                    ];
                 }
             }
-
         }
 
         echo $OUTPUT->render_from_template('mod_googledocs/grouping_table', $data);
-
     }
 
+    private function render_table_by_group_grouping($types) {
+        global $OUTPUT, $DB, $CFG;
 
-   /**
-    * Fetches data from the DB needed to render a table when the type of distribution
-    * is std_copy
-    * @global type $DB
-    * @global type $USER
-    * @return array
-    */
+        // Get teacher email. Is the owner of the copies that are going to be created for each group.
+        $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
+        $data['docid'] = $this->googledocs->docid;
+        $data['instanceid'] = $this->instanceid;
+        $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
+        $data['owneremail'] = $owneremail->email;
+
+        $groupsandmembers = $this->get_groups_and_members();
+        $j = json_decode($this->googledocs->group_grouping_json);
+
+        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+        $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
+        $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+
+        // Get the Groups details.
+        foreach ($groupsandmembers as $groupmember => $members) {
+
+            $urlshared = '';
+            if ($this->created) {
+                $conditions = ['googledocid' => $this->googledocs->id, 'groupid' => $members['groupid']];
+                $urlshared = $DB->get_field('googledocs_files', 'url', $conditions, IGNORE_MISSING);
+            }
+            $data['group_grouping']['ggdetails'][] = ['gid' => $members['groupid'],
+                'gname' => $groupmember,
+                'gtype' => 'group',
+                'memberspictures' => $members['user_pictures'],
+                'fileicon' => html_writer::link($urlshared, $iconimage,
+                    array('target' => '_blank', 'id' => 'shared_link_url_' . $members['groupid'])),
+                'sharingstatus' => html_writer::start_div('',
+                    ["id" => 'status_col_' . $members['groupid']]) . html_writer::end_div(),
+            ];
+        }
+
+        // Get the groupings details.
+        foreach ($j->c as $c => $condition) {
+            if ($condition->type == 'grouping') {
+                $groupingprops = groups_get_grouping($condition->id, 'id, name');
+                $groupingdetails = $this->grouping_details_helper_function($types, $groupingprops);
+                ;
+                foreach ($groupingdetails as $gg) {
+                    $data['group_grouping']['ggdetails'][] = ['gid' => $gg['groupingid'],
+                        'gname' => $gg['groupingdname'],
+                        'gtype' => $condition->type,
+                        'memberspictures' => $gg['memberspictures'],
+                        'fileicon' => $gg['fileicon'],
+                        'sharingstatus' => html_writer::start_div('',
+                            ["id" => 'status_col_' . $gg['groupingid']]) . html_writer::end_div()
+                    ];
+                }
+            }
+        }
+
+        echo $OUTPUT->render_from_template('mod_googledocs/group_grouping_table', $data);
+    }
+
+    private function grouping_details_helper_function($types, $gropingproperties) {
+        global $CFG, $DB, $OUTPUT;
+
+        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+        $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
+        $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
+
+        $members = groups_get_grouping_members($gropingproperties->id);
+        $memberspictures = '';
+        $data = [];
+        $urlshared = '';
+
+        foreach ($members as $member) {
+            $memberspictures .= $OUTPUT->user_picture($member, array('course' => $this->courseid,
+                'includefullname' => false, 'class' => 'userpicture'));
+        }
+
+        if ($this->created) {
+            $conditions = ['googledocid' => $this->googledocs->id, 'groupingid' => $gropingproperties->id];
+            $urlshared = $DB->get_field('googledocs_files', 'url', $conditions, IGNORE_MISSING);
+        }
+
+        $data[$gropingproperties->name] = ['groupingid' => $gropingproperties->id,
+            'groupingdname' => $gropingproperties->name,
+            'fileicon' => html_writer::link($urlshared, $iconimage,
+                array('target' => '_blank', 'id' => 'shared_link_url_' . $gropingproperties->id)), $iconimage,
+            'sharingstatus' => html_writer::start_div('',
+                ["id" => 'file_grouping']) . html_writer::end_div(),
+            'memberspictures' => $memberspictures,
+        ];
+
+        return $data;
+    }
+
+    /**
+     * Fetches data from the DB needed to render a table when the type of distribution
+     * is std_copy
+     * @global type $DB
+     * @global type $USER
+     * @return array
+     */
     public function query_db() {
 
         global $DB, $USER;
         $picturefields = user_picture::fields('u');
 
-        $studentrecords ='';
+        $studentrecords = '';
 
-        if (has_capability('mod/googledocs:view', $this->context) &&
-            is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
-            && !has_capability('mod/googledocs:viewall', $this->context) && $this->googledocs->distribution == 'std_copy') {
+        if (has_capability('mod/googledocs:view', $this->context)
+            && is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
+            && !has_capability('mod/googledocs:viewall', $this->context)
+            && $this->googledocs->distribution == 'std_copy') {
 
             list($rawdata, $params) = $this->query_student_file_view($picturefields);
+        } else {
 
-        }else {
-            if($this->created) {
+            if ($this->created) {
                 list($rawdata, $params) = $this->queries_get_students_list_created($picturefields);
+                $studentrecords = $DB->get_records_sql($rawdata, $params);
 
-                if($this->googledocs->distribution == 'grouping_copy' && $this->created) {
-                    $studentrecords = $DB->execute($rawdata, $params);
-                }else{
-                    $studentrecords = $DB->get_records_sql($rawdata, $params);
-                }
-            }else{
-               $studentrecords = $this->queries_get_students_list_processing();
-               return array($studentrecords);
+            } else {
+
+                $studentrecords = $this->queries_get_students_list_processing();
+                return array($studentrecords);
             }
         }
 
-        return  $studentrecords;
+        return $studentrecords;
     }
 
-     /**
+    /**
      * Return the number of groups for a particular course
      * @global type $DB
      * @param type $courseid
      * @return type
      */
-    private function get_course_group_number($courseid){
+    private function get_course_group_number($courseid) {
 
         global $DB;
-        $sql =" SELECT count(*)
+        $sql = " SELECT count(*)
                 FROM  mdl_groups AS gr
                 INNER JOIN mdl_googledocs as gd on gr.courseid = gd.course
                 WHERE gd.course = :courseid;";
@@ -607,7 +761,7 @@ class googledocs_rendering {
      * @global type $DB
      * @return type
      */
-    private function get_groups_and_members(){
+    private function get_groups_and_members() {
         global $DB, $OUTPUT;
 
         $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
@@ -615,10 +769,10 @@ class googledocs_rendering {
         $j = json_decode($this->googledocs->group_grouping_json);
         $groupids = [];
         $groupmembers = [];
-        $i= 0;
+        $i = 0;
 
-        foreach($groups as $group) {
-            $groupids[$i] =  $group->id;
+        foreach ($groups as $group) {
+            $groupids[$i] = $group->id;
             $i++;
         }
 
@@ -627,29 +781,31 @@ class googledocs_rendering {
         $sql = "SELECT  id, name FROM mdl_groups
                 WHERE id  $insql";
 
-        $groupsresult  =  $DB->get_records_sql($sql, $inparams);
-        $user_pictures='';
-        foreach ($groupsresult as $gr) {
-            $members = groups_get_members($gr->id, $fields='u.*', $sort='firstname ASC');
+        $groupsresult = $DB->get_records_sql($sql, $inparams);
+        $user_pictures = '';
 
-            if(empty($members)) {
+        foreach ($groupsresult as $gr) {
+
+            $members = groups_get_members($gr->id, $fields = 'u.*', $sort = 'firstname ASC');
+            if (empty($members)) {
                 continue;
             }
-            foreach($members as $member) {
 
-                $user_pictures .= $OUTPUT->user_picture($member, array('course' => $this->courseid, 'includefullname' => false, 'class' =>'userpicture' ));
-
+            foreach ($members as $member) {
+                $user_pictures .= $OUTPUT->user_picture($member,
+                    array('course' => $this->courseid, 'includefullname' => false, 'class' => 'userpicture'));
             }
-            $groupmembers[$gr->name] = [ 'groupid' => $gr->id,
-                                         'user_pictures' => $user_pictures,
-                                         'groupmembers' => $members];
 
+            $groupmembers[$gr->name] = ['groupid' => $gr->id,
+                'user_pictures' => $user_pictures,
+                'groupmembers' => $members
+            ];
 
             $user_pictures = '';
         }
 
 
-       return $groupmembers;
+        return $groupmembers;
     }
 
     private function set_data_for_grouping_table($groupingmembers) {
@@ -657,18 +813,17 @@ class googledocs_rendering {
         $i = 0;
         $data = [];
 
+        foreach ($groupingmembers as $member) {
 
-        foreach($groupingmembers as $member ){
-
-                $data [] = ['picture' => $OUTPUT->user_picture($member,
-                                                array('course' => $this->courseid, 'includefullname' => true, 'class' =>'userpicture ' )) ,
-                           'fullname' =>  fullname($member),
-                            'status' => html_writer::start_div('', ["id"=>'file_'. $i]).html_writer::end_div(),
-                            'student-id' =>$member->id,
-                            'student-email'=>$member->email,
-
-                        ];
-                    $i++;
+            $data [] = ['picture' => $OUTPUT->user_picture($member, array('course' => $this->courseid,
+                    'includefullname' => true,
+                    'class' => 'userpicture ')),
+                'fullname' => fullname($member),
+                'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
+                'student-id' => $member->id,
+                'student-email' => $member->email
+            ];
+            $i++;
         }
 
         return $data;
@@ -689,34 +844,33 @@ class googledocs_rendering {
         $sql = "SELECT  groupid FROM mdl_groupings_groups
                 WHERE groupingid  $insql";
 
-        $ggresult  =  $DB->get_records_sql($sql, $inparams);
+        $ggresult = $DB->get_records_sql($sql, $inparams);
         $url = "#";
         $user_pictures = '';
         foreach ($ggresult as $gg) {
 
             $group = groups_get_group($gg->groupid);
-            $gmembers = groups_get_members($gg->groupid,'u.*', $sort='firstname ASC');
+            $gmembers = groups_get_members($gg->groupid, 'u.*', $sort = 'firstname ASC');
 
-            foreach($gmembers as $gmember) {
-                $user_pictures .= $OUTPUT->user_picture($gmember, array('course' => $this->courseid, 'includefullname' => false, 'class' =>'userpicture' ));
+            foreach ($gmembers as $gmember) {
+                $user_pictures .= $OUTPUT->user_picture($gmember, array('course' => $this->courseid,
+                    'includefullname' => false, 'class' => 'userpicture'));
             }
 
-            if($this->created){
-                $conditions =['googledocid' => $this->instanceid, 'groupid' => $gg->groupid, 'groupingid' => $groupingid];
-                $url =  $DB->get_field('googledocs_files', 'url', $conditions,  IGNORE_MISSING);
+            if ($this->created) {
+                $conditions = ['googledocid' => $this->instanceid, 'groupid' => $gg->groupid, 'groupingid' => $groupingid];
+                $url = $DB->get_field('googledocs_files', 'url', $conditions, IGNORE_MISSING);
             }
 
-
-            $groupmembers []= [ 'groupid' => $gg->groupid,
-                                'group_name' => $group->name,
-                                'user_pictures' => $user_pictures,
-                                'url' => $url,
-                                'groupmembers' => $this->set_data_for_grouping_table($gmembers) ];
-            $user_pictures ='';
+            $groupmembers [] = ['groupid' => $gg->groupid,
+                'group_name' => $group->name,
+                'user_pictures' => $user_pictures,
+                'url' => $url,
+                'groupmembers' => $this->set_data_for_grouping_table($gmembers)];
+            $user_pictures = '';
         }
 
-
-       return $groupmembers;
+        return $groupmembers;
     }
 
     /**
@@ -725,22 +879,22 @@ class googledocs_rendering {
      */
     private function query_student_file_view($picturefields) {
         global $USER, $DB;
-        $usergroups =  groups_get_user_groups($this->courseid, $USER->id);
+        $usergroups = groups_get_user_groups($this->courseid, $USER->id);
 
+        if ($this->googledocs->distribution == "group_copy" && !empty($usergroups)
+            || $this->googledocs->distribution == "std_copy_group"
+            || $this->googledocs->distribution == "std_copy_grouping") {
 
-        if ($this->googledocs->distribution == "group_copy" && !empty($usergroups) ||
-            $this->googledocs->distribution == "std_copy_group_copy" ||  $this->googledocs->distribution == "std_copy_grouping_copy") {
-            foreach($usergroups as $ug=>$groups){
+            foreach ($usergroups as $ug => $groups) {
                 $a = $groups;
             }
+
             list($insql, $inparams) = $DB->get_in_or_equal($a);
-
-            $sql = "SELECT url FROM mdl_googledocs_files
-                    WHERE groupid  $insql";
-
+            $sql = "SELECT url FROM mdl_googledocs_files WHERE groupid  $insql";
             $r = $DB->get_records_sql($sql, $inparams);
+
             return array("", "", $r);
-        }else{
+        } else {
 
             $rawdata = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
                         FROM mdl_user as u
@@ -751,7 +905,6 @@ class googledocs_rendering {
             $params = array($this->googledocs->id, $USER->id);
 
             return array($rawdata, $params);
-
         }
     }
 
@@ -759,56 +912,57 @@ class googledocs_rendering {
      * This queries are executed when the table view corresponds to
      * a set of files already created.
      */
-    private function queries_get_students_list_created($picturefields){
+
+    private function queries_get_students_list_created($picturefields) {
 
         switch ($this->googledocs->distribution) {
             case 'group_copy':
                 list($rawdata, $params) = $this->query_get_students_list_created_by_group_grouping($picturefields);
                 break;
             case 'std_copy' :
-                list($rawdata, $params) =  $this->query_get_students_list_created($picturefields);
-                break;
-            case 'std_copy_group_copy' :
                 list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
                 break;
-            case 'dist_share_same_group_copy':
+            case 'std_copy_group' :
+                list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
+                break;
+            case 'dist_share_same_group':
                 list($rawdata, $params) = $this->query_get_student_list_created_by_dist_share_same_group_copy($picturefields);
                 break;
-            case 'std_copy_grouping_copy':
+            case 'std_copy_grouping':
                 list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
                 break;
             case 'grouping_copy':
-                  list($rawdata, $params) = $this->query_get_students_list_created_by_group_grouping($picturefields, true);
+                list($rawdata, $params) = $this->query_get_students_list_created_by_group_grouping($picturefields, true);
                 break;
-            case 'dist_share_same_grouping_copy':
-                 list($rawdata, $params) = $this->query_get_student_list_created_by_dist_share_same_group_copy($picturefields);
+            case 'dist_share_same_grouping':
+                list($rawdata, $params) = $this->query_get_student_list_created_by_dist_share_same_group_copy($picturefields);
                 break;
             case 'dist_share_same' :
-                  list($rawdata, $params) =  $this->query_get_students_list_created($picturefields);
+                list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
                 break;
-            case 'std_copy_group_grouping_copy':
-                 list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
+            case 'std_copy_group_grouping':
+                list($rawdata, $params) = $this->query_get_students_list_created($picturefields);
                 break;
             case 'group_grouping_copy':
-                  list($rawdata, $params) = $this->query_get_students_list_created_by_group_grouping($picturefields);
+                list($rawdata, $params) = $this->query_get_students_list_created_by_group_grouping($picturefields);
                 break;
-            case 'dist_share_same_group_grouping_copy':
-                 list($rawdata, $params) = $this->query_get_student_list_created_by_dist_share_same_group_copy($picturefields);
+            case 'dist_share_same_group_grouping':
+                list($rawdata, $params) = $this->query_get_student_list_created_by_dist_share_same_group_copy($picturefields);
             default:
                 break;
         }
 
         return array($rawdata, $params);
-
     }
-    private function query_get_students_list_created_by_group_grouping ($picturefields, $grouping = false) {
+
+    private function query_get_students_list_created_by_group_grouping($picturefields, $grouping = false) {
 
         $countgroups = $this->get_course_group_number($this->courseid);
 
         $j = json_decode($this->googledocs->group_grouping_json);
 
-           if ( $countgroups > 0 || !(empty($j->c))) {
-               if(!$grouping) {
+        if ($countgroups > 0 || !(empty($j->c))) {
+            if (!$grouping) {
 
                 $rawdata = "SELECT  DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.url, gd.name, gm.groupid,
                             gr.name as 'Group', gd.course as  'COURSE ID'
@@ -820,20 +974,19 @@ class googledocs_rendering {
                             WHERE gd.course = ? AND gd.id = ?  AND (gf.name like '{$this->googledocs->name }_%'
                                                 OR gf.name like '{$this->googledocs->name }')";
                 $params = array($this->courseid, $this->googledocs->id);
+            } else {
 
-               }else{
-
-                    $rawdata = "SELECT  DISTINCT gf.id, $picturefields, gf.url,  gm.groupid
+                $rawdata = "SELECT  DISTINCT gf.id, $picturefields, gf.url,  gm.groupid
                                 FROM mdl_user as u
                                 INNER JOIN mdl_groups_members as gm on gm.userid = u.id
                                 INNER JOIN mdl_groupings_groups as gg ON gg.groupid = gm.groupid
                                 INNER JOIN mdl_googledocs_files as gf on gf.groupid = gm.groupid and gf.groupingid = gg.groupingid
                                 WHERE gf.googledocid = ?";
 
-                    $params = array($this->googledocs->id);
-                }
-             //print_object($rawdata); exit;
-             return array($rawdata, $params);
+                $params = array($this->googledocs->id);
+            }
+
+            return array($rawdata, $params);
         }
     }
 
@@ -842,48 +995,27 @@ class googledocs_rendering {
      * @param type $picturefields
      * @return type
      */
-    private function query_get_students_list_created($picturefields){
+    private function query_get_students_list_created($picturefields) {
 
-        $rawdata = "SELECT DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.name, group_concat(gf.url) AS url, gf.groupid
+        $rawdata = "SELECT DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.name, gf.url url, gf.groupid
                     FROM mdl_user as u
                     INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
                     WHERE gf.googledocid = ?
                     GROUP BY u.id";
-        /*
-        $rawdata =  "SELECT DISTINCT $picturefields, u.id, u.firstname,  url = STUFF((
-                                                    SELECT ',' + f.url
-                                                    FROM mdl_googledocs_files f
 
-                                                    WHERE  f.userid = u.id AND f.googledocid = ?
-                                                    FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '')
-                FROM mdl_user as u
-                INNER JOIN  mdl_googledocs_files as gf
-                ON u.id = gf.userid";
-          */
+        $params = array($this->instanceid);
 
-
-
-            $params = array($this->instanceid);
-
-            return array($rawdata, $params);
+        return array($rawdata, $params);
     }
 
     private function query_get_student_list_created_by_dist_share_same_group_copy($picturefileds) {
 
-        $rawdata = "SELECT DISTINCT $picturefileds, gm.groupid, group_concat(gf.url) as url FROM mdl_groups_members AS gm
+        $rawdata = "SELECT DISTINCT $picturefileds, gm.groupid, gf.url as url FROM mdl_groups_members AS gm
                     INNER JOIN mdl_user AS u ON gm.userid = u.id
                     INNER JOIN mdl_googledocs_files as gf ON gf.groupid = gm.groupid
                     WHERE gf.googledocid = ?
                     GROUP BY u.id;";
-       /*
-        $rawdata = "SELECT DISTINCT $picturefileds, gm.groupid,  url = STUFF(( SELECT ',' + f.url FROM mdl_googledocs_files f
-                                           WHERE  f.groupid = gm.groupid AND f.googledocid = ?
-                                           FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 1, '')
-                FROM mdl_groups_members as gm
-                INNER JOIN  mdl_googledocs_files as gf ON gf.groupid = gm.groupid
-                INNER JOIN mdl_user as u on u.id = gf.userid";
-       */
-        
+
         $params = array($this->instanceid);
 
         return array($rawdata, $params);
@@ -897,85 +1029,99 @@ class googledocs_rendering {
      */
     private function queries_get_students_list_processing() {
 
-       $j = json_decode($this->googledocs->group_grouping_json);
-       $countgroups = $this->get_course_group_number($this->courseid);
+        $j = json_decode($this->googledocs->group_grouping_json);
+        $countgroups = $this->get_course_group_number($this->courseid);
+        $students = [];
 
-       if($countgroups == 0 || empty($j->c)) {
-           return  $this->coursestudents;
-       }else{
-        $students = $this->get_students_by_group($this->coursestudents, $this->googledocs->group_grouping_json, $this->googledocs->course);
+        if ($countgroups == 0 || empty($j->c)) { // TODO: std_copy  test course with and without gruops.
+            return $this->coursestudents;
+        } else if ($this->googledocs->distribution != 'dist_share_same_grouping'
+            && $this->googledocs->distribution != 'grouping_copy'
+            && $this->googledocs->distribution != 'std_copy_grouping') {
+            $students = $this->get_students_by_group($this->coursestudents, $this->googledocs->group_grouping_json,
+                $this->googledocs->course);
+        } else if ($this->googledocs->distribution == 'dist_share_same_group_grouping') {
+            $studentsingroups = $this->get_students_by_group($this->coursestudents, $this->googledocs->group_grouping_json,
+                $this->googledocs->course);
+            $studentsingroupings = $this->get_students_by_grouping($this->coursestudents,
+                $this->googledocs->group_grouping_json, $this->googledocs->course);
+
+            $students = array_merge($studentsingroups, $studentsingroupings($id));
+        } else {
+            $students = $this->get_students_by_grouping($this->coursestudents, $this->googledocs->group_grouping_json,
+                $this->googledocs->course);
+        }
+
         return $students;
-       }
     }
 
-  /* * Returns the students in a group.
+    /*     * Returns the students in a group.
      *
      * @param type $coursestudents
      * @param type $conditionjson
      * @param type $courseid
      * @return array stdClass
      */
-    private function  get_students_by_group($coursestudents, $conditionjson, $courseid){
 
-        $groupmembers = get_group_grouping_members_ids($conditionjson, $courseid);
+    private function get_students_by_group($coursestudents, $conditionjson, $courseid) {
 
-        $i=0;
+        $groupmembers = get_group_members_ids($conditionjson, $courseid);
+
         foreach ($coursestudents as $student) {
-
-            if(in_array($student->id, $groupmembers)){
+            if (in_array($student->id, $groupmembers)) {
                 $student->groupid = get_students_group_ids($student->id, $courseid);
-                $students[$i] = $student;
-                $i++;
+                $students[] = $student;
             }
         }
         return $students;
     }
 
-    /**
-     * Filter the name of the group the student belongs to.
-     * This information fills the Groups column.
-     * @param type $userid
-     * @param type $courseid
-     * @return string
-     * TODO: It ws requested not to show the column. Delete when the code goes to prod.
-     *
-     */
-    private function get_students_group_names($userid, $courseid) {
-        $usergroups =  groups_get_user_groups($courseid, $userid);
+    private function get_students_by_grouping($coursestudents, $conditionjson, $courseid) {
 
-        $groupnames = '';
-        foreach($usergroups as $usergroup => $ug)  {
-            $names = array_merge_recursive($usergroups[$usergroup]);
-        }
+        $groupmembers = get_grouping_members_ids($conditionjson, $courseid);
 
-        foreach($names as $name) {
-            $groupnames .= ' ' . groups_get_group_name($name);
-        }
+        foreach ($coursestudents as $student) {
+            if (in_array($student->id, $groupmembers)) {
+                $studentgroupingids = array_keys(groups_get_user_groups($this->courseid, $student->id));
+                unset($studentgroupingids[array_key_last($studentgroupingids)]);
+                $student->groupid = implode('-', $studentgroupingids);
+                $students[] = $student;
+            }
+        };
 
-        return $groupnames;
+        return $students;
     }
 
-
-
-    private function get_students_files_url($groupsandmembers){
+    /**
+     * Get the URL(S) the student can access to when rendering distr. by grouping.
+     * @global type $DB
+     * @param type $studentid
+     */
+    private function get_grouping_file_url($studentid) {
         global $DB;
 
-        foreach($groupsandmembers as $groupmember=> $members) {
-            foreach($members['groupmembers'] as $member) {
-                $conditions =['googledocid' => $this->instanceid, 'userid' => $member->id];
-                $url =  $DB->get_field('googledocs_files', 'url', $conditions,  IGNORE_MISSING);
+        $sql = "SELECT gf.url as url
+                FROM mdl_googledocs_files AS gf
+                INNER JOIN mdl_groupings_groups AS gg ON gf.groupingid = gg.groupingid
+                INNER JOIN mdl_groups_members AS gm ON gg.groupid = gm.groupid
+                WHERE gf.googledocid = {$this->instanceid} AND gm.userid = {$studentid}";
+
+        $r = $DB->get_records_sql($sql);
+        return $r;
+    }
+
+    private function get_students_files_url($groupsandmembers) {
+        global $DB;
+
+        foreach ($groupsandmembers as $groupmember => $members) {
+            foreach ($members['groupmembers'] as $member) {
+                $conditions = ['googledocid' => $this->instanceid, 'userid' => $member->id];
+                $url = $DB->get_field('googledocs_files', 'url', $conditions, IGNORE_MISSING);
                 $member->url = $url;
             }
         }
 
         return $groupsandmembers;
     }
-
-
-
-
-
-
-
 
 }

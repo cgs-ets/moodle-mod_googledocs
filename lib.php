@@ -50,7 +50,7 @@ function googledocs_supports($feature) {
         case FEATURE_SHOW_DESCRIPTION:
             return false;
         case FEATURE_GRADE_HAS_GRADE:
-            return false;
+            return true;
         case FEATURE_BACKUP_MOODLE2:
             return false;
         default:
@@ -73,7 +73,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-       #var_dump($mform->get_submitted_data()); exit;
+        #var_dump($mform->get_submitted_data());
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
 
@@ -89,34 +89,30 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
         $teachers = $gdrive->get_enrolled_teachers($googledocs->course);
-
         $group_grouping=[];
         $dist = '';
 
-        if(!empty(($mform->get_submitted_data())->groups) && !everyone(($mform->get_submitted_data())->groups)) {
+        if (!empty(($mform->get_submitted_data())->groups) &&
+            !everyone(($mform->get_submitted_data())->groups)) {
             list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
         }
 
         list($dist, $owncopy) = distribution_type($mform->get_submitted_data(), $dist);
 
-        if (!empty($group_grouping)){
+        if (!empty($group_grouping)) {
 
             $jsongroup = new stdClass();
             $jsongroup->c = $group_grouping;
-
-            if (!empty($jsongroup->c)) {
-                $googledocs->group_grouping_json = json_encode($jsongroup);
+            $googledocs->group_grouping_json = json_encode($jsongroup);
+            if ($dist == 'dist_share_same_grouping' || $dist == 'grouping_copy' || $dist == 'std_copy_grouping') {
+                $students = get_students_in_grouping($coursestudents, json_encode($jsongroup));
+            } else {
                 $students = get_students_by_group($coursestudents, json_encode($jsongroup), $googledocs->course);
             }
 
             $course_groups = count(groups_get_all_groups($googledocs->course));
-            $selected_groups  =  count(get_groups_details_from_json($jsongroup));
+            $selected_groups = count(get_groups_details_from_json($jsongroup));
 
-            if(($dist == 'std_copy_group_copy' || $dist == 'std_copy_grouping_copy'
-                || $dist == 'std_copy_group_grouping_copy')
-                && $course_groups == $selected_groups){
-                $dist ='std_copy';
-            }
         }
 
         if ($students == null) {
@@ -127,6 +123,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         if (($mform->get_submitted_data())->use_document == 'existing') {
             // Save new file in a COURSE Folder
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students, $dist);
+
             $folderid = $sharedlink[3];
             $types = google_filetypes();
             $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];
@@ -135,13 +132,14 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         } else {
             // Save new file in a new folder.
             $folderid = $gdrive->create_folder($googledocs->name_doc, $author);
-            $sharedlink = $gdrive->create_file($googledocs->name_doc, $googledocs->document_type , $author, $students, $folderid);
+            $sharedlink = $gdrive->create_file($googledocs->name_doc, $googledocs->document_type,
+                $author, $students, $folderid);
             $googledocs->name = $googledocs->name_doc;
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
-
+            /* TODO:
             if($dist == 'std_copy') {
                 $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
-            }
+            } */
         }
 
         return $googledocs->id;

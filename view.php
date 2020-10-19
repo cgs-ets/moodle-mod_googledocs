@@ -38,10 +38,9 @@ $new = optional_param('forceview', 0, PARAM_INT);
 $id = required_param('id', PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
-$googledocs = $DB->get_record('googledocs', array('id'=> $cm->instance), '*', MUST_EXIST);
-//var_dump($googledocs); exit;
+$googledocs = $DB->get_record('googledocs', array('id' => $cm->instance), '*', MUST_EXIST);
 $coursecontext = context_course::instance($course->id);
-$PAGE->set_context($coursecontext); //Every page needs a context.
+$PAGE->set_context($coursecontext); // Every page needs a context.
 
 require_login($course, true, $cm);
 
@@ -57,13 +56,10 @@ $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 // Output starts here.
 echo $OUTPUT->header();
 
-//echo $OUTPUT->render_from_template('mod_googledocs/group_grouping_table', $coursecontext);
-
 $created = ($googledocs->sharing == 1);
 
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm->instance, $googledocs, $created);
 $t->render_table();
-
 
 $PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.
