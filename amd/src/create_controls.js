@@ -64,7 +64,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
     GoogledocsControl.prototype.main = function () {
         var self = this;
-
+        self.test_service();
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
@@ -143,7 +143,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
         }
 
-
+        
         // When sharing by group or grouping. The same file is shared.
         // The generation of this file might be quick, but giving the students
         // a permission can take some time. In order for the entire sharing is done
@@ -584,7 +584,23 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 }
             }]);
     };
+    
+    GoogledocsControl.prototype.test_service = function () {
+        Log.debug("ENTRO AL TEST_SERVICE");
+        Ajax.call([{
+            methodname: 'mod_googledocs_test_service_call',
+            args: {
+                file_ids: '123',
+                },
+                done: function (response) {
+                  Log.debug(response.result);
 
+                },
+                fail: function (reason) {
+                    Log.error(reason);
+                }
+            }]);
+    };
   
 
     //Dist. Each student from a group gets a copy or each std. from a group share same copy. Create group folders
@@ -592,12 +608,12 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
         var self = this;
         Log.debug("create_group_folder " + self.instance_id);
         Ajax.call([{
-            methodname: 'mod_create_group_folder_struct',
+            methodname: 'mod_googledocs_create_group_folder_struct',
             args: {
                 instanceid: self.instance_id,
             },
             done: function (response) {
-               Log.debug('mod_create_group_folder_struct');
+               Log.debug('mod_googledocs_create_group_folder_struct');
                self.group_folder_ids = JSON.parse(response.group_folder_ids);
                // Each student will get a copy.
                if(self.dist_type ==  'std_copy_group' 
