@@ -586,18 +586,19 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
     };
     
     GoogledocsControl.prototype.test_service = function () {
-        Log.debug("ENTRO AL TEST_SERVICE");
+        Log.debug(" Starting test_service");
         Ajax.call([{
             methodname: 'mod_googledocs_test_service_call',
             args: {
                 file_ids: '123',
                 },
                 done: function (response) {
+                    
                   Log.debug(response.results);
 
                 },
                 fail: function (reason) {
-                    Log.error(reason);
+                    Log.debug(reason);
                 }
             }]);
     };
