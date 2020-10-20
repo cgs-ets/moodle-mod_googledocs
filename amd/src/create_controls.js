@@ -593,7 +593,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 file_ids: '123',
                 },
                 done: function (response) {
-                  Log.debug(response.result);
+                  Log.debug(response.results);
 
                 },
                 fail: function (reason) {

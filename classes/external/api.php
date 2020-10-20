@@ -35,13 +35,14 @@ use external_api;
  */
 class api extends external_api {
 
-    use create_student_file;
+    use create_students_file;
     use create_group_file;
     use create_grouping_file;
     use create_group_grouping_file;
     use create_group_folder_struct;
     use delete_files;
     use update_sharing;
+    use test_service_call;
 
 
 

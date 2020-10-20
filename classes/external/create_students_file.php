@@ -46,7 +46,7 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
  *        finally, assign permissions to the groups members.
  * For the rest of the distribution there are other services created.
  */
-trait create_student_file {
+trait create_students_file {
 
 
     /**
@@ -55,11 +55,11 @@ trait create_student_file {
      *
     */
 
-    public static  function create_student_file_parameters(){
+    public static  function create_students_file_parameters(){
         return new external_function_parameters(
             array(
                   'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID', PARAM_DEFAULT, 0),
-                  'group_id' => new external_value(PARAM_RAW, 'Group ID'),
+                  'group_id' => new external_value(PARAM_RAW, 'Group ID', PARAM_DEFAULT, 0),
                   'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
@@ -78,15 +78,14 @@ trait create_student_file {
      *         int $nav represents a nav direction, 0: Backward, 1: Forward.
      * @return a timetable for a user.$by_group, $by_grouping, $group_id, $grouping_id,
      */
-    public static function create_student_file($folder_group_id, $group_id, $grouping_id,
+    public static function create_students_file($folder_group_id, $group_id, $grouping_id,
                                                $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
         global $COURSE, $DB;
-
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         //Parameters validation
-        self::validate_parameters(self::create_student_file_parameters(),
+        self::validate_parameters(self::create_students_file_parameters(),
             array(
                   'folder_group_id' => $folder_group_id,
                   'group_id' => $group_id,
@@ -171,7 +170,7 @@ trait create_student_file {
      * @return external_single_structure
      *
      */
-    public static function create_student_file_returns(){
+    public static function create_students_file_returns(){
         return new external_single_structure(
                 array(
                     'url' => new external_value(PARAM_RAW,'File URL '),
