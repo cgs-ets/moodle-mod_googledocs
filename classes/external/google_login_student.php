@@ -31,74 +31,65 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
+require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
-require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 /**
- * Trait implementing the external function mod_googledocs_update_sharing
+ * Trait implementing the external function mod_googledocs_google_login_student
  */
-trait update_sharing {
+
+trait google_login_student{
 
 
     /**
      * Returns description of method parameters
      * @return external_function_parameters
-
+     *
     */
 
-    public static  function update_sharing_parameters(){
-         return new external_function_parameters(
-             array(
-                   'file_ids' => new external_value(PARAM_RAW, 'File ID'),
-                 )
+    public static  function google_login_student_parameters(){
+        return new external_function_parameters(
+            array(
 
+            )
         );
     }
 
 
-    public static function update_sharing($file_ids) {
+    public static function google_login_student() {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-        //Parameters validation
-        self::validate_parameters(self::update_sharing_parameters(),
-            array('file_ids' => $file_ids)
-        );
+        // Get the Google Drive object.
+        $client =  new \googledrive($context->id, false, false, true, true);
+        $login = ['isloggedin' => $client->check_google_login()];
 
-        $file_ids = json_decode($file_ids);
-        $r = [];
-        foreach($file_ids as $i=> $id) {
+        // Check whether the user is logged into their Google account.
 
-            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id]);
-            $d = new \stdClass();
-            $d->id = $id;
-            $d->sharing = 1;
-            $r [] = $DB->update_record('googledocs', $d);
+        if (!$client->check_google_login()) {
+            $output = $client->display_login_button();
+            $login ['loginbutton'] = $output;
         }
 
-
         return array(
-            'results' => json_encode($r)
-
+            'result' => json_encode($login)
         );
     }
 
     /**
      * Describes the structure of the function return value.
-     * Returns the URL of the file for the grouping
+     * Returns the URL of the file for the student
      * @return external_single_structure
      *
      */
-    public static function update_sharing_returns(){
+    public static function google_login_student_returns(){
         return new external_single_structure(
                 array(
-                    'results' => new external_value(PARAM_RAW,'DB update result'),
-                 )
+                    'result' => new external_value(PARAM_RAW, 'Google login button and login status'),
+                )
       );
     }
 }

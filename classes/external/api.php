@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright 2020 Veronica Bermegui, Michael Vangelovski
+ * @copyright 2020 Veronica Bermegui
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
@@ -42,7 +42,10 @@ class api extends external_api {
     use create_group_folder_struct;
     use delete_files;
     use update_sharing;
-    use test_service_call;
+    #use test_service_call;
+    use submit_student_file;
+    use google_login_student;
+    use grade_student_file;
 
 
 

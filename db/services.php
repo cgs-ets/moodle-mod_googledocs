@@ -84,10 +84,27 @@ $functions = [
         'loginrequired' => true,
         'ajax' => true  // Is this service available to 'internal' ajax calls.
     ],
-    'mod_googledocs_test_service_call' => [
+    'mod_googledocs_google_login_student' => [
         'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
-        'methodname' => 'test_service_call', // External function name.
-        'description' => 'Test to check module  ', // Human readable description of the WS function.
+        'methodname' => 'google_login_student', // External function name.
+        'description' => 'Give Moodle access to the student Google Drive  ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true  // Is this service available to 'internal' ajax calls.
+    ],
+    'mod_googledocs_submit_student_file' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' => 'submit_student_file', // External function name.
+        'description' => 'Submit file to grade  ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true  // Is this service available to 'internal' ajax calls.
+    ],
+
+    'mod_googledocs_grade_student_file' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' => 'grade_student_file', // External function name.
+        'description' => 'Grade student file  ', // Human readable description of the WS function.
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true  // Is this service available to 'internal' ajax calls.

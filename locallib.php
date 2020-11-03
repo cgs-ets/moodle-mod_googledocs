@@ -484,53 +484,16 @@ function get_id_detail_from_json($groupgroupingjson, $type) {
     return $ids;
 }
 
-/** TOD: DELETE AFTER TESTING THE CHANGE WORKS
-     * Filter the group grouping data to just groups without duplicates
-     * @global type $DB
-     * @param type $data
-     * @return type
-     */
-function get_groups_details_from_json_OLD($data) {
-        global $DB;
-      //Get the Groups names
-        $group_id_name = [];
+function count_students($googledocid) {
+    global $DB;
+    $sql = "SELECT count(*) FROM mdl_googledocs_files WHERE googledocid = {$googledocid}";
+    return $DB->count_records_sql($sql);
+}
 
-        foreach($data->c as $c) {
-            if ($c->type == 'group'){
-                $g = new stdClass();
-                $g->id = $c->id;
-                $g->name = groups_get_group_name($c->id);
-                $group_id_name[] = $g;
-
-            } else {
-
-            /*    $sql = "SELECT  g.id, g.name FROM mdl_groupings_groups as gg
-                         INNER JOIN mdl_groups as g
-                         ON gg.groupid = g.id
-                         WHERE groupingid = :grouping_id";
-
-                $groups  =  $DB->get_records_sql($sql, ["grouping_id" => $c->id]);
-
-                foreach ($groups as $group) {
-                    $group_id_name[] = $group;
-
-                }*/
-            }
-    }
-
-    // Remove empty groups.
-    foreach($group_id_name as $group => $g) {
-        if (!groups_get_members($g->id, 'u.id')) {
-            unset($group_id_name[$group]);
-        }
-    }
-    //Remove duplicates
-    $groups = array_map('json_encode', $group_id_name);
-    $groups = array_unique($groups);
-    $groups = array_map('json_decode', $groups);
-
-
-    return $groups;
+function count_submitted_files($googledocid) {
+    global $DB;
+    $submissions =  "SELECT count(*) FROM mdl_googledocs_submissions WHERE googledoc = {$googledocid}";
+    return $DB->count_records_sql($submissions);
 }
 
 /**
@@ -590,7 +553,7 @@ class googledrive {
      * @param int $cmid mod_googledrive instance id.
      * @return void
      */
-    public function __construct($cmid, $update = false, $students = false, $fromws = false) {
+    public function __construct($cmid, $update = false, $students = false, $fromws = false, $loginstudent = false) {
         global $CFG;
 
         $this->cmid = $cmid;
@@ -625,7 +588,7 @@ class googledrive {
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
 
-        if ($update || $fromws) {
+        if ($update || $fromws && !$loginstudent) {
            $this->refresh_token();
         }
 
@@ -669,7 +632,7 @@ class googledrive {
      * is avoided.
      * @return string
      */
-    private function refresh_token() {
+    public function refresh_token() {
         $accesstoken = json_decode($_SESSION['SESSION']->googledrive_rwaccesstoken);
         //To avoid error in authentication, refresh token.
         $this->client->refreshToken($accesstoken->refresh_token);
@@ -716,7 +679,7 @@ class googledrive {
      * @return string HTML link to Google authentication service.
      */
     public function display_login_button() {
-        // Create a URL that leaads back to the callback() above function on successful authentication.
+        // Create a URL that leads back to the callback() above function on successful authentication.
         $returnurl = new moodle_url('/mod/googledocs/oauth2_callback.php');
         $returnurl->param('callback', 'yes');
         $returnurl->param('cmid', $this->cmid);
@@ -729,13 +692,14 @@ class googledrive {
         // Create the button HTML.
         $title = get_string('login', 'repository');
 
-        $link = '<button class="btn-primary btn">'.$title.'</button>';
+        $link = '<button id ="googleloginbtn" class="btn-primary btn">'.$title.'</button>';
         $jslink = 'window.open(\''.$url.'\', \''.$title.'\', \'width=600,height=800\'); return false;';
 
         $output = '<a href="#" onclick="'.$jslink.'">'.$link.'</a>';
 
         return $output;
     }
+
 
     public function format_permission($permissiontype) {
         $commenter = false;
@@ -1480,7 +1444,7 @@ class googledrive {
             $file = $this->service->files->get($fileId);
             return $file;
         } catch (Exception $e) {
-           print "An error occurred: " . $e->getMessage();
+           error_log("An error occurred: " . $e->getMessage());;
         }
     }
 
@@ -1508,29 +1472,6 @@ class googledrive {
 
          return null;
     }
-
-    /**
-     * Helper function to get the file id from a given URL.
-     * @param type $url
-     * @param type $doctype
-     * @return type
-
-    public function get_file_id_from_url($url) {
-
-        if (strpos($url, 'document')) {
-            $doctype = 'document';
-        } else if (strpos($url, 'spreadsheets')) {
-            $doctype = 'spreadsheets';
-        } else {
-            $doctype ='presentation';
-        }
-
-        if (preg_match('/\/\/docs\.google\.com\/'.$doctype.'\/d\/(.+)\/edit/', $url, $match) == 1) {
-            $fileid = $match[1] ;
-        }
-        return $fileid;
-    }  */
-
 
 
     /**
@@ -1582,7 +1523,7 @@ class googledrive {
      * @param String $type The value "user", "group", "domain" or "default".
      * @param String $role The value "owner", "writer" or "reader".
      */
-    function insert_permission($service, $fileId, $value, $type, $role, $commenter = false, $is_teacher = false) {
+    public function insert_permission($service, $fileId, $value, $type, $role, $commenter = false, $is_teacher = false) {
         $newPermission = new Google_Service_Drive_Permission();
         $newPermission->setValue($value);
         $newPermission->setRole($role);
@@ -1592,14 +1533,12 @@ class googledrive {
         if($commenter) {
             $newPermission->setAdditionalRoles(array('commenter'));
         }
+
         try {
-            if($is_teacher) { //Give permission but don't send notification.
-             // return $service->permissions->insert($fileId, $newPermission,['sendNotificationEmails' => false]);
-            }else{
-                return $service->permissions->insert($fileId, $newPermission);
-            }
+            return $service->permissions->insert($fileId, $newPermission);
+
         } catch (Exception $e) {
-            print "An error occurred: " . $e->getMessage();
+            error_log("An error occurred: " . $e->getMessage());
         }
         return null;
     }
@@ -1612,13 +1551,12 @@ class googledrive {
     * @param String $fileId ID of the file to retrieve permissions for.
     * @return Array List of permissions.
     */
-    function get_permissions($fileId) {
+    public function get_permissions($fileId) {
         try {
             $permissions = $this->service->permissions->listPermissions($fileId, array ('fields' => 'items'));
-
             return $permissions->getItems();
         } catch (Exception $e) {
-           print "An error occurred: " . $e->getMessage();
+           error_log("An error occurred: " . $e->getMessage());;
         }
         return NULL;
     }
@@ -1749,7 +1687,7 @@ class googledrive {
             curl_exec($ch);
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
-            print ($ex->getMessage());
+            error_log($ex->getMessage());
         } finally {
             curl_close($ch);
         }
@@ -1764,6 +1702,8 @@ class googledrive {
      * @return type
      */
     private function update_permission_request($fileId, $permission) {
+
+
 
         try {
 
@@ -1791,7 +1731,52 @@ class googledrive {
 
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
-            print ($ex->getMessage());
+            error_log($ex->getMessage());
+        } finally {
+            curl_close($ch);
+        }
+        return $r;
+    }
+
+    /**
+     * Calls the update function from Googles API using Curl
+     * The update function from Drive.php did not work.
+     * This update is done verb PATCH.
+     * @param type $fileId
+     * @param type $permission
+     * @return type
+     */
+    private function update_patch_permission_request($fileId, $permission) {
+
+        try {
+
+          $data = array ('role' => $permission->role,
+                         'additionalRoles' => $permission->additionalRoles);
+
+            $data_string = json_encode($data);
+            $contentlength = strlen($data_string);
+
+            $token = $this->refresh_token();
+
+            $url = "https://www.googleapis.com/drive/v2/files/".$fileId."/permissions/".$permission->id."?key=". $this->api_key ;
+            $header = ['Authorization: Bearer ' . $token,
+                       'Accept: application/json',
+                       'Content-Type: application/json',
+                       'Content-Length:' . $contentlength];
+
+            $ch = curl_init($url);
+
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_exec($ch);
+
+            $r = (curl_getinfo($ch))['http_code'] === 200;
+
+        } catch (Exception $ex) {
+            error_log($ex->getMessage());
         } finally {
             curl_close($ch);
         }
@@ -1817,7 +1802,7 @@ class googledrive {
             curl_exec($ch);
             $r = (curl_getinfo($ch))['http_code'] === 200;
         } catch (Exception $ex) {
-            print ($ex->getMessage());
+            error_log($ex->getMessage());
         } finally {
             curl_close($ch);
         }
@@ -1854,9 +1839,9 @@ class googledrive {
             $r = (curl_getinfo($ch))['http_code'] === 204;
            // $r = curl_getinfo($ch);
         } catch (Exception $ex) {
-                print ($ex->getMessage());
+            error_log($ex->getMessage());
         } finally {
-                curl_close($ch);
+            curl_close($ch);
         }
 
         return $r;
@@ -1868,7 +1853,7 @@ class googledrive {
      * @param type $permissionlist
      * @return type
      */
-    private function update_permissions($fileId, $details, $instance) {
+    public function update_permissions($fileId, $details, $instance) {
 
         try {
 
@@ -1909,8 +1894,36 @@ class googledrive {
             }
 
         } catch(Exception $ex) {
-           print($ex->getMessage());
+           error_log($ex->getMessage());
         }
+    }
+    /**
+     * This function is called when the student submits a document.
+     * Set new permission to viewer.
+     * @param type $fileid
+     */
+    public function update_permission_when_submitted($fileid, $email) {
+        $this->refresh_token();
+        $permissionlist =  $this->get_permissions($fileid);
+        $newrole = 'reader';
+
+        try {
+
+            foreach ($permissionlist as $pl => $l) {
+
+                if($l->role === "owner") {
+                    continue;
+                }
+
+                if ($l->emailAddress === $email) {
+                    $l->setRole($newrole);
+                    return $this->update_patch_permission_request($fileid, $l);
+                }
+            }
+        } catch (Exception $ex) {
+            error_log($ex->getMessage());
+        }
+
     }
 
     /**

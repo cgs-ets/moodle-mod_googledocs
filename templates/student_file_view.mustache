@@ -1,0 +1,112 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+    @package   mod_googledocs
+    @copyright 2020 Veronica Bermegui
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+
+{{!
+    @template mod_googledocs/student_file_view
+
+    Google docs student file view content template.
+
+    Example context (json):
+    {
+        "isloggedintogoogle": true,
+        "files": [
+            {
+                "extra": "onclick="this.target='_blank';"",
+                "icon": "presentation.svg",
+                "url": "https://docs.google.com/presentation/d/1Wc4ScmfEvF4vJW2YigCRe8alESNdWYHhz2NvOnnD-_E/edit?usp=sharing",
+                "groupid": "10",
+                "img": {},
+                "fileid": "1Wc4ScmfEvF4vJW2YigCRe8alESNdWYHhz2NvOnnD-_E",
+                "action": {},
+                "instanceid": "9",
+                "submitted": false
+            },
+            {
+                "extra": "onclick="this.target='_blank';"",
+                "icon": "presentation.svg",
+                "url": "https://docs.google.com/presentation/d/1AjvgCbIC_6x4QsglvyVD1Xz9zYItcMZGCuKoU0B6oTk/edit?usp=sharing",
+                "groupid": "9",
+                "img": {},
+                "fileid": "1AjvgCbIC_6x4QsglvyVD1Xz9zYItcMZGCuKoU0B6oTk",
+                "action": {},
+                "instanceid": "9",
+                "submitted": false
+            }
+        ]
+    }
+}}
+
+<div id = "formcontainer" class="container-fluid table-container">
+
+<table class = "mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover">
+
+        <thead>
+            <tr>
+                <th class ="table-student-columns">File</th>
+                <th class ="table-student-columns">Status</th>
+            </tr>
+        </thead>
+        <tbody  class = "table-striped">
+            {{#files}}
+                <tr data-instance-id = "{{instanceid}}" data-file-id = "{{fileid}}" data-group-id = "{{groupid}}">
+                    <td>
+                        <a href={{{url}}}" target = "_blank"><img class='link_icon' src= {{{img}}}></a>
+                    </td>
+
+                    <td>
+                        {{^submitted}}
+                            {{#isloggedintogoogle}}
+                                <div class='submit-doc'>
+                                  <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn-sm">Submit</button>
+                                    {{#js}}
+                                        require(['mod_googledocs/submit_control'], function(mod) {
+                                            mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
+                                        });
+                                    {{/js}}
+                                </div>
+                            {{/isloggedintogoogle}}
+                        {{/submitted}}
+                        {{^isloggedintogoogle}}
+                            {{^submitted}}
+                                <button id="submitbtn_{{fileid}}" type="button" disabled class="btn btn-primary btn-sm">Submit</button>
+                            {{/submitted}}
+                        {{/isloggedintogoogle}}
+
+                        {{#submitted}}
+                            <div class="col">
+                              <h4><span class="badge badge-primary">Submitted</span></h4>
+                            </div>
+                        {{/submitted}}
+                    </td>
+                </tr>
+            {{/files}}
+        </tbody>
+</table>
+<div>
+ {{^isloggedintogoogle}}
+    <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
+ {{/isloggedintogoogle}}
+</div>
+{{#js}}
+    require(['mod_googledocs/google_login'], function(mod) {
+        mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
+    });
+{{/js}}

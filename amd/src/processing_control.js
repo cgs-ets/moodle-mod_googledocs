@@ -22,12 +22,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/**
- * @module mod_googledocs/control
- */
 
 /**
- * @module mod_googledocs/control
+ * @module mod_googledocs/processing_controls
  */
 define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
     'use strict';

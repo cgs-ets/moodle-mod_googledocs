@@ -142,6 +142,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             } */
         }
 
+        googledocs_grade_item_update($googledocs);
         return $googledocs->id;
 
     } catch (Exception $ex) {
@@ -234,7 +235,7 @@ function googledocs_refresh_events($courseid = 0) {
  * @return boolean Success/Failure
  */
 function googledocs_delete_instance($id) {
-    global $DB,  $PAGE;
+    global $DB;
 
     if (! $googledocs = $DB->get_record('googledocs', array('id' => $id))) {
         return false;
@@ -244,8 +245,8 @@ function googledocs_delete_instance($id) {
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
-    //$DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
-    //googledocs_grade_item_delete($googledocs);
+    $DB->delete_records('googledocs_submissions', array('googledoc'  => $googledocs->id));
+    googledocs_grade_item_delete($googledocs);
     return true;
 }
 
@@ -453,3 +454,94 @@ function googledocs_extend_settings_navigation(settings_navigation $settingsnav,
 
     // TODO: what Google drive documents are allowed SELECT box
 }
+
+/* GRADING API*/
+
+/**
+ * Create grade item for given googledoc instance by calling grade_update().
+ * @category grade
+ * @uses GRADE_TYPE_VALUE
+ * @uses GRADE_TYPE_NONE
+ * @param object $googledoc object with extra cmidnumber
+ * @param array|object $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
+ * @return int 0 if ok, error code otherwise
+ */
+function googledocs_grade_item_update($googledoc, $grades=null){
+ global $CFG;
+    if (!function_exists('grade_update')) { //workaround for buggy PHP versions
+        require_once($CFG->libdir.'/gradelib.php');
+    }
+
+    if (property_exists($googledoc, 'cmidnumber')) { //it may not be always present
+        $params = array('itemname'=>$googledoc->name, 'idnumber'=>$googledoc->cmidnumber);
+    } else {
+        $params = array('itemname'=>$googledoc->name);
+    }
+
+    if ($googledoc->grade > 0) {
+        $params['gradetype']  = GRADE_TYPE_VALUE;
+        $params['grademax']   = $googledoc->grade;
+        $params['grademin']   = 0;
+    } else if ($googledoc->grade < 0) {
+        $params['gradetype']  = GRADE_TYPE_SCALE;
+        $params['scaleid']   = -$googledoc->grade;
+
+        // Make sure current grade fetched correctly from $grades
+        $currentgrade = null;
+        if (!empty($grades)) {
+            if (is_array($grades)) {
+                $currentgrade = reset($grades);
+            } else {
+                $currentgrade = $grades;
+            }
+        }
+
+        // When converting a score to a scale, use scale's grade maximum to calculate it.
+        if (!empty($currentgrade) && $currentgrade->rawgrade !== null) {
+            $grade = grade_get_grades($googledoc->course, 'mod', 'googledocs', $googledoc->id, $currentgrade->userid);
+            $params['grademax']   = reset($grade->items)->grademax;
+        }
+    } else {
+        $params['gradetype']  = GRADE_TYPE_NONE;
+    }
+
+    if ($grades  === 'reset') {
+        $params['reset'] = true;
+        $grades = null;
+    } else if (!empty($grades)) {
+        // Need to calculate raw grade (Note: $grades has many forms)
+        if (is_object($grades)) {
+            $grades = array($grades->userid => $grades);
+        } else if (array_key_exists('userid', $grades)) {
+            $grades = array($grades['userid'] => $grades);
+        }
+        foreach ($grades as $key => $grade) {
+            if (!is_array($grade)) {
+                $grades[$key] = $grade = (array) $grade;
+            }
+            //check raw grade isnt null otherwise we erroneously insert a grade of 0
+            if ($grade['rawgrade'] !== null) {
+                $grades[$key]['rawgrade'] = ($grade['rawgrade'] * $params['grademax'] / 100);
+            } else {
+                //setting rawgrade to null just in case user is deleting a grade
+                $grades[$key]['rawgrade'] = null;
+            }
+        }
+    }
+
+    return grade_update('mod/googledocs', $googledoc->course, 'mod', 'googledocs', $googledoc->id, 0, $grades, $params);
+}
+
+/**
+ * Update the grade(s) for the supplied user.
+ * @param stdClass  $googledocs
+ * @param int $userid
+ * @param bool $nullifnone
+ */
+function googledocs_update_grades($googledocs, $userid = 0, $nullifnone = true) {
+
+}
+function googledocs_grade_item_delete($googledoc) {
+
+}
+

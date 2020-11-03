@@ -23,9 +23,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace mod_googledocs\external;
+
 defined('MOODLE_INTERNAL') || die();
 
-namespace mod_googledocs\external;
 use external_function_parameters;
 use external_value;
 use external_single_structure;

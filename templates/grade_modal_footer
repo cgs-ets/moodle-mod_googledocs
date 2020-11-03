@@ -19,7 +19,7 @@
     @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
 {{!
-    @template mod_googledocs/student_table
+    @template mod_googledocs/group_table
 
     Google docs group content template.
 
@@ -50,48 +50,7 @@
 
 
 }}
-<div class="container-fluid table-container">
-    <table class = "mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover"
-        data-googledocs-id = "{{googledocid}}"  data-instance-id = "{{instanceid}}"
-        data-from-existing = "{{from_existing}}" data-owner-email = "{{owneremail}}"
-        data-all-groups="{{all_groups}}" data-file-name="{{docname}}">
-
-        <thead>
-            <tr>
-                <th class="checkbox-column"></th>
-                <th class ="table-student-columns">Full name</th>
-                <th class ="table-student-columns">Links</th>
-                <th class ="table-student-columns">Status</th>
-                <th class ="table-student-columns">Grading</th>
-
-            </tr>
-        </thead>
-
-        <tbody  class = "table-striped">
-            {{#students}}
-                <tr data-student-id ="{{student-id}}" data-student-email="{{student-email}}" student-name="{{fullname}}"
-                    student-group-id ="{{student-groupid}}">
-                    <td>{{{checkbox}}}</td>
-                    <td  class="fullname-column">{{{picture}}}</td>
-                    <td>{{{link}}}</td>
-                    <td>{{{status}}}</td>
-                    {{^graded}}
-                        <td><button id="submitbtn_{{student-id}}" type="button" {{^readytograde}}disabled{{/readytograde}} class="btn btn-primary btn-sm">Grade</button></td>
-                            {{#js}}
-                                require(['mod_googledocs/modal_grade'], function(mod) {
-                                    mod.init({{student-id}}, {{instanceid}})
-                                });
-                            {{/js}}
-                       
-                    {{/graded}}
-                    {{#graded}}
-                        <td><h4><span class="badge badge-primary">Graded</span></h4></td>
-                    {{/graded}}
-                    
-            {{/students}}
-
-        </tbody>
-    </table>
-
-</div>
+<button type='button' class='btn btn-primary' data-action='grade'>Grade</button>\n\
+<button type='button' class='btn btn-primary' data-action='next'>Next</button>\n\
+<button type='button' class='btn btn-secondary' data-action='cancel'>Cancel</button>
 

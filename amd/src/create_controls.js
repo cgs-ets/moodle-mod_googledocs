@@ -23,7 +23,7 @@
  */
 
 /**
- * @module mod_googledocs/control
+ * @module mod_googledocs/controls
  */
 define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mod_googledocs/update_controls'],
 function ($, Log, Ajax, DeleteControl, UpdateControl) {
@@ -64,7 +64,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
     GoogledocsControl.prototype.main = function () {
         var self = this;
-        self.test_service();
+       // self.test_service();
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
@@ -318,6 +318,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
         var self = this;
         Log.debug("Enters to: callStudentFileServiceForGroup");
         Log.debug("Parent file ID " + parentfile_id + "Group ID " + group_id + "Grouping ID " + grouping_id);
+
         $('tbody#group-members-'+group_id).children().each(function(e){
 
             var student_id = $(this).attr('data-student-id');
@@ -584,7 +585,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 }
             }]);
     };
-    
+   /* TODO: DELETE WHEN GOING TO PROD.
     GoogledocsControl.prototype.test_service = function () {
         Log.debug(" Starting test_service");
         Ajax.call([{
@@ -602,7 +603,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 }
             }]);
     };
-  
+  */
 
     //Dist. Each student from a group gets a copy or each std. from a group share same copy. Create group folders
     GoogledocsControl.prototype.create_group_folder = function(){

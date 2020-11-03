@@ -124,3 +124,17 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
     left: 0;
     z-index: 10000;
 }
+
+/*Google login Style*/
+
+.login-google{
+    display:none;
+    text-align: center;
+    padding-top: 5%
+}
+
+/*Grading Style*/
+
+.grademessage {
+    margin-top: 5%;
+}

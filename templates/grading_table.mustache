@@ -1,0 +1,135 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+    @package   mod_googledocs
+    @copyright 2020 Veronica Bermegui
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+{{!
+    @template mod_googledocs/group_table
+}}
+<div role="main" id="yui_3_{{id}}_2_1_1603404905676_204">
+   <span id="maincontent"></span>
+   <h2>{{docname}}</h2>
+   
+    {{> core/initials_bar}}
+    {{> core/paged_content}}
+
+    <div class="no-overflow" >
+         <table cellspacing="0" class="flexible generaltable generalbox" >
+            <thead>
+               <tr>
+                  <th class="header c0" scope="col">
+                     Select
+                     <div class="selectall"><label class="accesshide" for="selectall">Select all</label>
+                        <input type="checkbox" id="selectall" name="selectall" title="Select all">
+                     </div>
+                     <div class="commands"></div>
+                  </th>
+                  <th class="header" scope="col">
+                     <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=picture&amp;tdir">
+                        User picture
+                       <span class="accesshide ">Sort by User picture Ascending</span>
+                    </a> 
+                    <div class="commands">
+                        <a title="Hide User picture" aria-expanded="true" 
+                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=picture">
+                           <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+                  <th class="header " scope="col">
+                     <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=firstname&amp;tdir">
+                        First name
+                        <span class="accesshide ">Sort by First name Ascending</span>
+                    </a> /
+                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=lastname&amp;tdir">
+                       Surname
+                       <span class="accesshide ">Sort by Surname Ascending</span>
+                    </a>
+                    <div class="commands">
+                        <a title="Hide Full name" aria-expanded="true" 
+                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=fullname">
+                            <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+                  <th class="header email" scope="col">
+                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=email&amp;tdir">
+                        Email address
+                        <span class="accesshide ">Sort by Email address Ascending</span>
+                    </a> 
+                    <div class="commands">
+                        <a title="Hide Email address" aria-expanded="true" 
+                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=email">
+                           <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+                  <th class="header " scope="col">
+                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=status&amp;tdir">
+                        Status
+                        <span class="accesshide ">Sort by Status Ascending</span>
+                    </a>
+                    <div class="commands">
+                        <a title="Hide Status" aria-expanded="true" >
+                           <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+                  <th class="header " scope="col">
+                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=grade&amp;tdir">
+                        Grade
+                        <span class="accesshide ">Sort by Grade Ascending</span>
+                    </a>
+                    <div class="commands">
+                        <a title="Hide Grade" aria-expanded="true" >
+                            <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+
+               </tr>
+            </thead>
+               {{#users}}
+               <tr class="user{{id}} unselectedrow" id="mod_assign_grading_r7">
+                    <td>
+                        <label class="accesshide" for="selectuser_{{id}}">Select {{fullname}}</label>
+                        <input type="checkbox"  name="selectedusers" value="{{id}}">
+                        <input type="hidden" name="grademodified_{{id}}" value="">
+                        <input type="hidden" name="gradeattempt_{{id}}" value="">
+                    </td>
+                  <td> {{{picture}}} </td>
+                  <td> {{fullname}} </td>
+                  <td class=" email">{{email}}</td>
+                  <td class="cell c4" id="mod_assign_grading_r7_c4">
+                     <div class="submissionstatus">No submission</div>
+                  </td>
+                  <td class="cell c5" id="mod_assign_grading_r7_c5">
+                    <a href= "{{{gradeurl}}}" class="btn btn-primary">
+                        Grade
+                    </a>
+               </tr>
+               {{/users}}
+
+
+            </tbody>
+         </table>
+      </div>
+      {{> core/paged_content}}
+   </div>
+
+</div>

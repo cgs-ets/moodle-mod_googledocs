@@ -75,7 +75,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->setType('completionunlocked', PARAM_INT);
             $this->add_action_buttons(true, false, false);
 
-            } else {
+        } else {
 
             $radioarray = array();
             $radioarray[] = $mform->createElement('radio', 'use_document', '',
@@ -206,7 +206,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
              // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null, false);
-            }
+        }
 
     }
 

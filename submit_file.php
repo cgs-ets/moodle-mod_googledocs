@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,15 +16,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Prints a particular instance of googledocs
+ * Submit file to grade functionality
  *
- * You can have a rather longer description of the file as well,
- * if you like, and it can span multiple lines.
- *
- * @package    mod_googledocs
- * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
- *             2020 Veronica Bermegui
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_googledocs
+ * @copyright 2020 Veronica Bermegui
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  */
 
@@ -47,7 +44,7 @@ $PAGE->set_context($coursecontext); // Every page needs a context.
 
 require_login($course, true, $cm);
 
-$url = new moodle_url('/mod/googledocs/view.php', array('id' => $cm->id));
+$url = new moodle_url('/mod/googledocs/view.php');
 
 $PAGE->set_url($url);
 $PAGE->set_heading(format_string($course->fullname));
@@ -59,20 +56,10 @@ $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 // Output starts here.
 echo $OUTPUT->header();
 
-$created = ($googledocs->sharing == 1);
 
-$t = new googledocs_rendering($course->id, false, $coursecontext, $cm, $googledocs, $created);
-
-if ($action == 'grade') {
-    $t->view_grading_summary();
-} else if ($action == 'grading') {
-    $t->view_grading_table();
-} else if ($action == 'grader') {
-    $t->render_work_in_progress();
-} else  {
-    $t->render_table();
-}
 
 $PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.
 echo $OUTPUT->footer();
+
+
