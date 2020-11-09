@@ -37,7 +37,8 @@ $new = optional_param('forceview', 0, PARAM_INT);
 $id = required_param('id', PARAM_INT);
 
 $action = optional_param('action', array(), PARAM_ALPHA);
-$fs = optional_param('fs', '', PARAM_TEXT);
+$fromsummary = optional_param('fromsummary','' , PARAM_ALPHA);
+$userid = required_param('userid', PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
 
@@ -48,30 +49,26 @@ $PAGE->set_context($coursecontext); // Every page needs a context.
 
 require_login($course, true, $cm);
 
-$url = new moodle_url('/mod/googledocs/view.php', array('id' => $cm->id));
+$url = new moodle_url('/mod/googledocs/view_grading_app.php', array('id' => $cm->id));
 
 $PAGE->set_url($url);
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_title(format_string($googledocs->name));
 $PAGE->set_pagetype('course-view-' . $course->format);  // To get the blocks exactly like the course.
-$PAGE->add_body_class('path-user');
+$PAGE->add_body_class('path-googledocs-grading');
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
-
+$PAGE->set_pagelayout('embedded');
 // Output starts here.
 echo $OUTPUT->header();
 
 $created = ($googledocs->sharing == 1);
 
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm, $googledocs, $created);
+$t->view_grading_app($userid);
 
-if ($action == 'grade' || empty($action) && $created && has_capability('mod/googledocs:viewall', $coursecontext))  {
-    $t->view_grading_summary();
-} else if ($action == 'grading') {
-    $t->view_grading_table();
-} else {
-    $t->render_table();
-}
+$PAGE->requires->js_call_amd('mod_googledocs/save_comment_control', 'init', array('este texto lo mando desde php'));
 
-$PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.
+
 echo $OUTPUT->footer();
+

@@ -75,6 +75,7 @@ class googledocs_rendering {
         $this->googledocs = $googledocs;
         $this->created = $created;
         $this->coursestudents = get_role_users(5, $this->context, false, 'u.*');
+
     }
 
     /**
@@ -84,14 +85,19 @@ class googledocs_rendering {
      * @global type $PAGE
      */
     public function render_table() {
-        global $USER;
+        global $USER, $DB;
 
         $types = google_filetypes();
         $isstudent = false;
 
+        if(is_role_switched($this->courseid)) {
+            $role = $DB->get_record('role', array('id' => $USER->access['rsw'][$this->context->path]));
+            $isstudent = ($role->shortname == 'student');
+        }
+
         if (has_capability('mod/googledocs:view', $this->context) &&
             is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
-            && !has_capability('mod/googledocs:viewall', $this->context)) {
+            && !has_capability('mod/googledocs:viewall', $this->context) ) {
             $isstudent = true;
         }
 
@@ -1206,7 +1212,7 @@ class googledocs_rendering {
         global $OUTPUT;
 
         $participants = count_students($this->googledocs->id);
-        $urlparams = array('id' => $this->cm->id, 'action' => 'grading');
+        $urlparams = array('id' => $this->cm->id, 'action' => 'grading', 'fromsummary'=> 'fs');
         $url = new moodle_url('/mod/googledocs/view.php?', $urlparams);
         $submitted = count_submitted_files($this->googledocs->id);
         $data = ['title' =>$this->googledocs->name,
@@ -1216,8 +1222,8 @@ class googledocs_rendering {
                  'url' => $url,
                  'viewgrading' =>get_string('viewgrading', 'googledocs')
                 ];
-        echo $OUTPUT->render_from_template('mod_googledocs/grading_summary', $data);
 
+        echo $OUTPUT->render_from_template('mod_googledocs/grading_summary', $data);
 
     }
 
@@ -1230,11 +1236,13 @@ class googledocs_rendering {
         global $OUTPUT, $DB;
 
         $picturefields = user_picture::fields('u');
-        $sql = "SELECT $picturefields
+        $sql = "SELECT $picturefields, u.username
                 FROM mdl_googledocs_files as gf INNER JOIN mdl_user as u ON gf.userid = u.id
                 WHERE googledocid = {$this->googledocs->id}";
         $users = $DB->get_records_sql($sql);
 
+
+        $submitted = count_submitted_files($this->googledocs->id);
 
         $url = new moodle_url('/mod/googledocs/view.php?action=grading&id'. $this->cm->id .'tifirst');
         $data = ['docname' => $this->googledocs->name,
@@ -1242,43 +1250,71 @@ class googledocs_rendering {
                  'title' => get_string('title', 'googledocs'),
                  'class' => 'firstinitial',
                  'current' => 'A',
-                 'url' => $url,
                  'all' => get_string('all', 'googledocs'),
                  'group' => $this->get_alphabet()
                 ];
 
         foreach ($users as $user) {
 
+            $sql = "SELECT status FROM mdl_googledocs_submissions WHERE userid = :userid
+                    AND googledoc = :instanceid";
+            $params = ['userid' => $user->id, 'instanceid' => $this->googledocs->id];
+
+            $submitted = $DB->get_record_sql($sql, $params);
+
+            $userprofile = new \moodle_url('/user/profile.php', array('id' => $user->id));
+            $link = html_writer::tag('a', $user->firstname .' ' . $user->lastname, array('href' => $userprofile));
+
+            $urlparams = array('id' => $this->cm->id, 'action' => 'grading', 'fromsummary'=> 'fs', 'userid' =>$user->id);
+            $grade = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
+
             $urlparams = ['id' => $this->cm->id,
                           'action' => 'grader',
                           'userid' => $user->id
                         ];
-            $gradeurl = new moodle_url('/mod/googledocs/view.php?', $urlparams);
+            $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
             $data[ 'users'][] = ['picture' => $OUTPUT->user_picture($user, array('course' => $this->courseid,
                                 'includefullname' => false, 'class' => 'userpicture')),
-                                'fullname' => fullname($user),
+                                'fullname' => $link,
                                 'email' => $user->email,
                                 'userid' => $user->id,
-                                'gradeurl' => $gradeurl
+                                'gradeurl' => $gradeurl,
+                                'username' => $user->username,
+                                'submited' => $submitted,
+                                'grade' => $grade,
+                                'maxgrade' => $this->googledocs->grade
 
-                ];
+            ];
 
         }
-       #var_dump($users); exit;
-        // Need submit permission to submit an assignment.
-       # $this->require_view_grades();
-        #require_once($CFG->dirroot . '/mod/assign/gradeform.php');
-
-        #$this->add_grade_notices();
-
-        // Only load this if it is.
-     #   $o .= $this->view_grading_table();
-
-       # $o .= $this->view_footer();
-
-       # \mod_assign\event\grading_table_viewed::create_from_assign($this)->trigger();
 
        echo $OUTPUT->render_from_template('mod_googledocs/grading_table', $data);
+    }
+
+    public function  view_grading_app($userid){
+        global $OUTPUT, $DB;
+        $user =  $DB->get_record('user', array('id' => $userid));
+        $sql = " SELECT url FROM mdl_googledocs_files
+                 WHERE userid = {$userid} and googledocid = {$this->googledocs->id};";
+        $url = $DB->get_record_sql($sql);
+
+        $data = ['userid' => $userid,
+                 'courseid' => $this->courseid,
+                 'showuseridentity' => true,
+                 'coursename' => $this->context->get_context_name(),
+                 'cmid' => $this->cm->id,
+                 'name' => $this->googledocs->name,
+                 'caneditsettings' => false,
+                 'actiongrading' =>'grading',
+                 'viewgrading' => get_string('viewgrading', 'googledocs'),
+                 'googledocid' => $this->googledocs->id,
+                 'usersummary' => $OUTPUT->user_picture($user, array('course' => $this->courseid, 'includefullname' => true, 'class' => 'userpicture')),
+                 'useremail' => $user->email,
+                 'fileurl' => $url->url,
+
+            ];
+
+        echo $OUTPUT->render_from_template('mod_googledocs/grading_app', $data);
     }
 
     private function get_alphabet() {

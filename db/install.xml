@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/googledocs/db" VERSION="20201028" COMMENT="XMLDB file for Moodle mod/googledocs"
+<XMLDB PATH="mod/googledocs/db" VERSION="20201109" COMMENT="XMLDB file for Moodle mod/googledocs"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -96,6 +96,20 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="googledocsfeedback_comments" COMMENT="Save submission comments">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="googledoc" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Googledoc instance id"/>
+        <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="commenttext" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="commentformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The feedback text format"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="googledoc" TYPE="foreign" FIELDS="googledoc" REFTABLE="googledocs" REFFIELDS="id"/>
+        <KEY NAME="grade" TYPE="foreign" FIELDS="grade" REFTABLE="googledocs_grades" REFFIELDS="id" COMMENT="The grade instance this feedback relates to"/>
       </KEYS>
     </TABLE>
   </TABLES>

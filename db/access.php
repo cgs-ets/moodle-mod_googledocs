@@ -93,7 +93,6 @@ $capabilities = array(
         )
     ),
 
-
     'mod/googledocs:viewreports' => array(
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
@@ -104,7 +103,6 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
     'mod/googledocs:manage' => array(
 
         'captype' => 'write',
@@ -115,7 +113,5 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
-
-
+    
 );

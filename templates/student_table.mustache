@@ -55,7 +55,7 @@
         data-googledocs-id = "{{googledocid}}"  data-instance-id = "{{instanceid}}"
         data-from-existing = "{{from_existing}}" data-owner-email = "{{owneremail}}"
         data-all-groups="{{all_groups}}" data-file-name="{{docname}}">
-
+        <input type ='hidden' id = 'simulation' </input>
         <thead>
             <tr>
                 <th class="checkbox-column"></th>
@@ -82,16 +82,12 @@
                                     mod.init({{student-id}}, {{instanceid}})
                                 });
                             {{/js}}
-                       
                     {{/graded}}
                     {{#graded}}
                         <td><h4><span class="badge badge-primary">Graded</span></h4></td>
                     {{/graded}}
-                    
             {{/students}}
-
         </tbody>
     </table>
-
 </div>
 

@@ -240,16 +240,39 @@ class mod_googledocs_mod_form extends moodleform_mod {
     }
 
     public function group_validation($data){
-
-//        $all_groups_all_groupings = in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
-//            && count($data['groups']) > 2;
-//        $all_groups_a_group = in_array('0_group', $data['groups']) && !in_array('0_grouping', $data['groups'])
-//            && (count($data['groups']) > 1);
-//        $all_grouping_a_grouping = !in_array('0_group', $data['groups']) && in_array('0_grouping', $data['groups'])
-//                && (count($data['groups']) > 1);
         $everyone_group_grouping = in_array('00_everyone', $data['groups']) && count($data['groups']) > 1;
-// $all_groups_all_groupings || $all_groups_a_group || $all_grouping_a_grouping ||
-         return $everyone_group_grouping;
+        return $everyone_group_grouping;
 
     }
+
+    public function set_data($default_values) {
+       // var_dump($default_values); exit;
+        isset($default_values->name) ?  $default_values->name_doc = $default_values->name : $default_values->name_doc = '';
+        $default_values->name_doc = $default_values->name;
+        if (isset($default_values->distribution)) {
+            $default_values->distribution = $this->get_distribution($default_values->distribution);
+        }
+        parent::set_data($default_values);
+    }
+
+    private function get_distribution($distribution) {
+
+        if ($distribution == 'std_copy' || $distribution == 'std_copy_group'
+            || $distribution == 'std_copy_grouping' || $distribution == 'std_copy_group_grouping') {
+            return 'std_copy';
+        }
+
+        if ($distribution == 'group_copy' || $distribution == 'grouping_copy'
+            || $distribution == 'group_grouping_copy' ) {
+            return 'group_copy';
+        }
+
+        if ($distribution == 'dist_share_same' || $distribution == 'dist_share_same_group'
+            || $distribution == 'dist_share_same_grouping' || $distribution == 'dist_share_same_group_grouping') {
+            return 'dist_share_same';
+        }
+
+    }
+
+
 }

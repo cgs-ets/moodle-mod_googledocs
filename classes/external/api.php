@@ -42,10 +42,10 @@ class api extends external_api {
     use create_group_folder_struct;
     use delete_files;
     use update_sharing;
-    #use test_service_call;
     use submit_student_file;
     use google_login_student;
     use grade_student_file;
+    use save_quick_grading;
 
 
 

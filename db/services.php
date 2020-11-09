@@ -108,6 +108,15 @@ $functions = [
         'type' => 'write', // DB rights of the WS function.
         'loginrequired' => true,
         'ajax' => true  // Is this service available to 'internal' ajax calls.
+    ],
+
+    'mod_googledocs_save_quick_grading' => [
+        'classname' => 'mod_googledocs\external\api', // Class containing a reference to the external function.
+        'methodname' => 'save_quick_grading', // External function name.
+        'description' => 'Sav grading and comment  ', // Human readable description of the WS function.
+        'type' => 'write', // DB rights of the WS function.
+        'loginrequired' => true,
+        'ajax' => true  // Is this service available to 'internal' ajax calls.
     ]
 
 ];

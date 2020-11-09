@@ -70,7 +70,6 @@
                     <td>
                         <a href={{{url}}}" target = "_blank"><img class='link_icon' src= {{{img}}}></a>
                     </td>
-
                     <td>
                         {{^submitted}}
                             {{#isloggedintogoogle}}
@@ -88,7 +87,13 @@
                             {{^submitted}}
                                 <button id="submitbtn_{{fileid}}" type="button" disabled class="btn btn-primary btn-sm">Submit</button>
                             {{/submitted}}
-                        {{/isloggedintogoogle}}
+                              <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
+                                {{#js}}
+                                    require(['mod_googledocs/google_login'], function(mod) {
+                                        mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
+                                    });
+                                {{/js}}
+                                    {{/isloggedintogoogle}}
 
                         {{#submitted}}
                             <div class="col">
@@ -100,13 +105,4 @@
             {{/files}}
         </tbody>
 </table>
-<div>
- {{^isloggedintogoogle}}
-    <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
- {{/isloggedintogoogle}}
 </div>
-{{#js}}
-    require(['mod_googledocs/google_login'], function(mod) {
-        mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
-    });
-{{/js}}

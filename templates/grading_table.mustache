@@ -21,7 +21,8 @@
 {{!
     @template mod_googledocs/group_table
 }}
-<div role="main" id="yui_3_{{id}}_2_1_1603404905676_204">
+
+<div role="main" >
    <span id="maincontent"></span>
    <h2>{{docname}}</h2>
    
@@ -40,47 +41,59 @@
                      <div class="commands"></div>
                   </th>
                   <th class="header" scope="col">
-                     <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=picture&amp;tdir">
+                     <a href="#">
                         User picture
                        <span class="accesshide ">Sort by User picture Ascending</span>
                     </a> 
                     <div class="commands">
                         <a title="Hide User picture" aria-expanded="true" 
-                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=picture">
+                           href="#">
                            <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
                         </a>
                     </div>
                   </th>
                   <th class="header " scope="col">
-                     <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=firstname&amp;tdir">
+                     <a href="#">
                         First name
                         <span class="accesshide ">Sort by First name Ascending</span>
                     </a> /
-                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=lastname&amp;tdir">
+                    <a href="#">
                        Surname
                        <span class="accesshide ">Sort by Surname Ascending</span>
                     </a>
                     <div class="commands">
                         <a title="Hide Full name" aria-expanded="true" 
-                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=fullname">
+                           href="#">
                             <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
                         </a>
                     </div>
                   </th>
                   <th class="header email" scope="col">
-                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=email&amp;tdir">
+                    <a href="#">
+                        Username
+                        <span class="accesshide ">Sort by Email address Ascending</span>
+                    </a> 
+                    <div class="commands">
+                        <a title="Hide Email address" aria-expanded="true" 
+                           href="#">
+                           <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                        </a>
+                    </div>
+                  </th>
+                  <th class="header email" scope="col">
+                    <a href="#">
                         Email address
                         <span class="accesshide ">Sort by Email address Ascending</span>
                     </a> 
                     <div class="commands">
                         <a title="Hide Email address" aria-expanded="true" 
-                           href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;thide=email">
+                           href="#">
                            <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
                         </a>
                     </div>
                   </th>
                   <th class="header " scope="col">
-                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=status&amp;tdir">
+                    <a href="#">
                         Status
                         <span class="accesshide ">Sort by Status Ascending</span>
                     </a>
@@ -91,7 +104,7 @@
                     </div>
                   </th>
                   <th class="header " scope="col">
-                    <a href="http://localhost/cgs/moodle/mod/assign/view.php?action=grading&amp;id=1032&amp;tsort=grade&amp;tdir">
+                    <a href="#">
                         Grade
                         <span class="accesshide ">Sort by Grade Ascending</span>
                     </a>
@@ -101,27 +114,96 @@
                         </a>
                     </div>
                   </th>
+            <th class="header c7" scope="col">
+            Edit
+            <div class="commands">
+                <a title="Hide Edit" aria-expanded="true" a
+                   href="#"><i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                </a>
+            </div>
+            </th>
+            <th class="header c8" scope="col">
+                <a href="#">Last modified (grade)<span class="accesshide ">Sort by Last modified (grade) Ascending</span></a> 
+                <div class="commands">
+                   <a title="Hide Last modified (grade)" aria-expanded="true" >
+                      <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                   </a>
+                </div>
+            </th>
+            <th class="header c8" scope="col">
+                Feedback comments
+                <div class="commands">
+                    <a title="Hide Feedback comments" aria-expanded="true" href="#">
+                      <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                    </a>
+                </div>
+            </th>
+            <th class="header c9" scope="col">
+               Final grade
+                <div class="commands">
+                  <a title="Hide Final grade" aria-expanded="true" >
+                  <i class="icon fa fa-minus fa-fw " title="Hide" aria-label="Hide"></i>
+                  </a>
+                </div>
+            </th>
 
                </tr>
             </thead>
                {{#users}}
-               <tr class="user{{id}} unselectedrow" id="mod_assign_grading_r7">
+               <tr class="user{{userid}} unselectedrow" data-user-id = "{{userid}}" >
                     <td>
                         <label class="accesshide" for="selectuser_{{id}}">Select {{fullname}}</label>
                         <input type="checkbox"  name="selectedusers" value="{{id}}">
                         <input type="hidden" name="grademodified_{{id}}" value="">
                         <input type="hidden" name="gradeattempt_{{id}}" value="">
                     </td>
-                  <td> {{{picture}}} </td>
-                  <td> {{fullname}} </td>
-                  <td class=" email">{{email}}</td>
-                  <td class="cell c4" id="mod_assign_grading_r7_c4">
-                     <div class="submissionstatus">No submission</div>
-                  </td>
-                  <td class="cell c5" id="mod_assign_grading_r7_c5">
-                    <a href= "{{{gradeurl}}}" class="btn btn-primary">
-                        Grade
-                    </a>
+                    <td> {{{picture}}} </td>
+                    <td> {{{fullname}}} </td>
+                    <td> {{username}} </td>
+                    <td class=" email">{{email}}</td>
+                    <td>
+                        {{^submitted}}
+                            <div class="submissionstatus ">No submission</div>
+                        {{/submitted}}
+
+                        {{#submitted}}
+                            <div class="submissionstatussubmitted alert-success" >Submitted for grading</div>
+                        {{/submitted}}
+                    </td>
+                    <td>
+                      <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade">
+                          Grade                     
+                      </a> <br> 
+                        {{# pix }}t/spacer {{/ pix }} <br>
+                        <input type="text" id="quickgrade_{{userid}}" name="quickgrade_{{userid}}" value="" size="6" maxlength="10" class="quickgrade"> <br>
+                        / {{maxgrade}}
+                    </td>
+                    <td>
+                     <div class="action-menu moodle-actionmenu d-inline" id="action-menu-3" data-enhance="moodle-core-actionmenu" data-owner=".gradingtable-actionmenu">
+                        <div class="menubar d-flex " id="action-menu-3-menubar" role="menubar">
+                           <div class="dropdown">
+                              <a href="#" tabindex="0" class=" dropdown-toggle icon-no-margin" id="action-menu-toggle-3" aria-label="Edit" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" aria-controls="action-menu-3-menu">
+                              Edit
+                              <b class="caret"></b>
+                              </a>
+                              <div class="dropdown-menu dropdown-menu-right menu  align-tl-bl" id="action-menu-3-menu" data-rel="menu-content" aria-labelledby="action-menu-toggle-3" role="menu" data-align="tl-bl" data-constraint=".gradingtable > .no-overflow">
+                                 <a href="{{{url}}}" class="dropdown-item menu-action" role="menuitem" aria-labelledby="actionmenuaction-8">
+                                 <span class="menu-action-text" id="actionmenuaction-8">Grade</span>
+                                 </a>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                    </td>
+                    <td >
+                        last modf
+                    </td>
+                    <td >
+                       <textarea name="quickgrade_comments_{{userid}}" id="quickgrade_comments_{{userid}}" class="quickgrade"></textarea>
+                    </td>
+                    <td >
+                        Final grade / {{maxgrade}}
+                    </td>
                </tr>
                {{/users}}
 
@@ -129,7 +211,14 @@
             </tbody>
          </table>
       </div>
-      {{> core/paged_content}}
+    <div>
+        <button class="btn btn-primary submit-quickgrade">Save all quick grading changes </button>
+    </div>
    </div>
-
 </div>
+
+{{#js}}
+    require(['mod_googledocs/save_quick_grading'], function(mod) {
+        mod.init();
+    });
+{{/js}}
