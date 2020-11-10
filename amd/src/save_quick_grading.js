@@ -36,19 +36,21 @@ define(['jquery', 'core/ajax', 'core/log'], function($,Ajax, Log) {
         $('button.submit-quickgrade').on('click', function () {
             Log.debug("Guardar los datos de los inputs con valores");
             var listOfGrades = [];
-            $('tbody').children().each(function(e){
+            $('tbody').children().each(function(){
                 var userid = $(this).attr('data-user-id');
                 var grade = $(this).find("#quickgrade_" + userid).val();
                 var comment = $(this).find("#quickgrade_comments_" + userid).val();
+                var googledocid = $(this).attr('data-googledocid');
                 /* False for null,undefined,0,000,"",false. True for string "0" and whitespace " ".*/
                 if( grade.length == 0 && comment.length == 0) {
                     return;
                 }
 
                 var grade = {
-                    id : userid,
+                    userid : userid,
                     grade : grade,
-                    comment: comment
+                    comment: comment,
+                    googledocid: googledocid
                 }
                 listOfGrades.push(grade);
 
