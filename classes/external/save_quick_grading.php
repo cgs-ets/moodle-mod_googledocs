@@ -34,6 +34,8 @@ use external_single_structure;
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once($CFG->dirroot . '/grade/grading/lib.php');
 
 /**
  * Trait implementing the external function mod_save_quick_grading
@@ -58,36 +60,58 @@ trait save_quick_grading{
 
 
     public static function save_quick_grading($grades) {
-        global $COURSE, $DB;
+        global $COURSE, $DB, $USER;
 
         $context = \context_user::instance($COURSE->id);
+
         self::validate_context($context);
 
        //Parameters validation.
         self::validate_parameters(self::save_quick_grading_parameters(),
             array('grades' => $grades)
         );
+        $grades = json_decode($grades);
+        $sql = "SELECT * FROM mdl_googledocs_grades  WHERE userid = :userid AND googledocid = :googledocid";
+        $modifiedtimes = [];
 
-        $data = new \stdClass();
-        $data->googledocid = $googledocid;
-        $data->userid = $userid;
-        $data->grade = $grade;
-        $data->late = 0;
-        $data->completed = 1;
 
-        /*if (($current->grade < 0 || $current->grade === null) &&
-                ($modified->grade < 0 || $modified->grade === null)) {
-                // Different ways to indicate no grade.
-                $modified->grade = $current->grade; // Keep existing grade.
+        foreach ($grades as $grade) {
+            $params = ['userid' => $grade->userid, 'googledocid' => $grade->googledocid];
+            $current  =  $DB->get_records_sql($sql,$params);
+
+            if(empty($current)) {  //New entry
+                $data = new \stdClass();
+                $data->googledocid = $grade->googledocid;
+                $data->userid = $grade->userid;
+                $data->timecreated = time();
+                $data->timemodified = time();
+                $data->grader = $USER->id;
+                $data->grade = floatval($grade->grade);
+                $finalgrade = (($data->grade > 0 && $data->grade <= $grade->maxgrade) ?
+                    strval($data->grade) . '/' . strval($grade->maxgrade) : '-');
+                $recordid = $DB->insert_record('googledocs_grades', $data, true);
+                $modifiedtimes [] = ['userid' =>$grade->userid,
+                                     'grade' => $data->grade,
+                                     'googledocid' => $grade->googledocid,
+                                     'comment' => $grade->comment,
+                                     'rownumber' => $grade->rownumber,
+                                     'timemodified' => date('l, d F Y, g:i A', $data->timemodified),
+                                     'finalgrade' =>  $finalgrade ,
+                                    ];
+
+                if ($recordid != null) {
+                    $data = new \stdClass();
+                    $data->googledoc = $grade->googledocid;
+                    $data->grade = $recordid;
+                    $data->commenttext = $grade->comment;
+                    $data->commentformat = 1;
+                    $commentfeedbackrecord = $DB->insert_record('googledocsfeedback_comments', $data, true);
+                }
             }
-            // Treat 0 and null as different values.
-            if ($current->grade !== null) {
-                $current->grade = floatval($current->grade);
-            }*/
 
-        //$recordid = $DB->insert_record('googledocs_grades', $data, true);
+        }
         return array(
-         'recordid' => $recordid
+         'modifiedtimes' => json_encode($modifiedtimes)
         );
     }
 
@@ -100,7 +124,7 @@ trait save_quick_grading{
     public static function save_quick_grading_returns(){
         return new external_single_structure(
                 array(
-                   'recordid' => new external_value(PARAM_RAW, 'DB record ID '),
+                   'modifiedtimes' => new external_value(PARAM_RAW, 'Time modified  '),
                 )
       );
     }

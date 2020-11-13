@@ -496,6 +496,8 @@ function count_submitted_files($googledocid) {
     return $DB->count_records_sql($submissions);
 }
 
+
+
 /**
  * Google Docs Plugin
  *

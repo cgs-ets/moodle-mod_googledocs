@@ -167,3 +167,7 @@ textarea.textarea-comment {
     display: block;
     margin: 1% auto;
 }
+
+.quickgrademodified {
+    background-color: #fc9;
+}

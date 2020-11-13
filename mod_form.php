@@ -246,9 +246,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
     }
 
     public function set_data($default_values) {
-       // var_dump($default_values); exit;
-        isset($default_values->name) ?  $default_values->name_doc = $default_values->name : $default_values->name_doc = '';
-        $default_values->name_doc = $default_values->name;
+
+        isset($default_values->name) ?  ($default_values->name_doc = $default_values->name ) :
+            $default_values->name_doc = '';
+
         if (isset($default_values->distribution)) {
             $default_values->distribution = $this->get_distribution($default_values->distribution);
         }

@@ -1251,16 +1251,25 @@ class googledocs_rendering {
                  'class' => 'firstinitial',
                  'current' => 'A',
                  'all' => get_string('all', 'googledocs'),
-                 'group' => $this->get_alphabet()
+                 'group' => $this->get_alphabet(),
+                 'courseid' => $this->googledocs->course,
+                'googledocid' =>  $this->googledocs->id,
+                'maxgrade' => $this->googledocs->grade,
                 ];
 
         foreach ($users as $user) {
 
-            $sql = "SELECT status FROM mdl_googledocs_submissions WHERE userid = :userid
+            $sql = "SELECT * FROM mdl_googledocs_submissions WHERE userid = :userid
                     AND googledoc = :instanceid";
             $params = ['userid' => $user->id, 'instanceid' => $this->googledocs->id];
 
             $submitted = $DB->get_record_sql($sql, $params);
+
+            $sql = "SELECT *, grades.grade as gradevalue FROM mdl_googledocs_grades as grades
+                    INNER JOIN mdl_googledocsfeedback_comments as comments ON grades.id = comments.grade
+                    WHERE grades.userid = :userid and grades.googledocid = :instanceid;";
+
+            $grading = $DB->get_record_sql($sql, $params);
 
             $userprofile = new \moodle_url('/user/profile.php', array('id' => $user->id));
             $link = html_writer::tag('a', $user->firstname .' ' . $user->lastname, array('href' => $userprofile));
@@ -1273,21 +1282,24 @@ class googledocs_rendering {
                           'userid' => $user->id
                         ];
             $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
-            $data[ 'users'][] = ['picture' => $OUTPUT->user_picture($user, array('course' => $this->courseid,
+
+            $data['users'][] = ['picture' => $OUTPUT->user_picture($user, array('course' => $this->courseid,
                                 'includefullname' => false, 'class' => 'userpicture')),
                                 'fullname' => $link,
                                 'email' => $user->email,
                                 'userid' => $user->id,
                                 'gradeurl' => $gradeurl,
                                 'username' => $user->username,
-                                'submited' => $submitted,
+                                'submited' => $submitted != false ? true : $submitted,
                                 'grade' => $grade,
-                                'maxgrade' => $this->googledocs->grade
+                                'gradegiven' => (!empty($grading) ? $grading->gradevalue : ''),
+                                'comment' =>  (!empty($grading) ? $grading->commenttext : ''),
+                                'lastmodified' => (!empty($grading) ? date('l, d F Y, g:i A', $grading->timemodified) : '-')
 
             ];
 
         }
-
+        
        echo $OUTPUT->render_from_template('mod_googledocs/grading_table', $data);
     }
 

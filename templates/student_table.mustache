@@ -62,8 +62,6 @@
                 <th class ="table-student-columns">Full name</th>
                 <th class ="table-student-columns">Links</th>
                 <th class ="table-student-columns">Status</th>
-                <th class ="table-student-columns">Grading</th>
-
             </tr>
         </thead>
 
@@ -75,17 +73,6 @@
                     <td  class="fullname-column">{{{picture}}}</td>
                     <td>{{{link}}}</td>
                     <td>{{{status}}}</td>
-                    {{^graded}}
-                        <td><button id="submitbtn_{{student-id}}" type="button" {{^readytograde}}disabled{{/readytograde}} class="btn btn-primary btn-sm">Grade</button></td>
-                            {{#js}}
-                                require(['mod_googledocs/modal_grade'], function(mod) {
-                                    mod.init({{student-id}}, {{instanceid}})
-                                });
-                            {{/js}}
-                    {{/graded}}
-                    {{#graded}}
-                        <td><h4><span class="badge badge-primary">Graded</span></h4></td>
-                    {{/graded}}
             {{/students}}
         </tbody>
     </table>

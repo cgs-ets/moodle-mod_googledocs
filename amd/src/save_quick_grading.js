@@ -9,7 +9,7 @@
   * @module mod_googledocs/update_controls
   * define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/update_controls'], function ($, Log, Ajax, UpdateControl)
   */
-define(['jquery', 'core/ajax', 'core/log'], function($,Ajax, Log) {
+define(['jquery', 'core/ajax', 'core/log', 'core/notification'], function($,Ajax, Log, Notification) {
   'use strict';
     /**
      * Initializes the update controls.
@@ -29,19 +29,25 @@ define(['jquery', 'core/ajax', 'core/log'], function($,Ajax, Log) {
     GoogledocSaveQuickGrading.prototype.main = function() {
         var self = this;
         self.saveQuickGrading();
+        self.refreshDateModified;
+        self.onGradeChangeHandler();
+        self.onCommentChangeHandler();
     };
 
-     GoogledocSaveQuickGrading.prototype.saveQuickGrading = function() {
-
+    GoogledocSaveQuickGrading.prototype.saveQuickGrading = function() {
+        var self = this;
         $('button.submit-quickgrade').on('click', function () {
-            Log.debug("Guardar los datos de los inputs con valores");
+
             var listOfGrades = [];
-            $('tbody').children().each(function(){
+            var googledocid = $('table.gradetb').attr('data-googledocid');
+            var maxgrade = $('table.gradetb').attr('data-maxgrade');
+            var courseid = $('table.gradetb').attr('data-maxgrade');
+
+            $('tbody').children().each(function(e){
                 var userid = $(this).attr('data-user-id');
                 var grade = $(this).find("#quickgrade_" + userid).val();
                 var comment = $(this).find("#quickgrade_comments_" + userid).val();
-                var googledocid = $(this).attr('data-googledocid');
-                /* False for null,undefined,0,000,"",false. True for string "0" and whitespace " ".*/
+
                 if( grade.length == 0 && comment.length == 0) {
                     return;
                 }
@@ -50,7 +56,10 @@ define(['jquery', 'core/ajax', 'core/log'], function($,Ajax, Log) {
                     userid : userid,
                     grade : grade,
                     comment: comment,
-                    googledocid: googledocid
+                    googledocid: googledocid,
+                    rownumber: e,
+                    maxgrade:maxgrade,
+                    courseid:courseid
                 }
                 listOfGrades.push(grade);
 
@@ -62,15 +71,59 @@ define(['jquery', 'core/ajax', 'core/log'], function($,Ajax, Log) {
                     grades : JSON.stringify(listOfGrades)
                 },
                 done: function (response) {
-                    Log.debug(response);
+                    Log.debug(JSON.parse(response.modifiedtimes));
+                    self.refreshDateModified(JSON.parse(response.modifiedtimes));
+                    Notification.addNotification({
+                        message: 'The grade changes were saved',
+                        type: 'success'
+                    });
                 },
                 fail: function (reason) {
+                    Notification.addNotification({
+                        message: 'The grade changes were saved',
+                        type: 'info'
+                    });
                     Log.error(reason);
                 }
             }]);
 
         });
 
+    };
+
+    GoogledocSaveQuickGrading.prototype.refreshDateModified = function(grades) {
+
+        grades.forEach((grade) => {
+            // tr is counting the header row too.
+            var currentText =  $( "tr" ).eq(grade.rownumber + 1).find('input.quickgrade').val();
+
+            $( "tr" ).eq(grade.rownumber + 1).find('input.quickgrade').val(function(i,v){
+                return v.replace(currentText, grade.grade);
+            });
+            $( "tr" ).eq(grade.rownumber + 1).find('input.quickgrade').parent().removeClass('quickgrademodified')
+            $( "tr" ).eq(grade.rownumber + 1).find('textarea.quickgrade').parent().removeClass('quickgrademodified');
+            $( "tr" ).eq( grade.rownumber + 1 ).find('td.timemod').html(grade.timemodified);
+            $( "tr" ).eq( grade.rownumber + 1 ).find('td.timemod').html(grade.timemodified);
+            $( "tr" ).eq( grade.rownumber + 1 ).find('td.finalgrade').html(grade.finalgrade);
+            $( "tr" ).eq( grade.rownumber + 1 ).find('div.submissionstatussubmitted ').html('Graded');
+            //submissionstatus 
+            $( "tr" ).eq( grade.rownumber + 1 ).find('div.submissionstatus ').html('Graded').addClass('alert-success');;
+            
+        });
+    };
+    
+    GoogledocSaveQuickGrading.prototype.onGradeChangeHandler = function() {
+        $('input.quickgrade').on('change', function (e) {
+            var target = $(e.target)[0];
+            $(target).parent().addClass('quickgrademodified');
+        });
+    };
+    
+    GoogledocSaveQuickGrading.prototype.onCommentChangeHandler = function() {
+        $('textarea.quickgrade').on('change', function (e) {
+            var target = $(e.target)[0];
+            $(target).parent().addClass('quickgrademodified');
+        });
     };
 
     return {

@@ -64,11 +64,16 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
     GoogledocsControl.prototype.main = function () {
         var self = this;
-       // self.test_service();
+        window.addEventListener('popstate', self.popstateHandler);
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
         //when sharing by group or by bygrouping other WS is called
+        if (!self.create) {
+            window.addEventListener('beforeunload', self.beforeunloadHandler);
+        } else {
+            window.removeEventListener('beforeunload', self.beforeunloadHandler, false);
+        }
 
         self.initTags();
 
@@ -142,8 +147,8 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 break;
 
         }
+        //
 
-        
         // When sharing by group or grouping. The same file is shared.
         // The generation of this file might be quick, but giving the students
         // a permission can take some time. In order for the entire sharing is done
@@ -205,8 +210,18 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 DeleteControl.init(JSON.stringify(self.files_to_erase), self.dist_type);
                 self.countCalls = 0;
             }
+
         });
     };
+
+    // Triggers when user tries to leave the page and documents are being created.
+    GoogledocsControl.prototype.beforeunloadHandler = function (event, created) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+    GoogledocsControl.prototype.popstateHandler = function (event) {
+        Log.debug('popstateHandler');
+    }
 
     GoogledocsControl.prototype.initTags = function (){
         var self = this;
