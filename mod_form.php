@@ -216,24 +216,26 @@ class mod_googledocs_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
 
+        
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-
-        if ($data['use_document'] != 'new') {
-            if (empty($data['google_doc_url'])) {
-                $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
-            } else if (!googledocs_appears_valid_url($data['google_doc_url']) ||
-                get_file_id_from_url($data['google_doc_url']) == null) {
-                $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
+        if(!isset($data['update'])) {
+            if ($data['use_document'] != 'new') {
+                if (empty($data['google_doc_url'])) {
+                    $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
+                } else if (!googledocs_appears_valid_url($data['google_doc_url']) ||
+                    get_file_id_from_url($data['google_doc_url']) == null) {
+                    $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
+                }
+            } else {
+                if (empty($data['name_doc'])) {
+                   $errors['name_doc'] = get_string('docnameinvalid', 'googledocs');
+                }
             }
-        } else {
-            if (empty($data['name_doc'])) {
-               $errors['name_doc'] = get_string('docnameinvalid', 'googledocs');
-            }
-        }
 
-        if (isset($data['groups']) && $this->group_validation($data)) {
-            $errors['groups'] = get_string('std_invalid_selection', 'googledocs');
+            if (isset($data['groups']) && $this->group_validation($data)) {
+                $errors['groups'] = get_string('std_invalid_selection', 'googledocs');
+            }
         }
 
         return $errors;
@@ -253,6 +255,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
         if (isset($default_values->distribution)) {
             $default_values->distribution = $this->get_distribution($default_values->distribution);
         }
+
+        isset($default_values->use_document) ? ($default_values->use_document =  $default_values->use_document )
+            : $default_values->name_doc = '' ;
         parent::set_data($default_values);
     }
 

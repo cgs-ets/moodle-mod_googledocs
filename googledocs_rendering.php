@@ -408,7 +408,9 @@ class googledocs_rendering {
                     'student-email' => $student->email,
                     'link' => $links,
                     'student-groupid' => isset($student->groupid) ? $student->groupid : '',
-                    'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div()
+                    'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
+                    'access' =>  "ACCESO",
+                    'grade' => "NOTA"
                 ];
 
                 $i++;
@@ -524,12 +526,12 @@ class googledocs_rendering {
 
         $data = ['googledocid' => $this->googledocs->docid,
                 'docname' =>$this->googledocs->name,
-            'instanceid' => $this->googledocs->id,
-            'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
-            'members' => array(),
-            'show_group' => false,
-            'owneremail' => $owneremail->email,
-            'all_groups' => $group_ids
+                'instanceid' => $this->googledocs->id,
+                'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
+                'members' => array(),
+                'show_group' => false,
+                'owneremail' => $owneremail->email,
+                'all_groups' => $group_ids
         ];
 
         $i = 0;
@@ -573,7 +575,11 @@ class googledocs_rendering {
                         'id' => 'link_file_' . $i));
             }
 
-
+            $urlparams = ['id' => $this->cm->id,
+                          'action' => 'grader',
+                          'userid' => $student->id
+                        ];
+            $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
 
             $data['students'][] = ['checkbox' => $OUTPUT->render($checkbox),
                 'picture' => $picture,
@@ -584,13 +590,14 @@ class googledocs_rendering {
                 'student-groupid' => isset($student->groupid) ? $student->groupid : '',
                 'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
                 'readytograde' => $readytograde,
-                'graded' => $graded
+                'access' => ucfirst($this->googledocs->permissions),
+                'gradeurl' => $gradeurl
 
             ];
 
             $i++;
         }
-
+        #var_dump($data); exit;
         echo $OUTPUT->render_from_template('mod_googledocs/student_table', $data);
     }
 
@@ -1299,7 +1306,7 @@ class googledocs_rendering {
             ];
 
         }
-        
+
        echo $OUTPUT->render_from_template('mod_googledocs/grading_table', $data);
     }
 

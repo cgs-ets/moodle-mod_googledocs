@@ -73,7 +73,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-        #var_dump($mform->get_submitted_data());
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
 
@@ -178,7 +177,7 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
     } else {
         $googledocs->update_status = 'modified';
         $googledocs->intro =   ($mform->get_submitted_data())->name;
-        $googledocs->introformat = $mform->get_current()->introformat;
+        $googledocs->introformat = ($mform->get_submitted_data())->name;
 
         /**
         if ($googledocs->intro == null) $googledocs->intro = $mform->get_current()->intro;
@@ -241,11 +240,11 @@ function googledocs_delete_instance($id) {
         return false;
     }
 
-    $DB->delete_records('googledocs', array('id' => $googledocs->id));
+    $DB->delete_records('googledocs_submissions', array('googledoc'  => $googledocs->id));
     $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
     $DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
-    $DB->delete_records('googledocs_submissions', array('googledoc'  => $googledocs->id));
+    $DB->delete_records('googledocs', array('id' => $googledocs->id));
 
     googledocs_grade_item_delete($googledocs);
     return true;
@@ -468,7 +467,38 @@ function googledocs_extend_settings_navigation(settings_navigation $settingsnav,
  * @return int 0 if ok, error code otherwise
  */
 function googledocs_grade_item_update($googledoc, $grades=null){
- 
+    global $CFG;
+    require_once($CFG->libdir.'/gradelib.php');
+
+    if (array_key_exists('cmidnumber', $googledoc)) { // May not be always present.
+        $params = array('itemname' => $googledoc->name, 'idnumber' => $googledoc->cmidnumber);
+    } else {
+        $params = array('itemname' => $googledoc->name);
+    }
+
+    if (!isset($googledoc->courseid)) {
+        $googledoc->courseid = $googledoc->course;
+    }
+
+    if ($googledoc->grade > 0) {
+        $params['gradetype'] = GRADE_TYPE_VALUE;
+        $params['grademax'] = $googledoc->grade;
+        $params['grademin'] = 0;
+
+    } else if ($googledoc->grade < 0) {
+        $params['gradetype'] = GRADE_TYPE_SCALE;
+        $params['scaleid'] = -$googledoc->grade;
+
+    } else {
+        $params['gradetype'] = GRADE_TYPE_TEXT; // Allow text comments only.
+    }
+
+    if ($grades === 'reset') {
+        $params['reset'] = true;
+        $grades = null;
+    }
+
+    return grade_update('mod/googledocs', $googledoc->course, 'mod', 'googledocs', $googledoc->id, 0, $grades,      $params);
 }
 
 /**
@@ -478,11 +508,27 @@ function googledocs_grade_item_update($googledoc, $grades=null){
  * @param bool $nullifnone
  */
 function googledocs_update_grades($googledocs, $userid = 0, $nullifnone = true) {
+    global $CFG;
+    require_once($CFG->libdir.'/gradelib.php');
 
+    if ($googledocs->grade == 0) {
+        googledocs_grade_item_update($googledocs);
+
+    } else if ($grades = googledocs_get_user_grades($googledocs, $userid)) {
+        foreach ($grades as $k => $v) {
+            if ($v->rawgrade == -1) {
+                $grades[$k]->rawgrade = null;
+            }
+        }
+        googledocs_grade_item_update($googledocs, $grades);
+
+    } else {
+        googledocs_grade_item_update($googledocs);
+    }
 }
 function googledocs_grade_item_delete($googledoc) {
     global $DB;
-    $DB->delete_records('googledocs_grades', array('googledoc'  => $googledoc->id));
+    $DB->delete_records('googledocs_grades', array('googledocid'  => $googledoc->id));
     $DB->delete_records('googledocsfeedback_comments', array('googledoc'  => $googledoc->id));
 }
 

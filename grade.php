@@ -27,7 +27,7 @@
  * Require config.php
  */
 require_once("../../config.php");
-require_once($CFG->dirroot.'/mod/lesson/locallib.php');
+require_once($CFG->dirroot.'/mod/googledocs/locallib.php');
 
 $new = optional_param('forceview', 0, PARAM_INT);
 
@@ -39,4 +39,9 @@ $coursecontext = context_course::instance($course->id);
 $PAGE->set_context($coursecontext); // Every page needs a context.
 
 $PAGE->set_url('/mod/googledocs/grade.php', array('id'=>$cm->id));
-redirect('view.php?id='.$cm->id.'&action='.get_string('grading', 'googledocs'));
+
+if(has_capability('mod/googledocs:viewall', $coursecontext)){
+  redirect('view.php?id='.$cm->id.'&action='.get_string('grading', 'googledocs'));
+} else {
+  redirect('view.php?id='.$cm->id);
+}
