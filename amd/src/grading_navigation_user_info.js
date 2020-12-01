@@ -13,65 +13,168 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/*
+/**
+ * Javascript controller for the "User summary" panel at the top of the page.
+ *
+ * @module     mod_googledocs/grading_navigation_user_info
  * @package    mod_googledocs
- * @copyright  2020 Veronica Bermegui
+ * @class      UserInfo
+ * @copyright  2016 Damyon Wiese <damyon@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since      3.1
  */
- 
- /**
-  * @module mod_googledocs/grading_navigation_user_info
-  * 
-  */
-define(['jquery', 'core/ajax', 'core/log', 'core/templates', 'core/notification'], 
-        function($, Ajax, Log, Templates, Notifications) {
-  'use strict';
+define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function($, notification, ajax, templates) {
+
     /**
-     * Initializes the delete controls.
+     * UserInfo class.
+     *
+     * @class UserInfo
+     * @param {String} selector The selector for the page region containing the user navigation.
      */
-    function init() {
-        Log.debug('mod_googledocs/grading_navigation_user_info: initializing grading_navigation_user_info of the mod_googledocs');
-        var region = $('[data-region="user-info"]').first();
-        var control = new GradingNavUserInfo(region);
-        control.main();
-    }
+    var UserInfo = function(selector) {
+        console.log('UserInfo starts');
+        console.log(selector);
+        this._regionSelector = selector;
+        this._region = $(selector);
+        this._userCache = [];
 
-    // Constructor
-    function GradingNavUserInfo (region){
-        var self = this;
-        self.region = region;
-        Log.debug(region);
-        alert("ENTRO al constructor");
+        if (selector == '[data-region="user-info"]') {
+            this._userid = $('[data-region="user-info"]').data('userid');
+            this._refreshUserInfo('e', this._userid);
+            this._refreshUserSelector(); 
+        }
+        $(document).on('user-changed', this._refreshUserInfo.bind(this));        
     };
 
-    GradingNavUserInfo.prototype.main = function() {
-        var self = this;
-        //self.getUserInfo();
-        Log.debug("ESTOY EN EL MAIN");
+    /** @type {String} Selector for the page region containing the user navigation. */
+    UserInfo.prototype._regionSelector = null;
 
+    /** @type {Array} Cache of user info contexts. */
+    UserInfo.prototype._userCache = null;
+
+    /** @type {JQuery} JQuery node for the page region containing the user navigation. */
+    UserInfo.prototype._region = null;
+
+    /** @type {Integer} Remember the last user id to prevent unnecessary reloads. */
+    UserInfo.prototype._lastUserId = 0;
+
+    UserInfo.prototype._userid = 0;
+
+    /**
+     * Get the googledocsment id
+     *
+     * @private
+     * @method _getGoogledocId
+     * @return {Integer} googledocsment id
+     */
+    UserInfo.prototype._getGoogledocId = function() {
+        return this._region.attr('data-googledocid');
+    };
+
+    UserInfo.prototype._refreshUserSelector = function () {
+        $(`select.custom-select option[value='${this._userid}']`).attr('selected', 'selected');
     }
 
-    GradingNavUserInfo.prototype.getUserInfo = function() {
+    /**
+     * Get the user context - re-render the template in the page.
+     *
+     * @private
+     * @method _refreshUserInfo
+     * @param {Event} event
+     * @param {Number} userid
+     */
+    UserInfo.prototype._refreshUserInfo = function(event, userid) {
+        var promise = $.Deferred();
+        console.log('_refreshUserInfo') ;
+        console.log(userid);
+        console.log('_lastUserId: ');
+        console.log(this._lastUserId);
+        // Put the current user ID in the DOM so yui can access it.
+        this._region.attr('data-userid', userid);
+        
+        // Skip reloading if it is the same user.
+        if (this._lastUserId == userid) {
+            return;
+        }
+        this._lastUserId = userid;
 
-        var self = this;
+        // First insert the loading template.     
+        templates.render('mod_googledocs/loading', {}).done(function(html, js) {
+            // Update the page.
+            this._region.fadeOut("fast", function() {
+                templates.replaceNodeContents(this._region, html, js);
+                this._region.fadeIn("fast");
+            }.bind(this));
 
-         Ajax.call([{
-            methodname: 'mod_googledocs_get_participant',
-            args: {
-                userid: self.userid,
-                googledocid: self.googledocid
-            },
-            done: function (response) {
-                Log.debug(response);
-            },
-            fail: function (reason) {
-                Log.error(reason);
+            if (userid < 0) {
+                // Render the template.
+                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function(html, js) {
+                    if (userid == this._lastUserId) {
+                        // Update the page.
+                        this._region.fadeOut("fast", function() {
+                            templates.replaceNodeContents(this._region, html, js);
+                            this._region.fadeIn("fast");
+                        }.bind(this));
+                    }
+                }.bind(this)).fail(notification.exception);
+                return;
             }
-        }]);
 
+            if (typeof this._userCache[userid] !== "undefined") {
+                promise.resolve(this._userCache[userid]);
+            } else {
+                // Load context from ajax.
+                var googledocid = this._getGoogledocId();  
+                var requests = ajax.call([{
+                    methodname: 'mod_googledocs_get_participant',
+                    args: {
+                        userid : userid,
+                        googledocid: googledocid
+                    }
+                }]);
+
+                requests[0].done(function(participant) {
+                    if (!participant.hasOwnProperty('id')) {
+                        promise.reject('No users');
+                    } else {
+                        this._userCache[userid] = participant;
+                        promise.resolve(this._userCache[userid]);
+                    }
+                }.bind(this)).fail(notification.exception); 
+            }
+
+            promise.done(function(context) {
+                context.courseid = $('[data-region="grading-navigation-panel"]').attr('data-courseid');
+                if (context.user) {
+                    context.identity =context.user.email;
+                    // Add profile image url to context.
+                    if (context.user.profileimageurl) {
+                        context.profileimageurl = context.user.profileimageurl;
+                    }
+                }
+
+                templates.render('mod_googledocs/grading_navigation_user_summary', context).done(function(html, js) {
+                    // Update the page.
+                    if (userid == this._lastUserId) {
+                        this._region.fadeOut("fast", function() {
+                            templates.replaceNodeContents(this._region, html, js);
+                            this._region.fadeIn("fast");
+                        }.bind(this));
+                    }
+                }.bind(this)).fail(notification.exception);
+            }.bind(this)).fail(function() {
+                // Render the template.
+                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function(html, js) {
+                    // Update the page.
+                    this._region.fadeOut("fast", function() {
+                        templates.replaceNodeContents(this._region, html, js);
+                        this._region.fadeIn("fast");
+                    }.bind(this));
+                }.bind(this)).fail(notification.exception);
+            }
+            .bind(this));
+        }.bind(this)).fail(notification.exception);
     };
 
-    return {
-        init: init
-    };
+    return UserInfo;
 });

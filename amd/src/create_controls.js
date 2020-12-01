@@ -75,7 +75,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
             window.removeEventListener('beforeunload', self.beforeunloadHandler, false);
         }
 
-        self.initTags();
+        //self.initTags();
 
         switch(self.dist_type) {
 
@@ -147,8 +147,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                 break;
 
         }
-        //
-
+     
         // When sharing by group or grouping. The same file is shared.
         // The generation of this file might be quick, but giving the students
         // a permission can take some time. In order for the entire sharing is done
@@ -157,9 +156,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
             $('tbody').children().each(function(){
                 var tag = $(this).find('#status_col');
-                tag.removeClass('spinner-border color');
-                tag.html('Created');
-                tag.addClass('tag_doc success');
+                self.createdTagHandler(tag); 
             });
 
             var from_existing = $('table.overviewTable').attr('data-from-existing');
@@ -170,9 +167,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
                     $(this).find('table').each(function(){
                         var tag = $(this).find("#file_grouping");
-                        tag.removeClass('spinner-border color');
-                        tag.html('Created');
-                        tag.addClass('tag_doc success');
+                        self.createdTagHandler(tag);
                     });
                 });
 
@@ -213,7 +208,12 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
         });
     };
-
+    
+    GoogledocsControl.prototype.createdTagHandler = function (tag) {
+        tag.removeClass('spinner-border color');
+        tag.html('Created');
+        tag.addClass('status-access');
+    }
     // Triggers when user tries to leave the page and documents are being created.
     GoogledocsControl.prototype.beforeunloadHandler = function (event, created) {
         event.preventDefault();
@@ -240,7 +240,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
             var gid = $(this).attr('data-g-id');
             var statuscol = ($(this).find('div#status_col_' + gid));
             $(statuscol).html('Created');
-            $(statuscol).addClass('tag_doc success');
+            $(statuscol).addClass('status-access');
         });
     };
 
@@ -252,7 +252,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
             var statuscol = ($(this).find('div#status_col_' + gid));
             if (self.create) {
                 $(statuscol).html('Created');
-                $(statuscol).addClass('tag_doc success');
+                $(statuscol).addClass('status-access');
             } else{
                 $('div#status_col_' + gid).addClass('spinner-border color');
             }
@@ -267,7 +267,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
     GoogledocsControl.prototype.tagDisplay = function(rownumber, creation){
         if(creation === true) {
             $('#file_' + rownumber).html('Created');
-            $('#file_' + rownumber).addClass('tag_doc success');
+            $('#file_' + rownumber).addClass('status-access');
 
         }else{
            // $('#file_' + rownumber).html('Failed');
@@ -405,14 +405,13 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
 
                     // Remove progress bar and display status
                     if(self.dist_type != 'group_copy') {
-                        $('#file_' + rownumber).removeClass('spinner-border color');
-                        self.tagDisplay(rownumber, true);
+                        self.createdTagHandler( $('#file_' + rownumber));                  
                     }
 
                 },
 
                 fail: function (reason) {
-                    Log.error(reason);
+                    Log.error(reason);                  
                     $('#file_' + rownumber).removeClass('spinner-border color');                   
                     self.failedTag(rownumber);
                 }
@@ -590,35 +589,14 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
                     // Add file's link.
                     $(aelement).attr("href", response.url);
                     // Change status.
-                    $(statuscol).removeClass('spinner-border color');
-                    $(statuscol).html('Created');
-                    $(statuscol).addClass('tag_doc success');
-
+                     self.createdTagHandler(statuscol);
                 },
                 fail: function (reason) {
                     Log.error(reason);
                 }
             }]);
     };
-   /* TODO: DELETE WHEN GOING TO PROD.
-    GoogledocsControl.prototype.test_service = function () {
-        Log.debug(" Starting test_service");
-        Ajax.call([{
-            methodname: 'mod_googledocs_test_service_call',
-            args: {
-                file_ids: '123',
-                },
-                done: function (response) {
-                    
-                  Log.debug(response.results);
 
-                },
-                fail: function (reason) {
-                    Log.debug(reason);
-                }
-            }]);
-    };
-  */
 
     //Dist. Each student from a group gets a copy or each std. from a group share same copy. Create group folders
     GoogledocsControl.prototype.create_group_folder = function(){
@@ -710,14 +688,12 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
     GoogledocsControl.prototype.get_grouping_url = function (id, urls) {
 
         var ref = $('#' + 'shared_link_url_' + id);  
-
+        var self = this;
         for (var i = 0 ; i < urls.length; i++) {
             if (id == (urls[i].gid)) {
                 $(ref).attr("href", urls[i].url);
                 var tag = $('#status_col_' + id);
-                tag.removeClass('spinner-border color');
-                tag.html('Created');
-                tag.addClass('tag_doc success');
+                self.createdTagHandler(tag);
                 break;
             }
         }
@@ -736,10 +712,7 @@ function ($, Log, Ajax, DeleteControl, UpdateControl) {
             self.countCalls++;
             Log.debug('append_links_to_icons');
             var id = $(this).attr('student-group-id');
-            //self.append_links_helper(links, rownumber);
             self.get_grouping_url_for_student(id, JSON.parse(urls), e); 
-     
-
         });
 
     };
