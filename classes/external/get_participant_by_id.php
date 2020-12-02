@@ -94,7 +94,7 @@ trait get_participant_by_id {
         $gradefromgradebook = 0;
         $gradebookurl = '';
 
-        if ($gg->locked != "0" || $gg->overridden != "0") {
+        if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
             $gradefromgradebook = $gg->finalgrade;
             $gradebookurl = new \moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' =>$COURSE->id]);
@@ -112,7 +112,6 @@ trait get_participant_by_id {
         }
 
         $output = $PAGE->get_renderer('core');
-        #var_dump($data); exit;
         return array(
             'html' => $output->render_from_template('mod_googledocs/grading_panel', $data),
             'data' => json_encode($data),

@@ -312,11 +312,13 @@ class googledocs_rendering {
     private function get_students_file_view_content($sqlresult, $types) {
         global $DB, $USER, $OUTPUT, $CFG;
 
+
         // Get the Google Drive object.
         $client =  new \googledrive($this->context->id, false, false, true, true);
         $emailaddress = $DB->get_record('user', array('id' => $USER->id), 'email');
         $data = ['isloggedintogoogle' => $client->check_google_login(),
-                  'email' => $emailaddress->email
+                  'email' => $emailaddress->email,
+                  'viewpermission' =>  $this->googledocs->permissions
                 ];
         $params = ['userid' => $USER->id, 'instanceid' => $this->googledocs->id];
 
@@ -325,14 +327,18 @@ class googledocs_rendering {
             if ($r->groupid == null) {
                 $r->groupid = 0;
             }
+            $submitstatus = false;
+            $submitted = false;
+            $graded;;
+            if ($view = $this->googledocs->permissions != 'view') {
+                $sql = "SELECT status FROM mdl_googledocs_submissions WHERE userid = :userid
+                        AND googledoc = :instanceid
+                        AND groupid =  {$r->groupid}";
 
-            $sql = "SELECT status FROM mdl_googledocs_submissions WHERE userid = :userid
-                    AND googledoc = :instanceid
-                    AND groupid =  {$r->groupid}";
-
-            $submitstatus = $DB->get_record_sql($sql, $params);
-
-            $submitted = ($submitstatus == false) ? false : true;
+                $submitstatus = $DB->get_record_sql($sql, $params);
+                $submitted = $submitstatus;
+                $graded = $DB->get_record('googledocs_grades', array('userid' => $USER->id, 'googledocid' =>  $this->googledocs->id));
+            }
 
             $extra = "onclick=\"this.target='_blank';\"";
             $icon = $types[get_doc_type_from_string($r->url)]['icon'];
@@ -344,7 +350,11 @@ class googledocs_rendering {
                    'img' => $imgurl,
                    'fileid' => get_file_id_from_url($r->url),
                    'instanceid' => $this->googledocs->id,
-                   'submitted' =>  $submitted];
+                   'submitted' =>  $submitted,
+                   'graded' => empty($graded) ? false : true,
+                   'permission' => ($submitted) ? 'View' : ucfirst($this->googledocs->permissions)
+
+                  ];
 
         }
 
@@ -543,11 +553,14 @@ class googledocs_rendering {
             $links = '';
 
             $readytograde = false;
-
+            $graded = false;
             if ($this->googledocs->permissions != 'view') { // If the file is only view then no grading
                 $readytograde = $DB->get_record('googledocs_submissions', array('userid' => $student->id,
                     'googledoc' =>  $this->googledocs->id));
             }
+
+            $graded = $DB->get_record('googledocs_grades', array('userid' => $student->id,
+                    'googledocid' =>  $this->googledocs->id));
 
             // If a student belongs to more than one group, it can get more than one file. Render all.
             if ($dist == 'std_copy_group' || $dist == 'std_copy_grouping'
@@ -573,21 +586,22 @@ class googledocs_rendering {
                         ];
             $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
 
-            list($statustext, $accesstext, $class) = $this->get_status_style($readytograde, $this->googledocs->permissions);
+            list($statustext, $accesstext, $class) = $this->get_status_style($readytograde, $this->googledocs->permissions, $graded);
 
-            $data['students'][] = [//'checkbox' => $OUTPUT->render($checkbox),
-                'picture' => $picture,
-                'fullname' => fullname($student),
-                'student-id' => $student->id,
-                'student-email' => $student->email,
-                'link' => $links,
-                'student-groupid' => isset($student->groupid) ? $student->groupid : '',
-                'status' => html_writer::start_div($class, ['id' => 'file_' . $i]).$statustext.html_writer::end_div(),
-                'readytograde' => $readytograde,
-                'access' => html_writer::start_div($class, ['id' => 'file_' . $i]).$accesstext.html_writer::end_div(),ucfirst($student->permission),
-                'gradeurl' => $gradeurl
+            $data['students'][] = [ 'picture' => $picture,
+                                    'fullname' => fullname($student),
+                                    'student-id' => $student->id,
+                                    'student-email' => $student->email,
+                                    'link' => $links,
+                                    'student-groupid' => isset($student->groupid) ? $student->groupid : '',
+                                    'status' => html_writer::start_div($class, ['id' => 'file_' . $i]).$statustext.html_writer::end_div(),
+                                    'readytograde' => $readytograde,
+                                    'access' => html_writer::start_div($class, ['id' => 'file_' . $i]).
+                                                $accesstext.
+                                                html_writer::end_div(),ucfirst($student->permission),
+                                    'gradeurl' => $gradeurl
 
-            ];
+                                 ];
 
             $i++;
         }
@@ -1087,7 +1101,7 @@ class googledocs_rendering {
                     gf.permission
                     FROM mdl_user as u
                     INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                    WHERE gf.googledocid = ?
+                    WHERE gf.googledocid = ? ORDER BY u.lastname
                     -- GROUP BY u.id";
 
         $params = array($this->instanceid);
@@ -1327,7 +1341,7 @@ class googledocs_rendering {
         $lockedoroverriden = false;
         $gradefromgradebook = 0;
         $gradebookurl = '';
-        if ($gg->locked != "0" || $gg->overridden != "0") {
+        if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
             $gradefromgradebook = $gg->finalgrade;
             $gradebookurl = new moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' =>$COURSE->id]);
@@ -1371,11 +1385,14 @@ class googledocs_rendering {
         return $group;
     }
 
-    private function get_status_style($isready, $permission) {
+    private function get_status_style($isready, $permission, $graded) {
 
-        if ($isready){
+        if ($graded) {
+            return ['Graded', ucfirst($permission), 'status-access' ];
+        }
+        if ($isready && !$graded){
             return ['Submitted', 'View', 'status-access' ];
-        } else  {
+        } else  if(!$isready){
             return ['Created', ucfirst($permission), 'status-access' ];
         }
 
@@ -1385,7 +1402,7 @@ class googledocs_rendering {
         global $DB;
         $sql = "SELECT u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
-                WHERE googledocid = :googledocid;";
+                WHERE googledocid = :googledocid ORDER BY u.lastname;";
 
         $participants = $DB->get_records_sql($sql, array('googledocid' => $googledocid));
         $users = [];
@@ -1401,26 +1418,4 @@ class googledocs_rendering {
 
         return $users;
     }
-
-   /* private function get_grade_comments($googledocid, $userid) {
-        global $DB;
-        $sql = "SELECT * FROM mdl_googledocs_submissions WHERE userid = :userid
-                AND googledoc = :instanceid";
-        $params = ['userid' => $userid, 'instanceid' => $googledocid];
-
-        $submitted = $DB->get_record_sql($sql, $params);
-
-        $sql = "SELECT comments.commenttext as comment, grades.grade as gradevalue FROM mdl_googledocs_grades as grades
-                INNER JOIN mdl_googledocsfeedback_comments as comments ON grades.id = comments.grade
-                WHERE grades.userid = :userid and grades.googledocid = :instanceid;";
-
-        $grading = $DB->get_record_sql($sql, $params);
-
-        if ($grading) {
-            return array($grading->gradevalue, $grading->comment);
-        } else {
-            return array('', '');
-        }
-    } */
-
 }

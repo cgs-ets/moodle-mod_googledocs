@@ -73,7 +73,8 @@ trait get_participant {
         // Get the File and grading details
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
-                WHERE googledocid = :googledocid and gf.userid = :userid;";
+                WHERE googledocid = :googledocid and gf.userid = :userid
+                ORDER BY  u.firstname";
 
         $results = $DB->get_records_sql($sql, array('googledocid' => $googledocid, 'userid' => $userid));
 
@@ -85,7 +86,7 @@ trait get_participant {
         $participant = $DB->get_record('user', array('id' => $userid));
 
         $user = (object)user_get_user_details($participant, $COURSE);
-        
+
         return ['id' => $user->id,
                 'fullname' => $user->fullname,
                 'fileurl' => $filegradedata->fileurl,

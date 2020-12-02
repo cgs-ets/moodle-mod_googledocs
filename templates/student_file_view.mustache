@@ -60,8 +60,10 @@
 
         <thead>
             <tr>
-                <th class ="table-student-columns">File</th>
-                <th class ="table-student-columns">Status</th>
+                <th class ="table-student-columns">File</th>  
+                <th class ="table-student-columns">Status</th> 
+                <th class ="table-student-columns">Access</th>
+
             </tr>
         </thead>
         <tbody  class = "table-striped">
@@ -70,37 +72,48 @@
                     <td>
                         <a href={{{url}}}" target = "_blank"><img class='link_icon' src= {{{img}}}></a>
                     </td>
-                    <td>
-                        {{^submitted}}
-                            {{#isloggedintogoogle}}
-                                <div class='submit-doc'>
-                                  <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn-sm">Submit</button>
-                                    {{#js}}
-                                        require(['mod_googledocs/submit_control'], function(mod) {
-                                            mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
-                                        });
-                                    {{/js}}
-                                </div>
-                            {{/isloggedintogoogle}}
-                        {{/submitted}}
-                        {{^isloggedintogoogle}}
-                            {{^submitted}}
-                                <button id="submitbtn_{{fileid}}" type="button" disabled class="btn btn-primary btn-sm">Submit</button>
-                            {{/submitted}}
-                              <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
-                                {{#js}}
-                                    require(['mod_googledocs/google_login'], function(mod) {
-                                        mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
-                                    });
-                                {{/js}}
+                        <td>
+                            {{^graded}}
+                                {{^submitted}}
+                                    {{#isloggedintogoogle}}
+                                        <div class='submit-doc'>
+                                          <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn-sm">Submit</button>
+                                            {{#js}}
+                                                require(['mod_googledocs/submit_control'], function(mod) {
+                                                    mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
+                                                });
+                                            {{/js}}
+                                        </div>
                                     {{/isloggedintogoogle}}
+                                {{/submitted}}
+                                {{^isloggedintogoogle}}
+                                    {{^submitted}}
+                                        <button id="submitbtn_{{fileid}}" type="button" disabled class="btn btn-primary btn-sm">Submit</button>
+                                    {{/submitted}}
+                                      <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
+                                        {{#js}}
+                                            require(['mod_googledocs/google_login'], function(mod) {
+                                                mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
+                                            });
+                                        {{/js}}
+                                {{/isloggedintogoogle}}
 
-                        {{#submitted}}
-                            <div class="col">
-                              <h4><span class="badge badge-primary">Submitted</span></h4>
-                            </div>
-                        {{/submitted}}
-                    </td>
+                                {{#submitted}}
+                                    <div class="col">
+                                      <h4><span class="badge badge-primary">Submitted</span></h4>
+                                    </div>
+                                {{/submitted}}
+                            {{/graded}}
+                            {{#graded}}
+                                <div class="col">
+                                    <span class="alert alert-success gradedtag" >Graded</span>
+                                </div>
+                            {{/graded}}
+                        </td>
+                 
+                    {{#viewpermission}}
+                         <td>{{permission}} </td>
+                    {{/viewpermission}}
                 </tr>
             {{/files}}
         </tbody>

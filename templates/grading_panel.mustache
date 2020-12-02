@@ -43,16 +43,18 @@
          </p>
         {{/lockedoroverriden}}
         
-        <form id="gradeform" action = 'POST'>
-        <input type="text" id="quickgrade_{{userid}}" name="grade"  {{#lockedoroverriden}} disabled {{/lockedoroverriden}}
-            value= "{{gradegiven}}" size="6" maxlength="10" class="grade-input" form="gradeform">       
-            <span class="alert alert-success gradedtag" {{^graded}}hidden{{/graded}} >Graded</span><br>
-             {{#lockedoroverriden}}
-                {{#str}} currentgradeingradebook, mod_googledocs {{/str}} <br>
-                 <a href="{{gradebookurl}}" >{{finalgrade}}</a> 
-                
-             {{/lockedoroverriden}}
-        <textarea class="textarea-comment" name="comment" rows = "5" cols = "50" required form="gradeform">{{commentgiven}}</textarea>
+        <form id="gradeform" >
+            <input type="text" id="quickgrade_{{userid}}" name="grade"  {{#lockedoroverriden}} disabled {{/lockedoroverriden}}
+                value= "{{gradegiven}}" size="6" maxlength="10" class="grade-input" form="gradeform" > 
+                <span class="alert alert-success gradedtag" {{^graded}}hidden{{/graded}} >Graded</span><br>
+                <div class="form-control-feedback invalid-feedback" id="id_error_grade" style="display: block;" hidden>
+                      Grade must be greater than or equal to zero.
+                </div>      
+                 {{#lockedoroverriden}}
+                    {{#str}} currentgradeingradebook, mod_googledocs {{/str}} <br>
+                     <a href="{{gradebookurl}}" >{{finalgrade}}</a> 
+                 {{/lockedoroverriden}}
+            <textarea class="textarea-comment" name="comment" rows = "5" cols = "50" required form="gradeform">{{commentgiven}}</textarea>
             <input type = "submit" name = "savechanges" value = "Save changes" class="btn btn-primary ml-1 submit-comment">
             <input type = "submit" name = "saveandshownext" value = "Save and show next" class="btn btn-primary ml-1 submit-comment">
         </form>
