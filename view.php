@@ -72,6 +72,8 @@ if ($action == 'grade' || empty($action) && $created && has_capability('mod/goog
 } else {
 }
 */
+
+//var_dump(get_config('googledocs'));exit;
 $t->render_table();
 $PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.

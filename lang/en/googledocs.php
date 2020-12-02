@@ -109,3 +109,16 @@ $string['loading'] = 'Loading...';
 $string['nousersselected'] = 'No users selected';
 $string['viewgrading'] = 'View all submissions';
 $string['assign:viewgrades'] = 'View grades';
+$string['changeuser'] = 'Change user';
+$string['gradechangessaveddetail'] = 'The changes to the grade and feedback were saved';
+$string['savingchanges'] = 'Saving Changes';
+$string['saveandcontinue'] = 'Save and continue';
+$string['unsavedchanges'] = 'Unsaved changes';
+$string['unsavedchangesquestion'] = 'There are unsaved changes to grades or feedback. Do you want to save the changes and continue?';
+$string['currentgradeingradebook'] = 'Current grade in gradebook';
+$string['gradelockedoroverrideningradebook'] = 'This grade is locked or overridden in the gradebook.';
+$string['feedbackplugin'] = 'Feedback plugin';
+$string['feedbacksettings'] = 'Feedback settings';
+$string['feedbackpluginforgradebook'] = 'Feedback plugin that will push comments to the gradebook';
+
+

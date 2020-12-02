@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 use external_function_parameters;
 use external_value;
 use external_single_structure;
-use core_user_external;
+
 
 require_once($CFG->libdir.'/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
@@ -38,10 +38,11 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->dirroot . "/user/lib.php");
 require_once("$CFG->dirroot/user/externallib.php");
 
+
 /**
  * Trait implementing the external function mod_googledocs_delete_files
  */
-trait get_participant {
+trait list_participants {
 
 
     /**
@@ -49,49 +50,44 @@ trait get_participant {
      *
     */
 
-    public static  function get_participant_parameters(){
+    public static  function list_participants_parameters(){
          return new external_function_parameters(
             array(
-                'userid' => new external_value(PARAM_RAW, 'user ID'),
                 'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
+                'groupid' =>  new external_value(PARAM_RAW, 'Instance ID', VALUE_OPTIONAL),
             )
         );
     }
 
 
-    public static function get_participant($userid, $googledocid) {
+    public static function list_participants($googledocid, $groupid ) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
         // Parameters validation.
-        self::validate_parameters(self::get_participant_parameters(),
-            array('userid' => $userid,
-                'googledocid' => $googledocid)
+        self::validate_parameters(self::list_participants_parameters(),
+            array('googledocid' => $googledocid,
+                'groupid' => $groupid,)
         );
-        // Get the File and grading details
+
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
-                WHERE googledocid = :googledocid and gf.userid = :userid;";
+                WHERE googledocid = :googledocid;";
 
-        $results = $DB->get_records_sql($sql, array('googledocid' => $googledocid, 'userid' => $userid));
-
-        $filegradedata = new \stdClass();
+        $results = $DB->get_records_sql($sql, array('googledocid' => $googledocid));
+        $participants;
         foreach ($results as $record) {
-            $filegradedata->fileurl = $record->url;
-            list($filegradedata->grade, $filegradedata->comment) = get_grade_comments($googledocid, $record->userid);
+            $participant = new \stdClass();
+            $participant->userid = $record->userid;
+            $participant->fullname = $record->firstname . ' '.$record->lastname;
+            $participant->fileurl = $record->url;
+            list($participant->grade, $participant->comment) = get_grade_comments($googledocid, $record->userid);
+            $participants[] = $participant;
         }
-        $participant = $DB->get_record('user', array('id' => $userid));
 
-        $user = (object)user_get_user_details($participant, $COURSE);
-        
-        return ['id' => $user->id,
-                'fullname' => $user->fullname,
-                'fileurl' => $filegradedata->fileurl,
-                'commentgiven' => $filegradedata->comment,
-                'gradegiven' => $filegradedata->grade,
-                'user' => $user];
+        return array ('users' => json_encode($participants));
 
     }
 
@@ -99,19 +95,12 @@ trait get_participant {
      * Describes the structure of the function return value.
      * @return external_single_structures
      */
-    public static function get_participant_returns() {
-        $userdescription = core_user_external::user_description();
-        $userdescription->default = [];
-        $userdescription->required = VALUE_OPTIONAL;
+    public static function list_participants_returns() {
+
 
         return new external_single_structure(array(
-            'id' => new external_value(PARAM_INT, 'ID of the user'),
-            'fullname' => new external_value(PARAM_NOTAGS, 'The fullname of the user'),
-            'fileurl' => new external_value(PARAM_RAW, 'URL'),
-            'commentgiven' =>  new external_value(PARAM_RAW, 'URL'),
-            'gradegiven' =>  new external_value(PARAM_RAW, 'URL'),
-            'groupid' => new external_value(PARAM_INT, 'for group assignments this is the group id', VALUE_OPTIONAL),
-            'user' => $userdescription
+            'users' => new external_value(PARAM_RAW, 'ID of the user'),
+
         ));
     }
 }

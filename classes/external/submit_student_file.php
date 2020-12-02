@@ -84,7 +84,7 @@ trait submit_student_file {
         $gdrive =  new \googledrive($context->id, false, false, true, true);
 
         $result = $gdrive->update_permission_when_submitted($fileid, $email);
-      
+
         $recordid = null;
 
         if ($result) {
@@ -92,10 +92,21 @@ trait submit_student_file {
             $data = new \stdClass();
             $data->googledoc = $instanceid;
             $data->timecreated = time();
+            $data->timemodified = time();
             $data->userid = $USER->id;
             $data->groupid = $groupid;
             $data->status = get_string('submitted', 'googledocs');
             $recordid = $DB->insert_record('googledocs_submissions', $data, true);
+
+            $r = "SELECT * FROM mdl_googledocs_files WHERE googledocid = :googledocid AND userid = :userid";
+            $dataobject = $DB->get_record_sql($r, ['googledocid'=> $instanceid, 'userid' =>  $USER->id]);
+            $update = new \stdClass();
+            $update->id = $dataobject->id;
+            $update->permission = 'view';
+            $update->submit_status = 'Submitted';
+
+            $DB->update_record('googledocs_files', $update);
+
         }
 
         return array(

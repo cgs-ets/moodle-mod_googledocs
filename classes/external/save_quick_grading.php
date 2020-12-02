@@ -53,13 +53,13 @@ trait save_quick_grading{
     public static  function save_quick_grading_parameters(){
         return new external_function_parameters(
             array(
-               'grades' => new external_value(PARAM_RAW, 'A JSON with all the grades'),
+               'grade' => new external_value(PARAM_RAW, 'A JSON with the user grading'),
             )
         );
     }
 
 
-    public static function save_quick_grading($grades) {
+    public static function save_quick_grading($grade) {
         global $COURSE, $DB, $USER;
 
         $context = \context_user::instance($COURSE->id);
@@ -68,50 +68,74 @@ trait save_quick_grading{
 
        //Parameters validation.
         self::validate_parameters(self::save_quick_grading_parameters(),
-            array('grades' => $grades)
+            array('grade' => $grade)
         );
-        $grades = json_decode($grades);
+
+        $grade = json_decode($grade);
         $sql = "SELECT * FROM mdl_googledocs_grades  WHERE userid = :userid AND googledocid = :googledocid";
-        $modifiedtimes = [];
 
+        $params = ['userid' => $grade->userid, 'googledocid' => $grade->googledocid];
+        $current  =  $DB->get_record_sql($sql,$params);
 
-        foreach ($grades as $grade) {
-            $params = ['userid' => $grade->userid, 'googledocid' => $grade->googledocid];
-            $current  =  $DB->get_records_sql($sql,$params);
+        list($gradeval, $comment) = explode('&', $grade->formdata);
+        $gradeval = str_replace('grade=','',$gradeval);
+        $comment = rawurldecode(str_replace('comment=','',$comment));
 
-            if(empty($current)) {  //New entry
+        if (!$current) { // new entry.
+            $data = new \stdClass();
+            $data->googledocid = $grade->googledocid;
+            $data->userid = $grade->userid;
+            $data->timecreated = time();
+            $data->timemodified = time();
+            $data->grader = $USER->id;
+            $data->grade = floatval($gradeval);
+            $recordid = $DB->insert_record('googledocs_grades', $data, true);
+
+            if ($recordid != null) {
                 $data = new \stdClass();
-                $data->googledocid = $grade->googledocid;
-                $data->userid = $grade->userid;
-                $data->timecreated = time();
-                $data->timemodified = time();
-                $data->grader = $USER->id;
-                $data->grade = floatval($grade->grade);
-                $finalgrade = (($data->grade > 0 && $data->grade <= $grade->maxgrade) ?
-                    strval($data->grade) . '/' . strval($grade->maxgrade) : '-');
-                $recordid = $DB->insert_record('googledocs_grades', $data, true);
-                $modifiedtimes [] = ['userid' =>$grade->userid,
-                                     'grade' => $data->grade,
-                                     'googledocid' => $grade->googledocid,
-                                     'comment' => $grade->comment,
-                                     'rownumber' => $grade->rownumber,
-                                     'timemodified' => date('l, d F Y, g:i A', $data->timemodified),
-                                     'finalgrade' =>  $finalgrade ,
-                                    ];
-
-                if ($recordid != null) {
-                    $data = new \stdClass();
-                    $data->googledoc = $grade->googledocid;
-                    $data->grade = $recordid;
-                    $data->commenttext = $grade->comment;
-                    $data->commentformat = 1;
-                    $commentfeedbackrecord = $DB->insert_record('googledocsfeedback_comments', $data, true);
-                }
+                $data->googledoc = $grade->googledocid;
+                $data->grade = $recordid;
+                $data->commenttext = $comment;
+                $data->commentformat = 1;
+                $commentfeedbackrecord = $DB->insert_record('googledocsfeedback_comments', $data, true);
             }
+            $graderesult = new \stdClass();
+            $graderesult->userid = $grade->userid;
+            $graderesult->grade = $gradeval;
+            $graderesult->comment = $comment;
+
+            $saveresult [] = ['graderecordid' => $recordid,
+                              'commentrecorid' => $commentfeedbackrecord,
+                              'grade' => $graderesult,
+                              'CRUD' => 'Create'];
+        } else  {
+
+            //Update grade
+            $current->timemodified = time();
+            $current->grade = $gradeval;
+            $DB->update_record('googledocs_grades', $current);
+
+            //Update comment
+            $sql = "SELECT * FROM mdl_googledocsfeedback_comments
+                   WHERE googledoc = :googledocid AND grade = :gradeid";
+            $params = ['googledocid' => $grade->googledocid, 'gradeid' => $current->id];
+
+            $currentcomment = $DB->get_record_sql($sql,$params);
+            $currentcomment->commenttext = $comment;
+
+            $DB->update_record('googledocsfeedback_comments', $currentcomment);
+            $saveresult [] = ['grade' => $graderesult,
+                              'CRUD' => 'UPDATE'];
 
         }
+
+        $sql = "SELECT * FROM mdl_googledocs WHERE id = {$grade->googledocid}";
+        $googledocinstance = $DB->get_record_sql($sql);
+        // Sync with gradebook.
+        googledocs_update_grades($googledocinstance,  $grade->userid, true);
+
         return array(
-         'modifiedtimes' => json_encode($modifiedtimes)
+         'saveresult' => json_encode($saveresult)
         );
     }
 
@@ -124,7 +148,7 @@ trait save_quick_grading{
     public static function save_quick_grading_returns(){
         return new external_single_structure(
                 array(
-                   'modifiedtimes' => new external_value(PARAM_RAW, 'Time modified  '),
+                   'saveresult' => new external_value(PARAM_RAW, 'Save result'),
                 )
       );
     }

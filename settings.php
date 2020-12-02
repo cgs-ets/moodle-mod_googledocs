@@ -50,5 +50,25 @@ if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_configtext('mod_googledocs/googledocs_api_key', get_string('googledocs_api_key', 'googledocs'),
     get_string('googledocs_api_key_desc', 'googledocs'), ''));
-    
+
+    $menu = array();
+    foreach (core_component::get_plugin_list('assignfeedback') as $type => $notused) {
+        $visible = !get_config('assignfeedback_' . $type, 'disabled');
+        if ($visible) {
+            
+            if ($type == 'comments') {
+                $menu['assignfeedback_' . $type] = new lang_string('pluginname', 'assignfeedback_' . $type);
+            }
+        }
+    }
+
+    // The default here is feedback_comments (if it exists).
+    $name = new lang_string('feedbackplugin', 'mod_googledocs');
+    $description = new lang_string('feedbackpluginforgradebook', 'mod_googledocs');
+    $settings->add(new admin_setting_configselect('googledocs/feedback_plugin_for_gradebook',
+                                                  $name,
+                                                  $description,
+                                                  'assignfeedback_comments',
+                                                  $menu));
+
 }

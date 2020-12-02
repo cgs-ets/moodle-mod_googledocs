@@ -46,6 +46,9 @@ class api extends external_api {
     use google_login_student;
     use grade_student_file;
     use save_quick_grading;
+    use get_participant;
+    use list_participants;
+    use get_participant_by_id;
 
 
 

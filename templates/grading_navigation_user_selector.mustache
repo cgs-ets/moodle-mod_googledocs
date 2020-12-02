@@ -15,36 +15,31 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_googledocs/grading_app
+    @template mod_assign/grading_navigation_user_selector
 
-    Actions panel at the bottom of the assignment grading UI.
+    The template HTML for the user selector in the top right corner.
 
     Classes required for JS:
-    * Uses some bootstrap classes, but for visual appeal only.
+    * none
 
     Data attributes required for JS:
-    * data-region, data-first-userid, data-courseid, data-contextid, data-assignmentid
+    * data-action, data-assignmentid, data-groupid, data-region
 
     Context variables required for this template:
     * see mod/assign/classes/output/grading_app.php
 
-    This template includes ajax functionality, so it cannot be shown in the template library.
+    This template uses ajax functionality, so it cannot be shown in the template library.
 }}
+<a href="#previous" data-action="previous-user">{{# pix }} i/return {{/ pix }}</a>
+    <span data-region="input-field">
+        <select class = "custom-select" data-action="change-user" data-currentuserid="{{userid}}" data-googledocid="{{googledocid}}" data-groupid="{{groupid}}">
+            <option value = "0">Change User</option>
+            {{#users}}
+                <option value="{{userid}}">{{fullname}}</option>
+            {{/users}} 
+        </select>
+    </span>
+<a href="#next" data-action="next-user">{{# pix }} e/forward {{/ pix }}</a>
 
-<div data-region="grading-navigation-panel" data-first-userid="{{userid}}" data-courseid="{{courseid}}" data-showuseridentity="{{showuseridentity}}"
-data-googledocid={{googledocid}}>
-   {{> mod_googledocs/grading_navigation }}
-</div>
+<br>
 
-{{> mod_googledocs/grading_panel }}
-
-<div data-region="overlay" class="moodle-has-zindex">
-{{> mod_googledocs/grading_save_in_progress }}
-</div>
-
-
-{{#js}}
-    require(['mod_googledocs/save_grading'], function(mod) {
-        mod.init();
-    });
-{{/js}}

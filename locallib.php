@@ -37,7 +37,9 @@ define('GDRIVEFILEPERMISSION_READER', 'view'); // Students can read.
 define('GDRIVEFILETYPE_DOCUMENT', 'application/vnd.google-apps.document');
 define('GDRIVEFILETYPE_FOLDER', 'application/vnd.google-apps.folder');
 
-
+// Grading states.
+define('GOOGLEDOCS_GRADING_STATUS_GRADED', 'graded');
+define('GOOGLEDOCS_GRADING_STATUS_NOT_GRADED', 'notgraded');
 /**
  * Google Drive file types.
  *
@@ -82,7 +84,6 @@ function get_doc_type_from_string($str) {
     } else {
         return 'presentation';
     }
-
 }
 
 /**
@@ -451,9 +452,6 @@ function get_groupings_details_from_json($data) {
     return $groupings;
 }
 
-
-
-
 function get_grouping_ids_from_json($data) {
 
     $groupingids = get_id_detail_from_json($data, "grouping");
@@ -484,6 +482,9 @@ function get_id_detail_from_json($groupgroupingjson, $type) {
     return $ids;
 }
 
+
+ //----------------------------------- Submission Gradings helper functions----------------------//
+
 function count_students($googledocid) {
     global $DB;
     $sql = "SELECT count(*) FROM mdl_googledocs_files WHERE googledocid = {$googledocid}";
@@ -496,7 +497,129 @@ function count_submitted_files($googledocid) {
     return $DB->count_records_sql($submissions);
 }
 
+function get_grade_comments($googledocid, $userid) {
 
+    global $DB;
+    $sql = "SELECT * FROM mdl_googledocs_submissions WHERE userid = :userid
+                AND googledoc = :instanceid";
+    $params = ['userid' => $userid, 'instanceid' => $googledocid];
+
+    $submitted = $DB->get_record_sql($sql, $params);
+
+    $sql = "SELECT comments.commenttext as comment, grades.grade as gradevalue FROM mdl_googledocs_grades as grades
+                INNER JOIN mdl_googledocsfeedback_comments as comments ON grades.id = comments.grade
+                WHERE grades.userid = :userid and grades.googledocid = :instanceid;";
+
+    $grading = $DB->get_record_sql($sql, $params);
+
+    if ($grading) {
+        return array($grading->gradevalue, $grading->comment);
+    } else {
+        return array('', '');
+    }
+}
+
+function is_gradebook_feedback_enabled() {
+    // Get default grade book feedback plugin.
+    $adminconfig = get_config('googledocs');
+    $gradebookplugin = $adminconfig->feedback_plugin_for_gradebook;
+    $gradebookplugin = str_replace('assignfeedback_', '', $gradebookplugin);
+
+    // Check if default gradebook feedback is visible and enabled.
+    $gradebookfeedbackplugin = get_feedback_plugin_by_type($gradebookplugin);
+
+    if (empty($gradebookfeedbackplugin)) {
+        return false;
+    }
+
+    if ($gradebookfeedbackplugin->is_visible() && $gradebookfeedbackplugin->is_enabled()) {
+        return true;
+    }
+
+    // Gradebook feedback plugin is either not visible/enabled.
+    return false;
+}
+
+function get_feedback_plugin_by_type($type) {
+    return get_plugin_by_type('assignfeedback', $type);
+}
+
+function get_plugin_by_type($subtype, $type) {
+    $shortsubtype = substr($subtype, strlen('assign'));
+    $name = $shortsubtype . 'plugins';
+    if ($name != 'feedbackplugins' && $name != 'submissionplugins') {
+        return null;
+    }
+    $pluginlist = $name;
+        foreach ($pluginlist as $plugin) {
+            if ($plugin->get_type() == $type) {
+                return $plugin;
+            }
+        }
+    return null;
+}
+
+function get_user_grades_for_gradebook($userid = 0, $instance){
+    global $DB;
+    $grades = array();
+    $adminconfig = get_config('googledocs');
+
+    $gradebookplugin = is_gradebook_feedback_enabled();
+
+    if ($userid) {
+        $where = ' WHERE u.id = :userid ';
+    } else {
+        $where = ' WHERE u.id != :userid ';
+    }
+    $params = ['googledocid1' => $instance->id,
+               'googledocid2' => $instance->id,
+               'googledocid3' => $instance->id,
+               'userid' => $userid];
+
+    $graderesults = $DB->get_recordset_sql('SELECT u.id as userid, s.timemodified as datesubmitted,
+                                            g.grade as rawgrade, g.timemodified as dategraded, g.grader as usermodified,                                             fc.commenttext as feedback, fc.commentformat as feedbackformat
+                                            FROM mdl_user as u
+                                            LEFT JOIN mdl_googledocs_submissions as s
+                                            ON u.id = s.userid and s.googledoc = :googledocid1
+                                            JOIN mdl_googledocs_grades as g
+                                            ON u.id = g.userid and g.googledocid = :googledocid2
+                                            JOIN mdl_googledocsfeedback_comments as fc
+                                            ON fc.googledoc = :googledocid3 AND fc.grade = g.id' .
+                                            $where, $params);
+
+    foreach ($graderesults as $result) {
+        $gradingstatus = get_grading_status($result->userid, $instance->id);
+        if ($gradingstatus == GOOGLEDOCS_GRADING_STATUS_GRADED) {
+            $gradebookgrade = clone $result;
+            // Now get the feedback.
+           // if ($gradebookplugin) {
+               // $grade = get_user_grade($result->userid, $instance);
+               // if ($grade) {
+                    $gradebookgrade->feedback = $result->feedback;
+                    $gradebookgrade->feedbackformat = $result->feedbackformat;
+              //  }
+         //   }
+            $grades[$gradebookgrade->userid] = $gradebookgrade;
+        }
+    }
+    $graderesults->close();
+    return $grades;
+
+}
+
+
+function get_grading_status($userid, $googledoc) {
+    global $DB;
+    $sql = "SELECT * FROM mdl_googledocs_grades WHERE userid = {$userid}
+            AND googledocid = {$googledoc};";
+    $grades = $DB->get_record_sql($sql);
+
+    if ($grades) {
+        return GOOGLEDOCS_GRADING_STATUS_GRADED;
+    } else {
+        return GOOGLEDOCS_GRADING_STATUS_NOT_GRADED;
+    }
+}
 
 /**
  * Google Docs Plugin
@@ -1055,17 +1178,11 @@ class googledrive {
         $link = sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id);
         $this->insert_permission($this->service, $copyid->id, $entity->email, $entity->type, $permission, $commenter);
 
-        // Give access to other teachers in the course. TODO
-       /* if (!empty($teachers)) {
-            foreach($teachers as $teacher) {
-                $this->insert_permission($this->service, $copyid->id, $teacher->emailAddress, $student->type, 'writer', $commenter, true);
-            }
-        } */
-
         $entityfiledata = new stdClass();
         $entityfiledata->googledocid = $data->id;
         $entityfiledata->url = $link;
         $entityfiledata->name = $copyname;
+        $entityfiledata->permission = $data->permissions;
 
         switch ($data->distribution) {
             case 'group_copy':

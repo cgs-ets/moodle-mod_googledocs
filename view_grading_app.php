@@ -66,8 +66,6 @@ $created = ($googledocs->sharing == 1);
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm, $googledocs, $created);
 $t->view_grading_app($userid);
 
-$PAGE->requires->js_call_amd('mod_googledocs/save_comment_control', 'init', array('este texto lo mando desde php'));
-
 // Finish the page.
 
 echo $OUTPUT->footer();

@@ -51,6 +51,10 @@ th.checkbox-column {
     width: 4%;
 }
 
+.status-access {
+    font-size: medium;
+}
+
 /*Group and Grouping Tables commonalities*/
 
 .container-fluid.table-container {
@@ -82,7 +86,7 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
     color:#3498db;
 }
 
-.success {
+.btn.success {
     color: #fff;
     background-color: rgba(17,119,209,.75);
 }
@@ -141,8 +145,10 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
 
 .grading-panel {
     background-color: #f5f5f5;
-    margin-left: auto;
+    display: inline-block;
+/*    margin-left: auto;*/
     margin-right: auto;
+    
     width: 70%;
 }
 
@@ -158,11 +164,19 @@ iframe#ifile {
 div#grading-panel-container {
     background-color: #f5f5f5;
 }
-.comment-div {
+.grade-div {
     text-align: center;
-    margin-top: 2%;
+    margin-top: 14px;
+/*    margin-bottom: 21%;*/
+    margin-right: 35px;
+    float: right;
+    display: block;
 }
 
+.grade-input {
+   max-width: 80px;
+   margin-bottom: 10px;
+}
 textarea.textarea-comment {
     display: block;
     margin: 1% auto;
@@ -171,3 +185,79 @@ textarea.textarea-comment {
 .quickgrademodified {
     background-color: #fc9;
 }
+
+button.btn.btn-primary.ml-1.submit-comment {
+    margin-top: 2%;
+}
+[data-region="user-selector"] select {
+    margin-bottom: 0;
+}
+
+[data-region="user-selector"] .alignment {
+    float: right;
+    width: 320px;
+    text-align: center;
+    margin-top: 7px;
+}
+
+[data-region="user-selector"] [data-action="previous-user"],
+[data-region="user-selector"] [data-action="next-user"] {
+    font-size: 26px;
+}
+
+ [data-region="user-selector"] [data-action="next-user"] {
+    margin-left: 6px;
+}
+
+ [data-region="user-selector"] .alignment input {
+    margin-bottom: 5px;
+}
+
+ [data-region="user-selector"] .alignment .form-autocomplete-downarrow {
+    top: 0;
+}
+
+ [data-region="user-selector"] .form-autocomplete-selection {
+    display: none;
+}
+
+[data-region="user-selector"] .form-autocomplete-suggestions {
+    text-align: left;
+}
+
+[data-region="user-selector"] .form-autocomplete-suggestions {
+    margin-left: 48px;
+}
+
+[data-region="grade"].collapsed {
+    left: calc(100% - 30px);
+    right: calc(30px - 100%);
+    visibility: hidden;
+    -webkit-transition: right 0.5s, left 0.5s, visibility 0s 0.5s;
+    -moz-transition: right 0.5s, left 0.5s, visibility 0s 0.5s;
+    transition: right 0.5s, left 0.5s, visibility 0s 0.5s;
+}
+[data-region="overlay"] {
+    display: none;
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: auto;
+    bottom: 0;
+    background-color: #ddd;
+    opacity: 0.4;
+    padding-top: 4em;
+    text-align: center;
+}
+
+
+@media screen and (max-width: 600px) {
+    iframe#ifile {
+        width: 352px;
+        height: 500px;
+    }
+    
+}
+    

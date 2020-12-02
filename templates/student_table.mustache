@@ -61,8 +61,10 @@
                 <th class ="table-student-columns">Full name</th>
                 <th class ="table-student-columns">Links</th>
                 <th class ="table-student-columns">Status</th>
-                <th class ="table-student-columns">Access</th>
-                <th class ="table-student-columns">Grade</th>
+                <th class ="table-student-columns">Student access</th>
+                {{#canbegraded}}
+                    <th class ="table-student-columns">Grade</th>
+                {{/canbegraded}}
             </tr>
         </thead>
 
@@ -72,11 +74,13 @@
                     student-group-id ="{{student-groupid}}">
                     <td  class="fullname-column">{{{picture}}}</td>
                     <td>{{{link}}}</td>
-                    <td>{{{status}}}</td>
-                    <td>{{access}}</td>
-                    <td><a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade">
-                          Grade                     
-                      </a></td>
+                    <td>{{{status}}} </td>
+                    <td>{{{access}}} </td>
+                    {{#canbegraded}}
+                        <td>
+                            <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade" role = "button">Grade</a>
+                        </td>
+                    {{/canbegraded}}
             {{/students}}
         </tbody>
     </table>

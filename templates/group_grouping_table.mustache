@@ -36,6 +36,8 @@
                 <th class="header ">Members</th>
                 <th class="header">Link</th>
                 <th class="header">Status</th>
+                <th class="header">Student access</th>
+                <th class="header">Grade</th>
             </tr>
         </thead>
         <tbody >
@@ -52,6 +54,13 @@
                     </td>
                     <td class="status-link-column">
                         {{{sharingstatus}}}
+                    </td>
+                    <td>
+                        Edit
+                    </td>
+                    <td>
+                        <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade"> 
+                        Grade </a>
                     </td>
                 </tr>
             {{/ggdetails}}
