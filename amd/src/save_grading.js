@@ -53,7 +53,7 @@ define(['jquery', 'core/ajax', 'core/log','core/str', 'core/notification'],
     GoogledocSaveGrading.prototype.saveGrading = function() {
         var self = this; 
         var buttonpressed;
-
+       
         $('input[name="savechanges"').click(function() {
             buttonpressed = $(this).attr('name');
         });
@@ -62,7 +62,15 @@ define(['jquery', 'core/ajax', 'core/log','core/str', 'core/notification'],
         });
 
         $("#gradeform").on('submit', function (e) {
-            $('[data-region="overlay"]').show();
+
+            var gradeval = parseFloat($('input').first().val());
+            if (isNaN(gradeval) || gradeval > 100 || gradeval < 0) {
+               $("#id_error_grade").removeAttr('hidden');
+               e.stopImmediatePropagation();
+               return false;
+            } else {
+                $('[data-region="overlay"]').show();
+            }
             e.preventDefault();
 
             var grade = {
