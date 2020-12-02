@@ -69,6 +69,7 @@ define(['jquery', 'core/ajax', 'core/log','core/str', 'core/notification'],
                e.stopImmediatePropagation();
                return false;
             } else {
+                $("#id_error_grade").attr('hidden', true);
                 $('[data-region="overlay"]').show();
             }
             e.preventDefault();
