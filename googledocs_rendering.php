@@ -690,6 +690,7 @@ class googledocs_rendering {
         $data['instanceid'] = $this->instanceid;
         $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
         $data['owneremail'] = $owneremail->email;
+        $data ['studentaccess'] = ucfirst($this->googledocs->permissions);
 
         foreach ($j->c as $c => $condition) {
             if ($condition->type == 'grouping') {
@@ -720,6 +721,7 @@ class googledocs_rendering {
         $data['instanceid'] = $this->instanceid;
         $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
         $data['owneremail'] = $owneremail->email;
+        $data['studentaccess'] = ucfirst($this->googledocs->permissions);
 
         $groupsandmembers = $this->get_groups_and_members();
         $j = json_decode($this->googledocs->group_grouping_json);
