@@ -29,11 +29,12 @@
     * None
 
 }}
-
 <div data-region="grade" id="grading-panel-container" data-googledocid={{googledocid}}>
+{{#display}}
     <div class="grading-panel">
         <iframe id='ifile' src="{{fileurl}}"></iframe>
     </div>
+  
     <div class ='grade-div'>
         <h4>Grade</h4>
         <p>Grade out of {{maxgrade}} </p> 
@@ -42,21 +43,22 @@
            {{#str}} gradelockedoroverrideningradebook, mod_googledocs {{/str}}
          </p>
         {{/lockedoroverriden}}
-        
-        <form id="gradeform" >
-            <input type="text" id="quickgrade_{{userid}}" name="grade"  {{#lockedoroverriden}} disabled {{/lockedoroverriden}}
-                value= "{{gradegiven}}" size="6" maxlength="10" class="grade-input" form="gradeform" > 
-                <span class="alert alert-success gradedtag" {{^graded}}hidden{{/graded}} >Graded</span><br>
-                <div class="form-control-feedback invalid-feedback" id="id_error_grade" style="display: block;" hidden>
-                      Grade must be greater than or equal to zero.
-                </div>      
-                 {{#lockedoroverriden}}
-                    {{#str}} currentgradeingradebook, mod_googledocs {{/str}} <br>
-                     <a href="{{gradebookurl}}" >{{finalgrade}}</a> 
-                 {{/lockedoroverriden}}
-            <textarea class="textarea-comment" name="comment" rows = "5" cols = "50" required form="gradeform">{{commentgiven}}</textarea>
-            <input type = "submit" name = "savechanges" value = "Save changes" class="btn btn-primary ml-1 submit-comment">
-            <input type = "submit" name = "saveandshownext" value = "Save and show next" class="btn btn-primary ml-1 submit-comment">
-        </form>
+      
+            <form id="gradeform" >
+                <input type="text" id="quickgrade_{{userid}}" name="grade"  {{#lockedoroverriden}} disabled {{/lockedoroverriden}}
+                    value= "{{gradegiven}}" size="6" maxlength="10" class="grade-input" form="gradeform" > 
+                    <span class="alert alert-success gradedtag" {{^graded}}hidden{{/graded}} >Graded</span><br>
+                    <div class="form-control-feedback invalid-feedback" id="id_error_grade" style="display: block;" hidden>
+                          Grade must be greater than or equal to zero.
+                    </div>      
+                     {{#lockedoroverriden}}
+                        {{#str}} currentgradeingradebook, mod_googledocs {{/str}} <br>
+                         <a href="{{gradebookurl}}" >{{finalgrade}}</a> 
+                     {{/lockedoroverriden}}
+                <textarea class="textarea-comment" name="comment" rows = "5" cols = "50" required form="gradeform">{{commentgiven}}</textarea>
+                <input type = "submit" name = "savechanges" value = "Save changes" class="btn btn-primary ml-1 submit-comment">
+                <input type = "submit" name = "saveandshownext" value = "Save and show next" class="btn btn-primary ml-1 submit-comment">
+            </form>
     </div>
+{{/display}}
 </div>

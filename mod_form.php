@@ -216,10 +216,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
 
-        
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-        if(!isset($data['update'])) {
+        if($data['update'] == 0) {
             if ($data['use_document'] != 'new') {
                 if (empty($data['google_doc_url'])) {
                     $errors['google_doc_url'] = get_string('urlempty', 'googledocs');

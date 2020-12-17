@@ -58,12 +58,12 @@
         <input type ='hidden' id = 'simulation' </input>
         <thead>
             <tr>
-                <th class ="table-student-columns">Full name</th>
-                <th class ="table-student-columns">Links</th>
-                <th class ="table-student-columns">Status</th>
-                <th class ="table-student-columns">Student access</th>
+                <th class ="table-student-columns">{{#str}} fullnameheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} linkheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} studentaccessheader, mod_googledocs{{/str}}</th>
                 {{#canbegraded}}
-                    <th class ="table-student-columns">Grade</th>
+                    <th class ="table-student-columns">{{#str}} gradeheader, mod_googledocs{{/str}}</th>
                 {{/canbegraded}}
             </tr>
         </thead>
@@ -78,7 +78,7 @@
                     <td>{{{access}}} </td>
                     {{#canbegraded}}
                         <td>
-                            <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade" role = "button">Grade</a>
+                            <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade" role = "button">{{#str}} gradeheader, mod_googledocs{{/str}}</a>
                         </td>
                     {{/canbegraded}}
             {{/students}}

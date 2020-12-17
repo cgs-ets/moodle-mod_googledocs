@@ -81,6 +81,7 @@ trait create_students_file {
     public static function create_students_file($folder_group_id, $group_id, $grouping_id,
                                                $instance_id, $parentfile_id,$student_email, $student_id, $student_name) {
         global $COURSE, $DB;
+
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
@@ -127,17 +128,25 @@ trait create_students_file {
         $student->email = $student_email;
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
-        //$teachers = $gdrive->get_enrolled_teachers($data->course);
+        $teachers = $gdrive->get_enrolled_teachers($data->course);
+       #var_dump($teachers); exit;
+
+        if ($data->distribution == 'dist_share_same' ||   $data->distribution == 'group_grouping_copy' ) {
+            foreach ($teachers as $teacher) {
+                $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
+            }
+        }
+
 
         switch ($data->distribution) {
             case 'std_copy':
                 $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
-                    $commenter, $fromexisting);
+                    $commenter, $fromexisting,0, $teachers);
                 $data->sharing = 1;
                 $DB->update_record('googledocs', $data);
                 break;
             case 'dist_share_same':
-                $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true);
+                $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true, false);
                 break;
             case 'group_copy' :
                 $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);

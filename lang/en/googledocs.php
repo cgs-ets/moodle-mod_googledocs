@@ -120,5 +120,14 @@ $string['gradelockedoroverrideningradebook'] = 'This grade is locked or overridd
 $string['feedbackplugin'] = 'Feedback plugin';
 $string['feedbacksettings'] = 'Feedback settings';
 $string['feedbackpluginforgradebook'] = 'Feedback plugin that will push comments to the gradebook';
-
+$string['nousersselected'] = 'No users selected';
+$string['groupheader'] = 'Groups';
+$string['memberheader'] = 'Members';
+$string['linkheader'] = 'Link';
+$string['statusheader'] = 'Status';
+$string['studentaccessheader'] = 'Student access';
+$string['studenttableaccessheader'] = 'Access';
+$string['fullnameheader'] = 'Full name';
+$string['groupsgroupingsheader'] = 'Groups - Groupings';
+$string['gradeheader'] = 'Grade';
 

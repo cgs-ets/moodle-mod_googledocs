@@ -31,22 +31,22 @@ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
 
         $("button#googlebtn").on('click', function () {
             Ajax.call([{
-                methodname: 'mod_googledocs_google_login_student',
-                args: {
+                    methodname: 'mod_googledocs_google_login_student',
+                    args: {
 
-                },
-                done: function (response) {
-                    Log.debug("mod_googledocs_google_login_student finished");
-                    var res = JSON.parse(response.result);
-                    var loginbutton = res.loginbutton;
-                    $('button#googlebtn').replaceWith(loginbutton);
-                    $('#googleloginbtn').trigger('click');
-                },
+                    },
+                    done: function (response) {
+                        Log.debug("mod_googledocs_google_login_student finished");
+                        var res = JSON.parse(response.result);
+                        var loginbutton = res.loginbutton;
+                        $('button#googlebtn').replaceWith(loginbutton);
+                        $('#googleloginbtn').trigger('click');
+                    },
                     fail: function (reason) {
                         Log.error(reason);
                     }
                 }]);
-            });
+        });
     };
 
     return {

@@ -70,14 +70,14 @@ function googledocs_supports($feature) {
  * @return int The id of the newly inserted googledocs record
  */
 function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $mform = null) {
-    global $USER;
+    global $USER, $COURSE;
 
     try {
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
 
         $gdrive = new googledrive($context->id);
-
+    
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
             $mform->addElement('html', $googleauthlink);
@@ -560,7 +560,7 @@ function googledocs_update_grades($googledocs, $userid = 0, $nullifnone = true) 
                 $grades[$k]->rawgrade = null;
             }
         }
-       
+
         googledocs_grade_item_update($googledocs, $grades);
 
     } else {

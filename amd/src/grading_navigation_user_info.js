@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
-define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function($, notification, ajax, templates) {
+define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function ($, notification, ajax, templates) {
 
     /**
      * UserInfo class.
@@ -31,7 +31,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
      * @class UserInfo
      * @param {String} selector The selector for the page region containing the user navigation.
      */
-    var UserInfo = function(selector) {
+    var UserInfo = function (selector) {
         console.log('UserInfo starts');
         console.log(selector);
         this._regionSelector = selector;
@@ -41,9 +41,9 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
         if (selector == '[data-region="user-info"]') {
             this._userid = $('[data-region="user-info"]').data('userid');
             this._refreshUserInfo('e', this._userid);
-            this._refreshUserSelector(); 
+            this._refreshUserSelector();
         }
-        $(document).on('user-changed', this._refreshUserInfo.bind(this));        
+        $(document).on('user-changed', this._refreshUserInfo.bind(this));
     };
 
     /** @type {String} Selector for the page region containing the user navigation. */
@@ -67,7 +67,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
      * @method _getGoogledocId
      * @return {Integer} googledocsment id
      */
-    UserInfo.prototype._getGoogledocId = function() {
+    UserInfo.prototype._getGoogledocId = function () {
         return this._region.attr('data-googledocid');
     };
 
@@ -83,15 +83,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
      * @param {Event} event
      * @param {Number} userid
      */
-    UserInfo.prototype._refreshUserInfo = function(event, userid) {
+    UserInfo.prototype._refreshUserInfo = function (event, userid) {
         var promise = $.Deferred();
-        console.log('_refreshUserInfo') ;
-        console.log(userid);
-        console.log('_lastUserId: ');
-        console.log(this._lastUserId);
+
         // Put the current user ID in the DOM so yui can access it.
         this._region.attr('data-userid', userid);
-        
+
         // Skip reloading if it is the same user.
         if (this._lastUserId == userid) {
             return;
@@ -99,19 +96,20 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
         this._lastUserId = userid;
 
         // First insert the loading template.     
-        templates.render('mod_googledocs/loading', {}).done(function(html, js) {
+        templates.render('mod_googledocs/loading', {}).done(function (html, js) {
             // Update the page.
-            this._region.fadeOut("fast", function() {
+            this._region.fadeOut("fast", function () {
                 templates.replaceNodeContents(this._region, html, js);
                 this._region.fadeIn("fast");
             }.bind(this));
 
-            if (userid < 0) {
+            if (userid == 0) {
                 // Render the template.
-                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function(html, js) {
+
+                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function (html, js) {
                     if (userid == this._lastUserId) {
                         // Update the page.
-                        this._region.fadeOut("fast", function() {
+                        this._region.fadeOut("fast", function () {
                             templates.replaceNodeContents(this._region, html, js);
                             this._region.fadeIn("fast");
                         }.bind(this));
@@ -124,49 +122,49 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function(
                 promise.resolve(this._userCache[userid]);
             } else {
                 // Load context from ajax.
-                var googledocid = this._getGoogledocId();  
+                var googledocid = this._getGoogledocId();
                 var requests = ajax.call([{
-                    methodname: 'mod_googledocs_get_participant',
-                    args: {
-                        userid : userid,
-                        googledocid: googledocid
-                    }
-                }]);
+                        methodname: 'mod_googledocs_get_participant',
+                        args: {
+                            userid: userid,
+                            googledocid: googledocid
+                        }
+                    }]);
 
-                requests[0].done(function(participant) {
+                requests[0].done(function (participant) {
                     if (!participant.hasOwnProperty('id')) {
                         promise.reject('No users');
                     } else {
                         this._userCache[userid] = participant;
                         promise.resolve(this._userCache[userid]);
                     }
-                }.bind(this)).fail(notification.exception); 
+                }.bind(this)).fail(notification.exception);
             }
 
-            promise.done(function(context) {
+            promise.done(function (context) {
                 context.courseid = $('[data-region="grading-navigation-panel"]').attr('data-courseid');
                 if (context.user) {
-                    context.identity =context.user.email;
+                    context.identity = context.user.email;
                     // Add profile image url to context.
                     if (context.user.profileimageurl) {
                         context.profileimageurl = context.user.profileimageurl;
                     }
                 }
 
-                templates.render('mod_googledocs/grading_navigation_user_summary', context).done(function(html, js) {
+                templates.render('mod_googledocs/grading_navigation_user_summary', context).done(function (html, js) {
                     // Update the page.
                     if (userid == this._lastUserId) {
-                        this._region.fadeOut("fast", function() {
+                        this._region.fadeOut("fast", function () {
                             templates.replaceNodeContents(this._region, html, js);
                             this._region.fadeIn("fast");
                         }.bind(this));
                     }
                 }.bind(this)).fail(notification.exception);
-            }.bind(this)).fail(function() {
+            }.bind(this)).fail(function () {
                 // Render the template.
-                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function(html, js) {
+                templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function (html, js) {
                     // Update the page.
-                    this._region.fadeOut("fast", function() {
+                    this._region.fadeOut("fast", function () {
                         templates.replaceNodeContents(this._region, html, js);
                         this._region.fadeIn("fast");
                     }.bind(this));

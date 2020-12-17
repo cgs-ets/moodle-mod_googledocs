@@ -34,7 +34,7 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
      */
     function init() {
         Log.debug('mod_googledocs/processing_control');
-        
+
         var saveAndDisplay = '#id_submitbutton';
         var selectGroup = '#id_groups';
         var selectDistribution = "#id_distribution";
@@ -43,12 +43,13 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
     }
 
     // Constructor.
-    function GoogledocsProcessingControl(saveAndDisplay,  selectGroup, selectDistribution) {
+    function GoogledocsProcessingControl(saveAndDisplay, selectGroup, selectDistribution) {
         var self = this;
         self.saveAndDisplay = saveAndDisplay;
         self.selectGroup = selectGroup;
         self.selectDistribution = selectDistribution;
-    };
+    }
+    ;
 
     GoogledocsProcessingControl.prototype.main = function () {
         var self = this;
@@ -57,45 +58,45 @@ define(['jquery', 'core/log', 'core/str'], function ($, Log, str) {
         self.change();
     };
 
-    GoogledocsProcessingControl.prototype.processingMessageDisplay = function() {
+    GoogledocsProcessingControl.prototype.processingMessageDisplay = function () {
         // Handle submit click.
         var self = this;
-        $(self.saveAndDisplay).on('click', function() {
+        $(self.saveAndDisplay).on('click', function () {
             $("<div class='d-flex flex-column align-items-center justify-content-center overlay'>"
-                + "<div class='spinner-border processing' role='status'>"
-                + "<span class='sr-only'>Loading...</span>"
-                + "</div>"
-                + "<div class = 'process_message'>\n\
+                    + "<div class='spinner-border processing' role='status'>"
+                    + "<span class='sr-only'>Loading...</span>"
+                    + "</div>"
+                    + "<div class = 'process_message'>\n\
                    <p>Saving to Google Drive. <br>\n\
                         This process can take some time.<br> \n\
                         Please do not close the browser.</p>\n\
                     </div></div>").appendTo('#page-content');
 
-            });
+        });
     };
 
-    GoogledocsProcessingControl.prototype.change = function(){
-      var self = this;
+    GoogledocsProcessingControl.prototype.change = function () {
+        var self = this;
 
         $(self.selectDistribution).change(function () {
             var optionSelected = $(this).find("option:selected");
-            var valueSelected  = optionSelected.val();
+            var valueSelected = optionSelected.val();
 
-            if(valueSelected === 'group_copy') {
+            if (valueSelected === 'group_copy') {
                 $('#id_groups option:eq(0)').attr('disabled', 'disabled');
                 $('#id_groups option:eq(0)').hide();
-            }else if(valueSelected === 'std_copy'  ||
+            } else if (valueSelected === 'std_copy' ||
                     valueSelected === 'dist_share_same') {
-                 $('#id_groups option:eq(0)').removeAttr('disabled');
-                 $('#id_groups option:eq(0)').show();
+                $('#id_groups option:eq(0)').removeAttr('disabled');
+                $('#id_groups option:eq(0)').show();
             }
 
 
-         });
+        });
     };
 
 
     return {
-         init: init
+        init: init
     };
- });
+});

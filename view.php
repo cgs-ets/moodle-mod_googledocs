@@ -64,16 +64,6 @@ $created = ($googledocs->sharing == 1);
 
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm, $googledocs, $created);
 
-/*
-if ($action == 'grade' || empty($action) && $created && has_capability('mod/googledocs:viewall', $coursecontext))  {
-    $t->view_grading_summary();
-} else if ($action == 'grading') {
-    $t->view_grading_table();
-} else {
-}
-*/
-
-//var_dump(get_config('googledocs'));exit;
 $t->render_table();
 $PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.

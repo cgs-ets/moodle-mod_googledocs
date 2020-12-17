@@ -71,6 +71,17 @@ trait get_participant_by_id {
                 'googledocid' => $googledocid)
         );
 
+        $output = $PAGE->get_renderer('core');
+
+        if ($userid == 0) {
+            $d = new \stdClass();
+            $d->display = false;
+            return array(
+            'html' => $output->render_from_template('mod_googledocs/grading_panel', $d),
+            'data' => json_encode($d),
+            );
+        }
+
         // Get the File and grading details
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, g.grade as maxgrade, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
@@ -108,6 +119,7 @@ trait get_participant_by_id {
             $data->finalgrade = number_format($gradefromgradebook,2);
             $data->lockedoroverriden = $lockedoroverriden;
             $data->lockedoroverriden = $lockedoroverriden;
+            $data->display = true;
             list($data->gradegiven, $data->commentgiven) = get_grade_comments($googledocid, $record->userid);
         }
 

@@ -4,13 +4,13 @@
  * @copyright  2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
- /**
-  * @module mod_googledocs/update_controls
-  * define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/update_controls'], function ($, Log, Ajax, UpdateControl)
-  */
-define(['core/ajax', 'core/log'], function(Ajax, Log) {
-  'use strict';
+
+/**
+ * @module mod_googledocs/update_controls
+ * 
+ */
+define(['core/ajax', 'core/log'], function (Ajax, Log) {
+    'use strict';
     /**
      * Initializes the update controls.
      */
@@ -23,32 +23,33 @@ define(['core/ajax', 'core/log'], function(Ajax, Log) {
     }
 
     // Constructor
-    function GoogledocsUpdateControl (file_ids){
+    function GoogledocsUpdateControl(file_ids) {
         var self = this;
-        self.file_ids = file_ids;  
-    };
+        self.file_ids = file_ids;
+    }
+    ;
 
-    GoogledocsUpdateControl.prototype.main = function() {
+    GoogledocsUpdateControl.prototype.main = function () {
         var self = this;
         self.updateSharing();
     };
 
-     GoogledocsUpdateControl.prototype.updateSharing = function() {
+    GoogledocsUpdateControl.prototype.updateSharing = function () {
 
-         var self = this;
+        var self = this;
 
-         Ajax.call([{
-            methodname: 'mod_googledocs_update_sharing',
-            args: {
-                file_ids : self.file_ids
-            },
-            done: function (response) {
-                Log.debug('mod_googledocs_update_sharing ' + response);
-            },
-            fail: function (reason) {
-                Log.error(reason);
-            }
-        }]);
+        Ajax.call([{
+                methodname: 'mod_googledocs_update_sharing',
+                args: {
+                    file_ids: self.file_ids
+                },
+                done: function (response) {
+                    Log.debug('mod_googledocs_update_sharing ' + response);
+                },
+                fail: function (reason) {
+                    Log.error(reason);
+                }
+            }]);
 
     };
 

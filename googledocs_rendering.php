@@ -112,7 +112,7 @@ class googledocs_rendering {
         global $USER;
         $students = $this->query_db();
         $usergroups = groups_get_user_groups($this->courseid, $USER->id);
-
+        
         switch ($this->googledocs->distribution) {
 
             case 'std_copy' :
@@ -164,10 +164,8 @@ class googledocs_rendering {
             case 'dist_share_same_group' :
                 if ($this->created && $isstudent) {
                     $this->render_files_for_students_in_groups($types, $usergroups);
-                } else if (!$this->created) {
-                    $this->render_student_table_processing($types, $students, $this->googledocs->distribution);
                 } else {
-                    $this->render_table_by_students_files_created($types, $students, $this->googledocs->distribution);
+                    $this->render_table_by_group($types);
                 }
 
                 break;
@@ -175,10 +173,9 @@ class googledocs_rendering {
             case 'dist_share_same_grouping':
                 if ($this->created && $isstudent) {
                     $this->render_files_for_students_in_groups($types, $usergroups);
-                } else if (!$this->created) {
                     $this->render_grouping_student_table($types, $students);
                 } else {
-                    $this->render_grouping_student_table($types);
+                    $this->render_table_by_grouping($types);
                 }
                 break;
 
@@ -405,7 +402,11 @@ class googledocs_rendering {
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
                 $links = html_writer::link('#', $image, array('target' => '_blank',
                         'id' => 'link_file_' . $i));
-
+                $urlparams = ['id' => $this->cm->id,
+                          'action' => 'grader',
+                          'userid' => $student->id
+                        ];
+               $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
                 $data['students'][] = [
                     'picture' => $picture,
                     'fullname' => fullname($student),
@@ -415,7 +416,8 @@ class googledocs_rendering {
                     'student-groupid' => isset($student->groupid) ? $student->groupid : '',
                     'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
                     'access' => ucfirst($this->googledocs->permissions),
-                    'creating' => $this->created
+                    'creating' => $this->created,
+                    'gradeurl' => $gradeurl
                 ];
 
                 $i++;
@@ -580,6 +582,11 @@ class googledocs_rendering {
                         'id' => 'link_file_' . $i));
             }
 
+            if ($links == '') {
+                $links .= html_writer::link($student->url, $image, array('target' => '_blank',
+                        'id' => 'link_file_' . $i));
+            }
+
             $urlparams = ['id' => $this->cm->id,
                           'action' => 'grader',
                           'userid' => $student->id
@@ -598,7 +605,7 @@ class googledocs_rendering {
                                     'readytograde' => $readytograde,
                                     'access' => html_writer::start_div($class, ['id' => 'file_' . $i]).
                                                 $accesstext.
-                                                html_writer::end_div(),ucfirst($student->permission),
+                                                html_writer::end_div(),ucfirst($this->googledocs->permissions),
                                     'gradeurl' => $gradeurl
 
                                  ];
@@ -626,12 +633,21 @@ class googledocs_rendering {
 
         // Get teacher email. Is the owner of the copies that are going to be created for each group.
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
+        $groupids = '';
+        if ($this->googledocs->distribution ==  'dist_share_same_group') {
+            $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
+            foreach ($groups as $group) {
+                $groupids .= '-' . $group->id;
+            }
+            $groupids = ltrim($groupids, '-');
+        }
 
         $data = [
             'groups' => array(),
             'googledocid' => '',
             'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
             'owneremail' => $owneremail->email,
+            'all_groups' => $groupids // a list of the groups ids. This is use in the Ajax call
         ];
 
         $data['googledocid'] = $this->googledocs->docid;
@@ -652,6 +668,7 @@ class googledocs_rendering {
                 'fileicon' => html_writer::link($urlshared, $iconimage,
                     array('target' => '_blank', 'id' => 'shared_link_url_' . $members['groupid'])),
                 'sharing_status' => html_writer::start_div('', ["id" => 'status_col']) . html_writer::end_div(),
+                'student_access' => ucfirst($this->googledocs->permissions)
             ];
 
             foreach ($members['groupmembers'] as $member) {
@@ -831,6 +848,7 @@ class googledocs_rendering {
             if ($this->created) {
                 list($rawdata, $params) = $this->queries_get_students_list_created($picturefields);
                 $studentrecords = $DB->get_records_sql($rawdata, $params);
+
             } else {
 
                 $studentrecords = $this->queries_get_students_list_processing();
@@ -998,7 +1016,7 @@ class googledocs_rendering {
             return array("", "", $r);
         } else {
 
-            $rawdata = "SELECT DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
+            $rawdata = "SELECT u.id, DISTINCT $picturefields, u.firstname, u.lastname, gf.name, gf.url
                         FROM mdl_user as u
                         INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
                         WHERE gf.googledocid = ? AND u.id = ?
@@ -1099,15 +1117,14 @@ class googledocs_rendering {
      */
     private function query_get_students_list_created($picturefields) {
 
-        $rawdata = "SELECT DISTINCT $picturefields, u.id, u.firstname, u.lastname, gf.name, gf.url as url, gf.groupid,
+        $rawdata = "SELECT  DISTINCT gf.id, $picturefields,  u.firstname, u.lastname, gf.name, gf.url as url, gf.groupid,
                     gf.permission
                     FROM mdl_user as u
-                    INNER JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                    WHERE gf.googledocid = ? ORDER BY u.lastname
-                    -- GROUP BY u.id";
+                    JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
+                    WHERE gf.googledocid = ?  ORDER BY u.lastname"; //TODO: VALIDATE IN SQL SERVER
 
         $params = array($this->instanceid);
-
+       # var_dump($rawdata); exit;
         return array($rawdata, $params);
     }
 
@@ -1369,7 +1386,8 @@ class googledocs_rendering {
                  'users' => $this->get_list_participants($this->googledocs->id),
                  'lockedoroverriden' => $lockedoroverriden,
                  'finalgrade' => number_format($gradefromgradebook,2),
-                 'gradebookurl' => $gradebookurl
+                 'gradebookurl' => $gradebookurl,
+                 'display' => true,
 
             ];
 
@@ -1401,9 +1419,9 @@ class googledocs_rendering {
     }
 
     private function get_list_participants($googledocid) {
-        global $DB;
-        $sql = "SELECT u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
-                INNER JOIN mdl_user as u ON gf.userid = u.id
+        global $DB; // By selecting the user id first, you avoid the duplicate warning.
+        $sql = "SELECT u.id, CONCAT(u.firstname,' ', u.lastname) as fullname, gf.* FROM mdl_googledocs_files as gf
+                JOIN mdl_user as u ON gf.userid = u.id
                 WHERE googledocid = :googledocid ORDER BY u.lastname;";
 
         $participants = $DB->get_records_sql($sql, array('googledocid' => $googledocid));
@@ -1412,11 +1430,10 @@ class googledocs_rendering {
         foreach ($participants as $participant) {
             $user  = new \stdClass();
             $user->userid = $participant->userid;
-            $user->fullname = $participant->firstname . ' '.$participant->lastname;
+            $user->fullname = $participant->fullname;
             list($user->grade, $user->comment) =  get_grade_comments($googledocid, $participant->userid);
             $users [] = $user;
         }
-
 
         return $users;
     }

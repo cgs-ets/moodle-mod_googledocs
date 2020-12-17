@@ -32,19 +32,17 @@
         data-from-existing = "{{from_existing}}" data-owner-email = "{{owneremail}}" 
         data-grouping-ids = "{{all_groupings}}">
         <thead>
-            <tr>
-                <th class="checkbox-column"></th>
-                <th class ="table-student-columns">Full name</th>
-                <th class ="table-student-columns">Links</th>
-                <th class ="table-student-columns">Status</th>
+            <tr>           
+                <th class ="table-student-columns">{{#str}} fullnameheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} linkheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th>
             </tr>
         </thead>
 
         <tbody  class = "table-striped">
             {{#students}}
                 <tr data-student-id ="{{student-id}}" data-student-email="{{student-email}}" student-name="{{fullname}}"
-                    student-grouping-id ="{{student-groupingid}}">
-                    <td>{{{checkbox}}}</td>
+                    student-grouping-id ="{{student-groupingid}}">              
                     <td  class="fullname-column">{{{picture}}}</td>
                     <td>{{{link}}}</td>
                     <td>{{{status}}}</td>

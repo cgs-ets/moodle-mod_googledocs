@@ -59,13 +59,15 @@
 
     <table class="mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover" 
         data-googledocs-id = "{{googledocid}}" data-owner-email = "{{owneremail}}"
-        data-instance-id = "{{instanceid}}" data-from-existing = "{{from_existing}}" >
+        data-instance-id = "{{instanceid}}" data-from-existing = "{{from_existing}}" 
+        data-all-groups = "{{all_groups}}">
         <thead class="thead-light">
             <tr>
-                <th class="header ">Groups</th>
-                <th class="header ">Members</th>
-                <th class="header">Link</th>
-                <th class="header">Status</th>
+                <th class="header ">{{#str}} groupheader, mod_googledocs{{/str}}</th>  
+                <th class="header ">{{#str}} memberheader, mod_googledocs{{/str}}</th>
+                <th class="header">{{#str}} linkheader, mod_googledocs{{/str}}</th>
+                <th class="header">{{#str}} statusheader, mod_googledocs{{/str}}</th>
+                <th class="header">{{#str}} studentaccessheader, mod_googledocs{{/str}}</th>
             </tr>
         </thead>
         <tbody >
@@ -82,14 +84,13 @@
                         {{{fileicon}}}
                     </td>
                     <td class = "status-link-column">{{{sharing_status}}}</td>
+                    <td class = "status-link-column">{{{student_access}}}</td>
                 </tr>
             {{/groupname}}
         </tbody>
         {{#student-id}}
             <tbody class = "table-striped collapse" id ="group-members-{{groupid}}">
-                    <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}">
-
-                    </tr>
+                <tr data-student-id = "{{student-id}}" data-student-email="{{student-email}}" student-group-id="{{groupid}}" student-name="{{fullname}}"></tr>
             </tbody>
         {{/student-id}}
      {{/groups}}
