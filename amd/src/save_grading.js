@@ -101,21 +101,24 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
     GoogledocSaveGrading.prototype._handleFormSubmissionResponse = function (formdata, nav) {
         var nextUserId;
         var currentSelectionid = $('.custom-select option:selected').val();
-        console.log(nav);
+        var lastSelectElement = $('select.custom-select option:last-child').val();
+        var isLast = (currentSelectionid == lastSelectElement);
 
-        if (nav != undefined && nav.userid != undefined) {
-            nextUserId = nav.userid;
-        } else if (nav == undefined || nav.direction.includes('right')) {  // Check if its coming from arrow nav or save and shownext
+        if (nav != undefined) {
+            if (nav.userid != undefined) {
+                nextUserId = nav.userid;
+            } else if (nav.direction.includes('right')) {
+                nextUserId = $('select.custom-select option:selected').next().val();
+                $('.custom-select option:selected').next().attr('selected', 'selected');
+            } else if (nav.direction.includes('left')) {
+                $('.custom-select option:selected').prev().attr('selected', 'selected');
+                nextUserId = $("select.custom-select option").filter(":selected").val();
+            }
+        } else { // clicked on save and show next
             nextUserId = $('select.custom-select option:selected').next().val();
-            $('.custom-select option:selected').next().attr('selected', 'selected');
-        } else if (nav.direction.includes('left')) {
-            $('.custom-select option:selected').prev().attr('selected', 'selected');
-            nextUserId = $("select.custom-select option").filter(":selected").val();
         }
-        
+
         if (nextUserId > 0) {
-            $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');
-            $(`select.custom-select option[value='${nextUserId}']`).attr('selected', 'selected'); // chance selection
 
             str.get_strings([
                 {key: 'changessaved', component: 'core'},
@@ -131,19 +134,27 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
                 }
             } else {
                 if (nextUserId != undefined && nextUserId > 0) {  // it's coming from the navigation
+                    $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');
+                    $(`select.custom-select option[value='${nextUserId}']`).attr('selected', 'selected'); // chance selection
                     GoogledocSaveGrading.prototype.get_next_user(nextUserId, nav);
                 } else if (nextUserId == 0) {
                     $(document).trigger('user-changed', nextUserId);
                 }
             }
-        } else if (nextUserId != 0) {  // clicked on a link 
+        } else if (nextUserId != 0 && nav != undefined) {  // clicked on a link 
             window.open(nav.direction, "_self");
         } else {
             Checker.saveFormState('#gradeform'); // Save new form state.
-            $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');
-            $("select.custom-select option[value='0']").attr('selected', 'selected');
-            $(document).trigger('user-changed', nextUserId);
-            $("div#grading-panel-container").css('display', 'none');
+            console.log(!(formdata != undefined && formdata == 'savechanges'));
+            if (isLast && !(formdata != undefined && formdata == 'savechanges')) {
+                $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');
+                console.log("ultimo");
+                nextUserId = 0;
+                $("select.custom-select option[value='0']").attr('selected', 'selected');
+                $(document).trigger('user-changed', nextUserId);
+                $("div#grading-panel-container").css('display', 'none');
+            }
+
         }
 
         $('[data-region="overlay"]').hide();

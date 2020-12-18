@@ -144,11 +144,13 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'mod_googledocs/
             }
         } else {
 
-            if (currentSelectionid != lastSelection) {
+            if (currentSelectionid == lastSelection) {
+                userid = 0;
+            } else {
                 this._handleNextUser_helper(currentSelectionid);
                 var userid = $("select.custom-select option").filter(":selected").val();
-                this._refreshView(e, userid, true);
             }
+                this._refreshView(e, userid, true);
         }
     };
 
@@ -174,11 +176,12 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'mod_googledocs/
      * @param {String} userid
      */
     GradingNavigation.prototype._refreshView = function (event, userid, fromhandleUser) {
-
+       
         userid = fromhandleUser ? userid : event.target.value;
+     
 
         if (userid == 0) {
-            $('.select.custom-select').val(userid);
+            $('select.custom-select').val(userid);
         }
 
         userid = parseInt(userid, 10);
@@ -186,6 +189,13 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'mod_googledocs/
         if (Checker.checkFormForChanges('#gradeform')) {
             this._handleChangeUserHelper(userid);
         } else {
+
+            if (!fromhandleUser) {
+                $(".custom-select option").each(function () {
+                    $(this).removeAttr('selected');
+                });
+                $(`select.custom-select option[value='${userid}']`).attr('selected', 'selected')
+            } 
             $(document).trigger('user-changed', userid);   // Refresh name
             GradingNavigation.prototype.get_user_by_id(userid);
             GradingNavigation.prototype.update_url(userid);

@@ -49,7 +49,6 @@ define(['jquery'], function($) {
          * @return {Boolean} True if there are changes to the form data.
          */
         checkFormForChanges: function(selector) {
-            console.log("Checking if form changed");
             $(selector).trigger('save-form-state');
 
             var data = $(selector).serialize(),
@@ -58,6 +57,8 @@ define(['jquery'], function($) {
             if (typeof previousdata === 'undefined') {
                 return false;
             }
+            console.log("Checking  form change: ");
+            console.log(previousdata != data);
             return (previousdata != data);
         }
     };
