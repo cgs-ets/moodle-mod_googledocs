@@ -77,7 +77,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $context = context_course::instance($googledocs->course);
 
         $gdrive = new googledrive($context->id);
-    
+
         if (!$gdrive->check_google_login()) {
             $googleauthlink = $gdrive->display_login_button();
             $mform->addElement('html', $googleauthlink);
@@ -166,26 +166,21 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
 
     $context = context_course::instance($googledocs->course);
     $gdrive = new googledrive($context->id, true);
-    $updateresult = $gdrive->updates($mform->get_current(), $mform->get_submitted_data());
+    $currentvalues = $DB->get_record('googledocs', ['id' => $googledocs->instance], '*');
 
-    $googledocs->introeditor = null;
-    $googledocs->timemodified = time();
-    $googledocs->id = $googledocs->instance;
+    if($currentvalues->permissions != $googledocs->permissions) {
+        $detail = new stdClass();
+        $detail->permissions = $googledocs->permissions;
+        $currentvalues->permissions = $googledocs->permissions;
 
-    if (is_string($updateresult)  ) { // Error on the update.
+        $updateresult = $gdrive->updates($currentvalues, $detail ); // Update the google file permission
+    }
+    if (!$updateresult) { // Error on the update.
         $result = false;
     } else {
-        $googledocs->update_status = 'modified';
-        $googledocs->intro =   ($mform->get_submitted_data())->name;
-        $googledocs->introformat = ($mform->get_submitted_data())->name;
-
-        /**
-        if ($googledocs->intro == null) $googledocs->intro = $mform->get_current()->intro;
-        if ($googledocs->introformat == null) $googledocs->introformat = $mform->get_current()->introformat;
-
-        $googledocs->introeditor = null; */
+        $currentvalues->update_status = 'modified';
         // You may have to add extra stuff in here.
-        $result = $DB->update_record('googledocs', $googledocs);
+        $result = $DB->update_record('googledocs', $currentvalues);
         //googledocs_grade_item_update($googledocs);
     }
 
@@ -580,4 +575,3 @@ function googledocs_grade_item_delete($googledoc) {
     $DB->delete_records('googledocs_grades', array('googledocid'  => $googledoc->id));
     $DB->delete_records('googledocsfeedback_comments', array('googledoc'  => $googledoc->id));
 }
-

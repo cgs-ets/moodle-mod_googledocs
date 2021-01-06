@@ -60,8 +60,8 @@
             <tr>
                 <th class ="table-student-columns">{{#str}} fullnameheader, mod_googledocs{{/str}}</th>
                 <th class ="table-student-columns">{{#str}} linkheader, mod_googledocs{{/str}}</th>
-                <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th>
                 <th class ="table-student-columns">{{#str}} studentaccessheader, mod_googledocs{{/str}}</th>
+                <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th>
                 {{#canbegraded}}
                     <th class ="table-student-columns">{{#str}} gradeheader, mod_googledocs{{/str}}</th>
                 {{/canbegraded}}
@@ -74,12 +74,19 @@
                     student-group-id ="{{student-groupid}}">
                     <td  class="fullname-column">{{{picture}}}</td>
                     <td>{{{link}}}</td>
-                    <td>{{{status}}} </td>
                     <td>{{{access}}} </td>
+                    <td>{{{status}}} </td>
                     {{#canbegraded}}
+                        {{^beengraded}}
+                            <td>
+                                <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade" role = "button">{{#str}} gradeheader, mod_googledocs{{/str}}</a>
+                            </td>
+                       {{/beengraded}}
+                       {{#beengraded}}
                         <td>
-                            <a href= "{{{gradeurl}}}" class="btn btn-primary btn-grade" role = "button">{{#str}} gradeheader, mod_googledocs{{/str}}</a>
+                            <a href= "{{{gradeurl}}}" class="" role = "button">{{gradevalue}}</a>
                         </td>
+                       {{/beengraded}}
                     {{/canbegraded}}
             {{/students}}
         </tbody>

@@ -94,18 +94,18 @@ function url_templates() {
     $sharedlink = array();
 
     $sharedlink['application/vnd.google-apps.document'] = array('linktemplate' => 'https://docs.google.com/document/d/%s/edit?usp=sharing',
-            'linkbegin' => 'https://docs.google.com/document/d/',
-            'linkend' => '/edit?usp=sharing'
+        'linkbegin' => 'https://docs.google.com/document/d/',
+        'linkend' => '/edit?usp=sharing'
     );
 
     $sharedlink['application/vnd.google-apps.presentation'] = array('linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing',
-            'linkbegin' => 'https://docs.google.com/presentation/d/',
-            'linkend' => '/edit?usp=sharing'
+        'linkbegin' => 'https://docs.google.com/presentation/d/',
+        'linkend' => '/edit?usp=sharing'
     );
     $sharedlink['application/vnd.google-apps.spreadsheet'] = array(
-            'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing',
-            'linlbegin' => 'https://docs.google.com/spreadsheets/d/',
-            'linkend' => '/edit?usp=sharing'
+        'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing',
+        'linlbegin' => 'https://docs.google.com/spreadsheets/d/',
+        'linkend' => '/edit?usp=sharing'
     );
 
     $sharedlink['application/vnd.google-apps.folder'] = array(
@@ -588,13 +588,8 @@ function get_user_grades_for_gradebook($userid = 0, $instance) {
         if ($gradingstatus == GOOGLEDOCS_GRADING_STATUS_GRADED) {
             $gradebookgrade = clone $result;
             // Now get the feedback.
-            // if ($gradebookplugin) {
-            // $grade = get_user_grade($result->userid, $instance);
-            // if ($grade) {
             $gradebookgrade->feedback = $result->feedback;
             $gradebookgrade->feedbackformat = $result->feedbackformat;
-            //  }
-            //   }
             $grades[$gradebookgrade->userid] = $gradebookgrade;
         }
     }
@@ -613,6 +608,37 @@ function get_grading_status($userid, $googledoc) {
     } else {
         return GOOGLEDOCS_GRADING_STATUS_NOT_GRADED;
     }
+}
+
+/**
+ * Implements a renderable grading options form
+ * @package   mod_assign
+ * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class googledocs_form implements renderable {
+
+    /** @var moodleform $form is the edit submission form */
+    public $form = null;
+
+    /** @var string $classname is the name of the class to assign to the container */
+    public $classname = '';
+
+    /** @var string $jsinitfunction is an optional js function to add to the page requires */
+    public $jsinitfunction = '';
+
+    /**
+     * Constructor
+     * @param string $classname This is the class name for the container div
+     * @param moodleform $form This is the moodleform
+     * @param string $jsinitfunction This is an optional js function to add to the page requires
+     */
+    public function __construct($classname, moodleform $form, $jsinitfunction = '') {
+        $this->classname = $classname;
+        $this->form = $form;
+        $this->jsinitfunction = $jsinitfunction;
+    }
+
 }
 
 /**
@@ -1114,17 +1140,17 @@ class googledrive {
 
         $this->insert_permission($this->service, $data->docid, $user->email, 'user', $role, $commenter, $teacher);
 
-            $d = new stdClass();
-            $d->userid = $user->id;
-            $d->googledocid = $data->id;
-            $d->url = $data->google_doc_url;
-            $d->name = $data->name;
-            $d->groupingid = $data->groupingid;
+        $d = new stdClass();
+        $d->userid = $user->id;
+        $d->googledocid = $data->id;
+        $d->url = $data->google_doc_url;
+        $d->name = $data->name;
+        $d->groupingid = $data->groupingid;
 
         if ($makerecord) {
             $DB->insert_record('googledocs_files', $d);
         }
-            $this->update_creation_and_sharing_status($data, $user);
+        $this->update_creation_and_sharing_status($data, $user);
 
         return $data->google_doc_url;
     }
@@ -1381,44 +1407,29 @@ class googledrive {
     }
 
     /**
-     * Update the file(s) and folder(s) in Google Drive.
      *
-     * @param StdClass $instance
-     * @param Object $details submitted data
-     * @return \Exception
+     * @global type $DB
+     * @param object $instance
+     * @param object $newpermission
+     * @return boolean
      */
-    public function updates($instance, $details) {
+    public function updates($instance, $newpermission) {
         global $DB;
-        $result = false;
+        $conditions = ['googledocid' => $instance->id];
+        $records = $DB->get_records('googledocs_files', $conditions, '', $fields='*');
+        $saved = false;
 
-        try {
-
-            $fileId = $instance->docid;
-            $parentfolderid = $instance->parentfolderid;
-
-            // Updates the "master" file.
-            $result = $this->update_file_request($parentfolderid, $details);
-            if (!$result) {
-                throw new Exception("Unable to update file in My Drive.");
-            }
-
-            //Update the name of the folder the master file is in.
-            $result = $this->update_file_request($parentfolderid, $details);
-
-            // Update the students files
-            $this->update_students_files($instance, $details);
-        } catch (Exception $ex) {
-
-            print $ex->getMessage();
-            $error = new stdClass();
-            $error->id = $instance->id;
-            $error->update_status = $ex->getMessage();
-
-            $DB->update_record('googledocs', $error); // record the error.
-            return $ex->getMessage();
+        foreach($records as $record) {
+           $fileId = get_file_id_from_url($record->url);
+           $saved = $this->update_permissions($fileId, $newpermission, $instance); // this updates the file in Google drive.
+           if ($saved) {
+            $record->permission = $newpermission->permissions;
+            $DB->update_record('googledocs_files', $record);
+           }
         }
 
-        return $result;
+       return $saved;
+
     }
 
     /**
@@ -1576,7 +1587,7 @@ class googledrive {
 
         $context = \context_course::instance($courseid);
 
-        $coursestudents = get_role_users(5, $context,false,'u.*', 'u.lastname');
+        $coursestudents = get_role_users(5, $context, false, 'u.*', 'u.lastname');
         foreach ($coursestudents as $student) {
             $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
                 'displayName' => $student->firstname . ' ' . $student->lastname);
@@ -1653,7 +1664,6 @@ class googledrive {
             return $permissions->getItems();
         } catch (Exception $e) {
             error_log("An error occurred: " . $e->getMessage());
-            ;
         }
         return NULL;
     }
@@ -1763,7 +1773,7 @@ class googledrive {
     private function update_file_request($fileid, $details, $studentsfolder = false) {
 
         try {
-            $title = $studentsfolder ? $details->name . '_students' : $details->name;
+            $title = $studentsfolder ? $details->name . '_students' : $details->name_doc;
             $data = array('title' => $title);
             $data_string = json_encode($data);
             $contentlength = strlen($data_string);
@@ -1801,8 +1811,6 @@ class googledrive {
      * @return type
      */
     private function update_permission_request($fileId, $permission) {
-
-
 
         try {
 
@@ -1953,7 +1961,7 @@ class googledrive {
      * @return type
      */
     public function update_permissions($fileId, $details, $instance) {
-
+        $saved = true;
         try {
 
             $permissionlist = $this->get_permissions($fileId);
@@ -1990,7 +1998,10 @@ class googledrive {
             }
         } catch (Exception $ex) {
             error_log($ex->getMessage());
+            $saved = false;
         }
+
+        return $saved;
     }
 
     /**

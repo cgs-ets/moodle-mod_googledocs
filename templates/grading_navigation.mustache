@@ -37,23 +37,16 @@
             There are three chunks, which appear side-by-side at large screen sizes.
             A) File info, which has 3 rows:
         }}
-
-        <div data-region="googledoc-info" class="col-md-4" data-courseid = {{courseid}}>
+   
+    <div data-region="googledoc-info" class="col-md-4" data-courseid = {{courseid}}>
 
         {{!
             Row 1) course name & link.
         }}
         <a href="{{config.wwwroot}}/course/view.php?id={{courseid}}" title="{{{coursename}}}">{{{coursename}}}</a><br/>
-
+       
         {{!
-            Row 2) File name & link.
-        }}
-        <a href="{{config.wwwroot}}/mod/googledocs/view.php?id={{cmid}}" title="{{name}}">{{name}}</a>
-
-        <br/>
-
-        {{!
-            Row 3) File grading & link, due date
+            Row 2) File grading & link, due date
         }}
         <a href="{{config.wwwroot}}/mod/googledocs/view.php?id={{cmid}}&action={{actiongrading}}" title="{{viewgrading}}">{{viewgrading}}</a>
 

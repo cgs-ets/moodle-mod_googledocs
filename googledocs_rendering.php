@@ -112,7 +112,7 @@ class googledocs_rendering {
         global $USER;
         $students = $this->query_db();
         $usergroups = groups_get_user_groups($this->courseid, $USER->id);
-        
+
         switch ($this->googledocs->distribution) {
 
             case 'std_copy' :
@@ -563,7 +563,7 @@ class googledocs_rendering {
 
             $graded = $DB->get_record('googledocs_grades', array('userid' => $student->id,
                     'googledocid' =>  $this->googledocs->id));
-
+           
             // If a student belongs to more than one group, it can get more than one file. Render all.
             if ($dist == 'std_copy_group' || $dist == 'std_copy_grouping'
                 || $dist =='std_copy_group_grouping') {
@@ -588,27 +588,28 @@ class googledocs_rendering {
             }
 
             $urlparams = ['id' => $this->cm->id,
-                          'action' => 'grader',
-                          'userid' => $student->id
-                        ];
+                'action' => 'grader',
+                'userid' => $student->id
+            ];
             $gradeurl = new moodle_url('/mod/googledocs/view_grading_app.php?', $urlparams);
 
             list($statustext, $accesstext, $class) = $this->get_status_style($readytograde, $this->googledocs->permissions, $graded);
 
-            $data['students'][] = [ 'picture' => $picture,
-                                    'fullname' => fullname($student),
-                                    'student-id' => $student->id,
-                                    'student-email' => $student->email,
-                                    'link' => $links,
-                                    'student-groupid' => isset($student->groupid) ? $student->groupid : '',
-                                    'status' => html_writer::start_div($class, ['id' => 'file_' . $i]).$statustext.html_writer::end_div(),
-                                    'readytograde' => $readytograde,
-                                    'access' => html_writer::start_div($class, ['id' => 'file_' . $i]).
-                                                $accesstext.
-                                                html_writer::end_div(),ucfirst($this->googledocs->permissions),
-                                    'gradeurl' => $gradeurl
-
-                                 ];
+            $data['students'][] = ['picture' => $picture,
+                'fullname' => fullname($student),
+                'student-id' => $student->id,
+                'student-email' => $student->email,
+                'link' => $links,
+                'student-groupid' => isset($student->groupid) ? $student->groupid : '',
+                'status' => html_writer::start_div($class, ['id' => 'file_' . $i]) . $statustext . html_writer::end_div(),
+                'readytograde' => $readytograde,
+                'access' => html_writer::start_div($class, ['id' => 'file_' . $i]) .
+                $accesstext .
+                html_writer::end_div(), ucfirst($this->googledocs->permissions),
+                'gradeurl' => $gradeurl,
+                'beengraded' => $graded,
+                'gradevalue' => ($graded) ? $graded->grade : '',
+            ];
 
             $i++;
         }
@@ -1388,6 +1389,7 @@ class googledocs_rendering {
                  'finalgrade' => number_format($gradefromgradebook,2),
                  'gradebookurl' => $gradebookurl,
                  'display' => true,
+                 'contextid' =>$this->context->id,
 
             ];
 

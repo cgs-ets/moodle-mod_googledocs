@@ -32,8 +32,7 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function 
      * @param {String} selector The selector for the page region containing the user navigation.
      */
     var UserInfo = function (selector) {
-        console.log('UserInfo starts');
-        console.log(selector);
+        
         this._regionSelector = selector;
         this._region = $(selector);
         this._userCache = [];

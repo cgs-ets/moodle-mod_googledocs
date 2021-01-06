@@ -29,7 +29,7 @@
     * None
 
 }}
-<div data-region="grade" id="grading-panel-container" data-googledocid={{googledocid}}>
+<div data-region="grade" id="grading-panel-container" data-googledocid="{{googledocid}}">
 {{#display}}
     <div class="grading-panel">
         <iframe id='ifile' src="{{fileurl}}"></iframe>
@@ -55,10 +55,12 @@
                         {{#str}} currentgradeingradebook, mod_googledocs {{/str}} <br>
                          <a href="{{gradebookurl}}" >{{finalgrade}}</a> 
                      {{/lockedoroverriden}}
-                <textarea class="textarea-comment" name="comment" rows = "5" cols = "50" required form="gradeform">{{commentgiven}}</textarea>
+                <textarea class="textarea-comment" name="comment" rows = "5" cols = "50"  form="gradeform">{{commentgiven}}</textarea>
                 <input type = "submit" name = "savechanges" value = "Save changes" class="btn btn-primary ml-1 submit-comment">
                 <input type = "submit" name = "saveandshownext" value = "Save and show next" class="btn btn-primary ml-1 submit-comment">
             </form>
     </div>
 {{/display}}
+
+
 </div>

@@ -119,14 +119,7 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
         }
 
         if (nextUserId > 0) {
-
-            str.get_strings([
-                {key: 'changessaved', component: 'core'},
-                {key: 'gradechangessaveddetail', component: 'mod_googledocs'},
-            ]).done(function (strs) {
-                notification.alert(strs[0], strs[1]);
-            }).fail(notification.exception);
-
+            
             if (formdata != undefined && formdata == 'savechanges') {
                 if ($('.grade-input').val() != '' || $('.grade-input').val() != '0.00') {
                     $('span.gradedtag').removeAttr('hidden');
@@ -144,11 +137,9 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
         } else if (nextUserId != 0 && nav != undefined) {  // clicked on a link 
             window.open(nav.direction, "_self");
         } else {
-            Checker.saveFormState('#gradeform'); // Save new form state.
-            console.log(!(formdata != undefined && formdata == 'savechanges'));
+            Checker.saveFormState('#gradeform'); // Save new form state          
             if (isLast && !(formdata != undefined && formdata == 'savechanges')) {
-                $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');
-                console.log("ultimo");
+                $(`select.custom-select option[value='${currentSelectionid}']`).removeAttr('selected');               
                 nextUserId = 0;
                 $("select.custom-select option[value='0']").attr('selected', 'selected');
                 $(document).trigger('user-changed', nextUserId);

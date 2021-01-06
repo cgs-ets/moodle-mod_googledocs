@@ -123,7 +123,7 @@ trait get_participant_by_id {
             list($data->gradegiven, $data->commentgiven) = get_grade_comments($googledocid, $record->userid);
         }
 
-        $output = $PAGE->get_renderer('core');
+       // $output = $PAGE->get_renderer('core');
         return array(
             'html' => $output->render_from_template('mod_googledocs/grading_panel', $data),
             'data' => json_encode($data),

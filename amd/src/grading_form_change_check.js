@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.1
  */
-define(['jquery'], function($) {
+define(['jquery'], function ($) {
 
     return /** @alias module:mod_googledocs/grading_form_change_checker */ {
         /**
@@ -32,13 +32,11 @@ define(['jquery'], function($) {
          * @method saveFormState
          * @param {String} selector The selector for the form element.
          */
-        saveFormState: function(selector) {
-            
+        saveFormState: function (selector) {
+
             $(selector).trigger('save-form-state');
             var data = $(selector).serialize();
             $(selector).data('saved-form-state', data);
-            console.log("Current form state saved...");
-            console.log(data);
         },
 
         /**
@@ -48,17 +46,14 @@ define(['jquery'], function($) {
          * @param {String} selector The selector for the form element.
          * @return {Boolean} True if there are changes to the form data.
          */
-        checkFormForChanges: function(selector) {
-            $(selector).trigger('save-form-state');
-
+        checkFormForChanges: function (selector,) {
+            $(selector).trigger('save-form-state');           
             var data = $(selector).serialize(),
-                previousdata = $(selector).data('saved-form-state');
+            previousdata = $(selector).data('saved-form-state');
 
-            if (typeof previousdata === 'undefined') {
+            if (typeof previousdata === 'undefined' ) {
                 return false;
             }
-            console.log("Checking  form change: ");
-            console.log(previousdata != data);
             return (previousdata != data);
         }
     };
