@@ -50,6 +50,9 @@ if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_configtext('mod_googledocs/googledocs_api_key', get_string('googledocs_api_key', 'googledocs'),
     get_string('googledocs_api_key_desc', 'googledocs'), ''));
+    
+    $settings->add(new admin_setting_configtext('mod_googledocs/referrer', get_string('googledocs_referrer', 'googledocs'),
+            get_string('googledocs_referrer_key_desc', 'googledocs'), ''));
 
     $menu = array();
     foreach (core_component::get_plugin_list('assignfeedback') as $type => $notused) {

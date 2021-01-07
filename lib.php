@@ -152,7 +152,7 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
 /**
  * Updates an instance of the googledocs in the database
- *
+ * 
  * Given an object containing all the necessary data,
  * (defined by the form in mod_form.php) this function
  * will update an existing instance with new data.
@@ -173,8 +173,9 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
         $detail->permissions = $googledocs->permissions;
         $currentvalues->permissions = $googledocs->permissions;
 
-        $updateresult = $gdrive->updates($currentvalues, $detail ); // Update the google file permission
+        $updateresult = $gdrive->updates($currentvalues, $detail );  // Update the google file permission        
     }
+    
     if (!$updateresult) { // Error on the update.
         $result = false;
     } else {
@@ -183,6 +184,8 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
         $result = $DB->update_record('googledocs', $currentvalues);
         //googledocs_grade_item_update($googledocs);
     }
+
+    
 
     return $result;
 }
