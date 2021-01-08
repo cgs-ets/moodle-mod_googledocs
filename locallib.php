@@ -743,7 +743,7 @@ class googledrive {
         }
 
         $this->service = new Google_Service_Drive($this->client);
-        $this->referrer = '';//(get_config('mod_googledocs'))->referrer;
+        $this->referrer = (get_config('mod_googledocs'))->referrer;
     }
 
     /**
@@ -1888,6 +1888,7 @@ class googledrive {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_REFERER,  $this->referrer);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
             curl_exec($ch);
 
