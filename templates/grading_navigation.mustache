@@ -38,7 +38,7 @@
             A) File info, which has 3 rows:
         }}
    
-    <div data-region="googledoc-info" class="col-md-4" data-courseid = {{courseid}}>
+    <div data-region="googledoc-info" class="col-md-4 col-sm" data-courseid = {{courseid}}>
 
         {{!
             Row 1) course name & link.
@@ -54,14 +54,14 @@
 {{!
     B) Current user name and info.
 }}
-<div data-region="user-info" class="col-md-4" data-googledocid="{{googledocid}}" data-groupid="{{groupid}}" data-userid="{{userid}}">
+<div data-region="user-info" class="col-md-4 col-sm" data-googledocid="{{googledocid}}" data-groupid="{{groupid}}" data-userid="{{userid}}">
     {{> mod_googledocs/grading_navigation_user_info }}
 </div>
 
 {{!
     C) User selector widget.
 }}
-<div data-region="user-selector" class="col-md-4">
+<div data-region="user-selector" class="col-md-4 col-sm">
     <div class="alignment">
         {{> mod_googledocs/grading_navigation_user_selector }}
     </div>

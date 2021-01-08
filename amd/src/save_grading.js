@@ -78,7 +78,7 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
             e.preventDefault();
 
             var grade = {
-                userid: $('[data-region="user-info"]').attr('data-userid'), //data returns old values
+                userid: $('[data-region="user-info"]').attr('data-userid'), //data returns old values. Use attr instead
                 googledocid: String($('[data-region="user-info"]').data('googledocid')),
                 courseid: String($('[data-region="googledoc-info"]').data('courseid')),
                 formdata: $(this).serialize()
