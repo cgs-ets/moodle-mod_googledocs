@@ -2026,7 +2026,7 @@ class googledrive {
         $this->refresh_token();
         $permissionlist = $this->get_permissions($fileid);
         $newrole = 'reader';
-
+      
         try {
 
             foreach ($permissionlist as $pl => $l) {
@@ -2036,6 +2036,7 @@ class googledrive {
                 }
 
                 if ($l->emailAddress === $email) {
+
                     $l->setRole($newrole);
                     return $this->update_patch_permission_request($fileid, $l);
                 }

@@ -49,6 +49,11 @@ $PAGE->set_context($coursecontext); // Every page needs a context.
 
 require_login($course, true, $cm);
 
+$context = context_module::instance($cm->id);
+
+require_capability('mod/googledocs:view', $context);
+require_capability('mod/googledocs:viewall', $context);
+
 $url = new moodle_url('/mod/googledocs/view_grading_app.php', array('id' => $cm->id));
 
 $PAGE->set_url($url);
