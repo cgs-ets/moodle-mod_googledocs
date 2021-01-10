@@ -104,7 +104,6 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/templates'], function 
 
             if (userid == 0) {
                 // Render the template.
-
                 templates.render('mod_googledocs/grading_navigation_no_users', {}).done(function (html, js) {
                     if (userid == this._lastUserId) {
                         // Update the page.

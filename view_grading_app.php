@@ -59,7 +59,6 @@ $url = new moodle_url('/mod/googledocs/view_grading_app.php', array('id' => $cm-
 $PAGE->set_url($url);
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_title(format_string($googledocs->name));
-//$PAGE->set_pagetype('course-view-' . $course->format);  // To get the blocks exactly like the course.
 $PAGE->add_body_class('path-mod-googledocs');
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 $PAGE->set_pagelayout('embedded');

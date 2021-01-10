@@ -132,4 +132,4 @@ $string['studenttableaccessheader'] = 'Access';
 $string['fullnameheader'] = 'Full name';
 $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
-
+$string['logintosubmit'] = 'Log in to submit';

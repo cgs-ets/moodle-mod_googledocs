@@ -822,7 +822,7 @@ class googledrive {
      *
      * @return string HTML link to Google authentication service.
      */
-    public function display_login_button() {
+    public function display_login_button($fromUI = false) {
         // Create a URL that leads back to the callback() above function on successful authentication.
         $returnurl = new moodle_url('/mod/googledocs/oauth2_callback.php');
         $returnurl->param('callback', 'yes');
@@ -834,7 +834,7 @@ class googledrive {
         $url->param('state', $returnurl->out_as_local_url(false));
 
         // Create the button HTML.
-        $title = get_string('login', 'repository');
+        $title = $fromUI ? get_string('logintosubmit', 'googledocs') : get_string('login', 'repository');
 
         $link = '<button id ="googleloginbtn" class="btn-primary btn">' . $title . '</button>';
         $jslink = 'window.open(\'' . $url . '\', \'' . $title . '\', \'width=600,height=800\'); return false;';
@@ -2026,7 +2026,7 @@ class googledrive {
         $this->refresh_token();
         $permissionlist = $this->get_permissions($fileid);
         $newrole = 'reader';
-      
+
         try {
 
             foreach ($permissionlist as $pl => $l) {

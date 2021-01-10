@@ -77,7 +77,7 @@
                                 {{^submitted}}
                                     {{#isloggedintogoogle}}
                                         <div class='submit-doc'>
-                                          <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn-sm">Submit</button>
+                                          <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn">Submit</button>
                                             {{#js}}
                                                 require(['mod_googledocs/submit_control'], function(mod) {
                                                     mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
@@ -86,11 +86,8 @@
                                         </div>
                                     {{/isloggedintogoogle}}
                                 {{/submitted}}
-                                {{^isloggedintogoogle}}
-                                    {{^submitted}}
-                                        <button id="submitbtn_{{fileid}}" type="button" disabled class="btn btn-primary btn-sm">Submit</button>
-                                    {{/submitted}}
-                                      <button  type= "button" id= "googlebtn" class="btn btn-primary btn-sm">Login to your Google Account</button>
+                                {{^isloggedintogoogle}}                                   
+                                      <button  type= "button" id= "googlebtn" class="btn-primary btn">{{#str}}logintosubmit, mod_googledocs{{/str}}</button>
                                         {{#js}}
                                             require(['mod_googledocs/google_login'], function(mod) {
                                                 mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
