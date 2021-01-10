@@ -1,3 +1,4 @@
+
 /* 
     Created on : 16 Jun 2020, 8:50:23 am
     Author     : Veronica Bermegui.
@@ -292,6 +293,13 @@ button.btn.btn-primary.ml-1.submit-comment {
     text-align: center;
 }
 @media (max-width: 767px) {
+    .pagelayout-embedded #page{
+        margin-top: 0;
+    }
+    #page {
+     background-color: #f5f5f5 !important; 
+     padding: 0 !important; 
+    }
     .path-mod-googledocs.pagelayout-embedded {
         overflow: auto;
     }
@@ -356,4 +364,3 @@ button.btn.btn-primary.ml-1.submit-comment {
         width: auto;
     }
 }
-

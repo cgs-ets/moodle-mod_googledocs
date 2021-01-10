@@ -50,7 +50,7 @@
                     <div class='input-group'>
                         <input type="text" id="quickgrade_{{userid}}" name="grade" class="form-control" {{#lockedoroverriden}} disabled {{/lockedoroverriden}}
                         value= "{{gradegiven}}" size="6" maxlength="10" class="grade-input" form="gradeform" >
-                        <span class = "input-group-addon gradedtag" {{^graded}}hidden{{/graded}}>
+                        <span class = "input-group-addon " {{^graded}}hidden{{/graded}}>
                             <span class="input-group-text bg-success-graded"  >Graded</span>
                         </span>
                     </div>    
@@ -66,8 +66,8 @@
     
                 <input type = "submit" name = "savechanges" value = "Save changes" class="btn btn-primary ml-1 submit-comment">
                 <input type = "submit" name = "saveandshownext" value = "Save and show next" class="btn btn-primary ml-1 submit-comment">
-            </form>
     </div>
+            </form>
 {{/display}}
 
 

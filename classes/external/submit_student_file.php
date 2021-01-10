@@ -83,7 +83,6 @@ trait submit_student_file {
         // Get the Google Drive object.
         $gdrive =  new \googledrive($context->id, false, false, true, true);
         $email = strtolower($email);
-       
         $result = $gdrive->update_permission_when_submitted($fileid, $email);
 
         $recordid = null;

@@ -45,7 +45,10 @@ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
                             if (response.recordid != null) {
                                 $('div#submitting_' + fileid).
                                     replaceWith("<h4><span class='badge badge-primary'>Submitted</span></h4>");
-                                }
+                            } else{
+                                $('div#submitting_' + fileid).
+                                    replaceWith("<p><span class='alert alert-danger'>Please try again later.</span></p>");
+                            }
                                 Log.debug(response);
                             },
                     fail: function (reason) {
