@@ -139,15 +139,7 @@ function googledocs_appears_valid_url($url) {
  */
 function get_file_id_from_url($url) {
 
-    if (strpos($url, 'document')) {
-        $doctype = 'document';
-    } else if (strpos($url, 'spreadsheets')) {
-        $doctype = 'spreadsheets';
-    } else {
-        $doctype = 'presentation';
-    }
-
-    if (preg_match('/\/\/docs\.google\.com\/' . $doctype . '\/d\/(.+)\/edit/', $url, $match) == 1) {
+    if (preg_match('#\/d\/([a-zA-Z0-9-_]+)#', $url, $match) == 1) {
         $fileid = $match[1];
     }
     return $fileid;
