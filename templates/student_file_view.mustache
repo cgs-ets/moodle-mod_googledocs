@@ -87,7 +87,7 @@
                                     {{/isloggedintogoogle}}
                                 {{/submitted}}
                                 {{^isloggedintogoogle}}                                   
-                                      <button  type= "button" id= "googlebtn" class="btn-primary btn">{{#str}}logintosubmit, mod_googledocs{{/str}}</button>
+                                      <button  type= "button" id= "googlebtn" class="btn-primary btn" {{#submitted}}hidden{{/submitted}}>{{#str}}logintosubmit, mod_googledocs{{/str}}</button>
                                         {{#js}}
                                             require(['mod_googledocs/google_login'], function(mod) {
                                                 mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
