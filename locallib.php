@@ -679,11 +679,9 @@ class googledrive {
     private $author = array();
     // List (array) of students (array).
     private $students = array();
-
     private $api_key;
-
     private $referrer;
-
+    private $courseid;
 
     /**
      * Constructor.
@@ -691,10 +689,11 @@ class googledrive {
      * @param int $cmid mod_googledrive instance id.
      * @return void
      */
-    public function __construct($cmid, $update = false, $students = false, $fromws = false, $loginstudent = false) {
+    public function __construct($cmid, $update = false, $students = false, $fromws = false, $loginstudent = false, $courseid = 0) {
         global $CFG;
 
         $this->cmid = $cmid;
+        $this->courseid = $courseid;
 
         // Get the OAuth issuer.
         if (!isset($CFG->googledocs_oauth)) {
@@ -1413,23 +1412,22 @@ class googledrive {
     public function updates($instance, $newpermission) {
         global $DB;
         $conditions = ['googledocid' => $instance->id];
-        $records = $DB->get_records('googledocs_files', $conditions, '', $fields='*');
+        $records = $DB->get_records('googledocs_files', $conditions, '', $fields = '*');
         $saved = false;
         $savedResults = [];
 
-        foreach($records as $record) {
-           $fileId = get_file_id_from_url($record->url);
-           $saved = $this->update_permissions($fileId, $newpermission, $instance); // this updates the file in Google drive.
-           $savedResults [] = $saved; // Collect the result of the request.
+        foreach ($records as $record) {
+            $fileId = get_file_id_from_url($record->url);
+            $saved = $this->update_permissions($fileId, $newpermission, $instance); // this updates the file in Google drive.
+            $savedResults [] = $saved; // Collect the result of the request.
 
-           if ($saved) {
-            $record->permission = $newpermission->permissions;
-            $DB->update_record('googledocs_files', $record);
-           }
+            if ($saved) {
+                $record->permission = $newpermission->permissions;
+                $DB->update_record('googledocs_files', $record);
+            }
         }
 
-       return in_array(true, $savedResults);
-
+        return in_array(true, $savedResults);
     }
 
     /**
@@ -1633,6 +1631,7 @@ class googledrive {
         $newPermission->setValue($value);
         $newPermission->setRole($role);
         $newPermission->setType($type);
+        $emailMessage = $this->courseid != 0 ? get_string('emailmessageGoogleNotification', 'googledocs',                                $this->set_email_message_content()) : 'Students get a link to the course';
 
         if ($commenter) {
             $newPermission->setAdditionalRoles(array('commenter'));
@@ -1641,6 +1640,8 @@ class googledrive {
         try {
             if ($is_teacher) {
                 $service->permissions->insert($fileId, $newPermission, array('sendNotificationEmails' => false)); //
+            } else if ($this->courseid != 0){
+                return $service->permissions->insert($fileId, $newPermission, array('emailMessage' => $emailMessage));
             } else {
                 return $service->permissions->insert($fileId, $newPermission);
             }
@@ -1649,6 +1650,15 @@ class googledrive {
         }
 
         return null;
+    }
+
+    private function set_email_message_content() {
+
+        $url = new moodle_url('/course/view.php?', ['id' => $this->courseid]);
+        $a = (object) [
+                'url' => $url->__toString(),
+        ];
+        return $a;
     }
 
     /**
@@ -1811,7 +1821,7 @@ class googledrive {
      * @return type
      */
     private function update_permission_request($fileId, $permission) {
-        $r =  false;
+        $r = false;
 
         try {
 
@@ -1834,11 +1844,10 @@ class googledrive {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_REFERER,  $this->referrer);
+            curl_setopt($ch, CURLOPT_REFERER, $this->referrer);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 
             $r = (curl_getinfo($ch))['http_code'] === 200;
-
         } catch (Exception $ex) {
             error_log($ex->getMessage());
         } finally {
@@ -1880,7 +1889,7 @@ class googledrive {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_REFERER,  $this->referrer);
+            curl_setopt($ch, CURLOPT_REFERER, $this->referrer);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
             curl_exec($ch);
 
@@ -1945,7 +1954,7 @@ class googledrive {
             curl_setopt($ch, CURLOPT_ENCODING, "");
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_REFERER,  $this->referrer);
+            curl_setopt($ch, CURLOPT_REFERER, $this->referrer);
             curl_exec($ch);
 
             $r = (curl_getinfo($ch))['http_code'] === 204;
@@ -2000,7 +2009,6 @@ class googledrive {
 
                 $l->setRole($newrole);
                 $saved = $this->update_permission_request($fileId, $l);
-
             }
         } catch (Exception $ex) {
             error_log($ex->getMessage());

@@ -133,3 +133,4 @@ $string['fullnameheader'] = 'Full name';
 $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
 $string['logintosubmit'] = 'Log in to submit';
+$string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';

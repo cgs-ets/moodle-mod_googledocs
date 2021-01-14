@@ -48,7 +48,6 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
  */
 trait create_students_file {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
@@ -63,7 +62,7 @@ trait create_students_file {
                   'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
                   'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
-                  'student_email' =>  new external_value(PARAM_RAW, 'student email'),
+                  'student_email' => new external_value(PARAM_RAW, 'student email'),
                   'student_id' => new external_value(PARAM_RAW, 'student ID'),
                   'student_name' => new external_value(PARAM_RAW, 'studentname')
             )
@@ -116,11 +115,10 @@ trait create_students_file {
             $data->docid = $parentfile_id;
             $data->name = $data->groupfilename; //Get the name for the group's file.
             $data->groupingid = $grouping_id;
-
         }
 
         // Generate the student file
-        $gdrive = new \googledrive($context->id, false, false, true);
+        $gdrive = new \googledrive($context->id, false, false, true, false, $data->course);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
         $student = new \stdClass();
         $student->id = $student_id;
@@ -129,15 +127,13 @@ trait create_students_file {
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
         $teachers = $gdrive->get_enrolled_teachers($data->course);
-       #var_dump($teachers); exit;
 
         if ($data->distribution == 'dist_share_same' ||   $data->distribution == 'group_grouping_copy' ) {
             foreach ($teachers as $teacher) {
                 $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
             }
         }
-
-
+        
         switch ($data->distribution) {
             case 'std_copy':
                 $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,

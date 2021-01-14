@@ -74,7 +74,7 @@ trait create_grouping_file {
         $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfileid]);
 
         // Generate the grouping file.
-        $gdrive = new \googledrive($context->id, false, false, true);
+        $gdrive = new \googledrive($context->id, false, false, true, false, $data->course);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
         $gids = get_grouping_ids_from_json(json_decode($data->group_grouping_json));
         $groupingurls = [];
