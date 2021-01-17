@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
@@ -44,20 +42,18 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
  */
 trait create_group_grouping_file {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
-     *
-    */
-    public static  function create_group_grouping_file_parameters() {
+     */
+    public static function create_group_grouping_file_parameters() {
         return new external_function_parameters(
             array('gid' => new external_value(PARAM_RAW, 'Group or Grouping ID'),
-                  'gname' => new external_value(PARAM_RAW, 'Name of the group or grouping'),
-                  'gtype' => new external_value(PARAM_RAW, 'Group or Grouping'),
-                  'instanceid' => new external_value(PARAM_RAW, 'instance ID'),
-                  'owneremail' => new external_value(PARAM_RAW, 'Author of the file email'),
-                  'parentfileid' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
+            'gname' => new external_value(PARAM_RAW, 'Name of the group or grouping'),
+            'gtype' => new external_value(PARAM_RAW, 'Group or Grouping'),
+            'instanceid' => new external_value(PARAM_RAW, 'instance ID'),
+            'owneremail' => new external_value(PARAM_RAW, 'Author of the file email'),
+            'parentfileid' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
             )
         );
     }
@@ -79,17 +75,17 @@ trait create_group_grouping_file {
         // Parameters validation.
         self::validate_parameters(self::create_group_grouping_file_parameters(),
             array(
-                  'gid' => $gid,
-                  'gname' => $gname,
-                  'gtype' => $gtype,
-                  'instanceid' => $instanceid,
-                  'owneremail' => $owneremail,
-                  'parentfileid' => $parentfileid,
-                )
+                'gid' => $gid,
+                'gname' => $gname,
+                'gtype' => $gtype,
+                'instanceid' => $instanceid,
+                'owneremail' => $owneremail,
+                'parentfileid' => $parentfileid,
+            )
         );
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
-        $data = $DB->get_record_sql($filedata, ['id'=> $instanceid]);
+        $data = $DB->get_record_sql($filedata, ['id' => $instanceid]);
 
         // Generate the group/grouping file.
         $gdrive = new \googledrive($context->id, false, false, true);
@@ -104,7 +100,7 @@ trait create_group_grouping_file {
         $owner->name = $gname; // Adds the group/grouping name to the file.
         $fromexisting = $data->use_document == 'new' ? false : true;
         $teachers = $gdrive->get_enrolled_teachers($data->course);
-        $url = $gdrive->make_file_copy($data,  $data->parentfolderid, $owner, $role, $commenter, $fromexisting, $gid, $teachers);
+        $url = $gdrive->make_file_copy($data, $data->parentfolderid, $owner, $role, $commenter, $fromexisting, $gid, $teachers);
         return array(
             'url' => $url
         );
@@ -116,11 +112,12 @@ trait create_group_grouping_file {
      * @return external_single_structure
      *
      */
-    public static function create_group_grouping_file_returns(){
+    public static function create_group_grouping_file_returns() {
         return new external_single_structure(
-                array(
-                    'url' => new external_value(PARAM_RAW, 'File URL '),
-                 )
-      );
+            array(
+            'url' => new external_value(PARAM_RAW, 'File URL '),
+            )
+        );
     }
+
 }

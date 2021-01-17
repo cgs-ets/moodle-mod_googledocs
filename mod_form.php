@@ -24,13 +24,12 @@
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
 
 
 require_once(__DIR__ . '/locallib.php');
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once($CFG->dirroot.'/course/lib.php');
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/course/lib.php');
 
 /**
  * Module instance settings form
@@ -62,6 +61,10 @@ class mod_googledocs_mod_form extends moodleform_mod {
         // Get the Google Drive object.
         $client = new googledrive($this->context->id);
 
+        // Hiden parameters.
+        $mform->addElement('hidden', 'group_grouping_json', '');
+        $mform->setType('group_grouping_json', PARAM_RAW);
+
         // Check whether the user is logged into their Google account.
         if (!$client->check_google_login()) {
 
@@ -74,7 +77,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('hidden', 'completionunlocked', 0);
             $mform->setType('completionunlocked', PARAM_INT);
             $this->add_action_buttons(true, false, false);
-
         } else {
 
             $radioarray = array();
@@ -103,9 +105,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $typesarray = array();
 
             foreach ($types as $key => $type) {
-                $imgurl = new moodle_url($CFG->wwwroot.'/mod/googledocs/pix/'.$type['icon']);
+                $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $type['icon']);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'style' => 'width:30px;')) . '&nbsp;';
-                $doctype = $mform->createElement('radio', 'document_type', '', $image.$type['name'], $type['mimetype']);
+                $doctype = $mform->createElement('radio', 'document_type', '', $image . $type['name'], $type['mimetype']);
 
                 if ($update) {
                     $doctype->freeze();
@@ -118,7 +120,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             $mform->hideif('document_type', 'use_document', 'eq', 'existing');
 
-            if( $update != 0) {
+            if ($update != 0) {
                 $doctype->freeze();
             }
 
@@ -136,7 +138,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('select', 'permissions', get_string('permissions', 'googledocs'), $permissions);
             $mform->setDefault('permissions', 'edit');
 
-              // Groups.
+            // Groups.
             if (!empty($course_groups)) {
                 $groups = array('00_everyone' => get_string('everyone', 'googledocs'));
             }
@@ -149,7 +151,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                     continue;
                 }
 
-                $groups[$g->id.'_group'] = $g->name;
+                $groups[$g->id . '_group'] = $g->name;
             }
 
             $not_show = false;
@@ -160,19 +162,19 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
             if ((!empty($course_groups) || !empty($course_grouping)) && !$not_show) {
                 $distribution = array(
-                'std_copy' => get_string('dist_student_copy', 'googledocs'),
-                'group_copy' => get_string('dist_group_copy', 'googledocs'),
-                'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
+                    'std_copy' => get_string('dist_student_copy', 'googledocs'),
+                    'group_copy' => get_string('dist_group_copy', 'googledocs'),
+                    'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
             } else {
                 $distribution = array(
-                'std_copy' => get_string('dist_student_copy', 'googledocs'),
-                'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
+                    'std_copy' => get_string('dist_student_copy', 'googledocs'),
+                    'dist_share_same' => get_string('dist_all_share_same', 'googledocs'));
             }
 
             $distselect = $mform->addElement('select', 'distribution', get_string('distribution', 'googledocs'),
                 $distribution);
 
-            if ($update != 0 ) {
+            if ($update != 0) {
                 $distselect->freeze();
             }
 
@@ -186,7 +188,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 if (empty(groups_get_grouping_members($g->id))) {
                     continue;
                 }
-                $groups[$g->id.'_grouping'] = $g->name;
+                $groups[$g->id . '_grouping'] = $g->name;
             }
 
             if (!empty($course_groups) && !$not_show) {
@@ -200,16 +202,14 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 }
             }
 
-            //    // Grade settings.
+            // Grade settings.
             $this->standard_grading_coursemodule_elements();
 
-             // Add standard buttons, common to all modules.
+            // Add standard buttons, common to all modules.
             $this->standard_coursemodule_elements();
             $this->add_action_buttons(true, null, false);
         }
-
     }
-
 
     /**
      * Validates forms elements.
@@ -218,17 +218,16 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         // Validating doc URL if sharing an existing doc.
         $errors = parent::validation($data, $files);
-        if($data['update'] == 0) {
+        if ($data['update'] == 0) {
             if ($data['use_document'] != 'new') {
                 if (empty($data['google_doc_url'])) {
                     $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
-                } else if (!googledocs_appears_valid_url($data['google_doc_url']) ||
-                    get_file_id_from_url($data['google_doc_url']) == null) {
+                } else if (!googledocs_appears_valid_url($data['google_doc_url']) || get_file_id_from_url($data['google_doc_url']) == null) {
                     $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
                 }
             } else {
                 if (empty($data['name_doc'])) {
-                   $errors['name_doc'] = get_string('docnameinvalid', 'googledocs');
+                    $errors['name_doc'] = get_string('docnameinvalid', 'googledocs');
                 }
             }
 
@@ -240,23 +239,25 @@ class mod_googledocs_mod_form extends moodleform_mod {
         return $errors;
     }
 
-    public function group_validation($data){
+    public function group_validation($data) {
         $everyone_group_grouping = in_array('00_everyone', $data['groups']) && count($data['groups']) > 1;
         return $everyone_group_grouping;
-
     }
 
     public function set_data($default_values) {
 
-        isset($default_values->name) ?  ($default_values->name_doc = $default_values->name ) :
-            $default_values->name_doc = '';
+        isset($default_values->name) ? ($default_values->name_doc = $default_values->name ) :
+                $default_values->name_doc = '';
 
         if (isset($default_values->distribution)) {
+            $default_values->groups = $this->get_group_ids($default_values);
             $default_values->distribution = $this->get_distribution($default_values->distribution);
         }
 
-        isset($default_values->use_document) ? ($default_values->use_document =  $default_values->use_document )
-            : $default_values->name_doc = '' ;
+        isset($default_values->use_document) ? ($default_values->use_document = $default_values->use_document ) : $default_values->name_doc =
+                '';
+
+
         parent::set_data($default_values);
     }
 
@@ -268,7 +269,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
         }
 
         if ($distribution == 'group_copy' || $distribution == 'grouping_copy'
-            || $distribution == 'group_grouping_copy' ) {
+            || $distribution == 'group_grouping_copy') {
             return 'group_copy';
         }
 
@@ -276,8 +277,36 @@ class mod_googledocs_mod_form extends moodleform_mod {
             || $distribution == 'dist_share_same_grouping' || $distribution == 'dist_share_same_group_grouping') {
             return 'dist_share_same';
         }
-
     }
 
+    private function get_group_ids($default_values) {
+        $type = '';
+        $selected = array();
+        $data = json_decode($default_values->group_grouping_json);
+        if ($default_values->distribution == 'std_copy'
+            || $default_values->distribution == 'dist_share_same') {
+            $type = 'everyone';
+        } else if ($default_values->distribution == 'std_copy_grouping'
+            || $default_values->distribution == 'grouping_copy'
+            || $default_values->distribution == 'dist_share_same_grouping') {
+            $type = 'grouping';
+        } else if ($default_values->distribution == 'std_copy_group_grouping'
+            || $default_values->distribution == 'group_grouping_copy'
+            || $default_values->distribution == 'dist_share_same_group_grouping') {
+            $type = 'group_grouping';
+        } else if ($default_values->distribution == 'std_copy_group'
+            || $default_values->distribution == 'group_copy'
+            || $default_values->distribution == 'dist_share_same_group') {
+            $type = 'group';
+        }
+
+        if ($type == 'everyone') {
+            $selected = ['00_everyone'];
+        } else {
+            $selected = get_groups_formatted_for_form($data);
+        }
+
+        return $selected;
+    }
 
 }

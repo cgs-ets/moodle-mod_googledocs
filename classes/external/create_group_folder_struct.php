@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
@@ -41,26 +39,24 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
  */
 trait create_group_folder_struct {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function create_group_folder_struct_parameters(){
+     */
+    public static function create_group_folder_struct_parameters() {
         return new external_function_parameters(
-            array( 'instanceid' => new external_value(PARAM_RAW, 'instance ID')
-                ));
+            array('instanceid' => new external_value(PARAM_RAW, 'instance ID')
+        ));
     }
 
- /**
-  * Create the folder for the group(s)
-  * @global type $COURSE
-  * @global type $DB
-  * @param int $instanceid
-  * @return array
-  */
+    /**
+     * Create the folder for the group(s)
+     * @global type $COURSE
+     * @global type $DB
+     * @param int $instanceid
+     * @return array
+     */
     public static function create_group_folder_struct($instanceid) {
         global $COURSE, $DB;
 
@@ -72,7 +68,7 @@ trait create_group_folder_struct {
             array('instanceid' => $instanceid));
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
-        $data = $DB->get_record_sql($filedata, ['id'=> $instanceid]);
+        $data = $DB->get_record_sql($filedata, ['id' => $instanceid]);
 
         // Generate the student file.
         $gdrive = new \googledrive($context->id, false, false, true);
@@ -89,11 +85,12 @@ trait create_group_folder_struct {
      * @return external_single_structure
      *
      */
-    public static function create_group_folder_struct_returns(){
+    public static function create_group_folder_struct_returns() {
         return new external_single_structure(
-                array(
-                    'group_folder_ids' => new external_value(PARAM_RAW, 'folder and group id')
-                )
-      );
+            array(
+            'group_folder_ids' => new external_value(PARAM_RAW, 'folder and group id')
+            )
+        );
     }
+
 }

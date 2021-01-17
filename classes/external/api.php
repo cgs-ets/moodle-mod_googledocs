@@ -27,14 +27,8 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir.'/externallib.php');
 
 use external_api;
-/**
- * Provides an external API of the plugin.
- *
- * @copyright 2018 David Mudrák <david@moodle.com>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class api extends external_api {
 
+class api extends external_api {
     use create_students_file;
     use create_group_file;
     use create_grouping_file;
@@ -49,7 +43,4 @@ class api extends external_api {
     use get_participant;
     use list_participants;
     use get_participant_by_id;
-
-
-
 }

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2019042601;
-$plugin->requires  = 2016052300; // Moodle 3.1
+$plugin->requires  = 2016052300; // Moodle 3.1.
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = 'Version for Moodle 3.1 onwards';
 $plugin->component = 'mod_googledocs';

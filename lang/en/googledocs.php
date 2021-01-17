@@ -17,10 +17,6 @@
 
 /**
  * English strings for googledocs
- *
- * You can have a rather longer description of the file as well,
- * if you like, and it can span multiple lines.
- *
  * @package    mod_googledocs
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -68,7 +64,10 @@ $string['group_select_help'] = '<strong>Everyone</strong>: All Students enrolled
     . '<strong>All Groupings</strong>: Groups belonging to any of the groupings in the course.';
 
 $string['modulename'] = 'Google Doc';
-$string['modulename_help'] = 'Share Google Docs with students.';
+$string['modulename_help'] = 'The Google Doc activity module enables a teacher to share G Suite documents (docs, sheets, slides) with students, provide grades and feedback.<br><br>'
+    . 'Students can submit their work provided the permission of the file is either edit or comment. <br>'
+    . 'When reviewing G suite documents, teachers can leave feedback comments. <br><br>'
+    . 'Google docs can be graded using a numerical scale. Final grades are recorded in the gradebook.';
 $string['modulenameplural'] = 'Google Docs';
 $string['oauth2link'] = 'This plugin requires a Google OAuth service to be set up. See the <a href="{$a}" title="'.
                         'Link to OAuth 2 services configuration">OAuth 2 services</a> configuration page.';

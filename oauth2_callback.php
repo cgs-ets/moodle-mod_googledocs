@@ -22,12 +22,11 @@
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 // Include required files.
 require('../../config.php');
 require(__DIR__ . '/locallib.php');
 
-// Gather parameters
+// Gather parameters.
 $cmid = required_param('cmid', PARAM_INT);
 $code = required_param('oauth2code', PARAM_RAW);
 
@@ -40,8 +39,8 @@ header('Expires: Wed, 31 Dec 2025 00:00:00 GMT');
 $PAGE->set_url(
     '/mod/googledocs/oauth2_callback.php',
     array(
-        'cmid'       => $cmid,
-        'sesskey'    => sesskey(),
+        'cmid' => $cmid,
+        'sesskey' => sesskey(),
         'oauth2code' => $code,
     )
 );
@@ -52,20 +51,20 @@ $PAGE->set_pagelayout('popup');
 echo $OUTPUT->header();
 echo $OUTPUT->heading($strauthorised, 2);
 
-/// Wait as long as it takes for this script to finish
+// Wait as long as it takes for this script to finish.
 core_php_time_limit::raise();
 
 // Save the user authentication code.
 $googledrive = new googledrive($cmid);
 $googledrive->callback();
 
-// Output the page content
+// Output the page content.
 echo html_writer::tag('div', get_string('windowillclose', 'googledocs'), ['style' => 'margin: 20px 0;']);
 echo html_writer::start_tag('div', ['class' => 'btn-group']);
 echo html_writer::tag('input', '', [
-    'type'    => 'button',
-    'class'   => 'btn btn-primary',
-    'value'   => get_string('close', 'googledocs'),
+    'type' => 'button',
+    'class' => 'btn btn-primary',
+    'value' => get_string('close', 'googledocs'),
     'onclick' => 'window.close();'
 ]);
 echo html_writer::end_tag('div');

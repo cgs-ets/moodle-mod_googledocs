@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
@@ -41,20 +39,18 @@ require_once($CFG->dirroot . '/mod/googledocs/lib.php');
  */
 trait update_student_file {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function update_student_file_parameters(){
+     */
+    public static function update_student_file_parameters() {
         return new external_function_parameters(
             array(
-                  'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
-                  'student_email' =>  new external_value(PARAM_RAW, 'student email'),
-                  'student_name' => new external_value(PARAM_RAW, 'studentname'),
-                  'student_id' => new external_value(PARAM_RAW, 'student ID'),
+            'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
+            'student_email' => new external_value(PARAM_RAW, 'student email'),
+            'student_name' => new external_value(PARAM_RAW, 'studentname'),
+            'student_id' => new external_value(PARAM_RAW, 'student ID'),
             )
         );
     }
@@ -67,25 +63,25 @@ trait update_student_file {
      *         int $nav represents a nav direction, 0: Backward, 1: Forward.
      * @return a timetable for a user.
      */
-    public static function update_student_file($parentfile_id,  $student_email, $student_name, $student_id) {
+    public static function update_student_file($parentfile_id, $student_email, $student_name, $student_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
         $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
-        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfile_id]);
+        $data = $DB->get_record_sql($filedata, ['parentfile_id' => $parentfile_id]);
 
-        //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::update_student_file_parameters(),
             array(
-                  'parentfile_id' => $parentfile_id,
-                  'student_email'=> $student_email,
-                  'student_name' => $student_name,
-                  'student_id' => $student_id,
-                )
+                'parentfile_id' => $parentfile_id,
+                'student_email' => $student_email,
+                'student_name' => $student_name,
+                'student_id' => $student_id,
+            )
         );
 
-        // Generate the student file
+        // Generate the student file.
         $gdrive = new \googledrive($context->id, false, false, true);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
         $student = new \stdClass();
@@ -96,14 +92,14 @@ trait update_student_file {
         $teachers = $gdrive->get_enrolled_teachers($data->course);
         if ($data->distribution == 'each_gets_own') {
             $fromexisting = $data->use_document == 'new' ? false : true;
-            $url= $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting, $teachers);
-        }else{
+            $url = $gdrive->make_file_copy($data, [$data->parentfolderid], $student, $role, $commenter, $fromexisting, $teachers);
+        } else {
             $gdrive->share_single_copy($student, $data, $role, $commenter);
             $url = $gdrive->insert_permission($gdrive->get_service(), $parentfile_id, $student_email, 'user', $role, $commenter);
         }
 
         return array(
-            'url'=>$url
+            'url' => $url
         );
     }
 
@@ -113,11 +109,12 @@ trait update_student_file {
      * @return external_single_structure
      *
      */
-    public static function update_student_file_returns(){
+    public static function update_student_file_returns() {
         return new external_single_structure(
-                array(
-                    'url' => new external_value(PARAM_RAW,'File URL '),
-                 )
-      );
+            array(
+            'url' => new external_value(PARAM_RAW, 'File URL '),
+            )
+        );
     }
+
 }

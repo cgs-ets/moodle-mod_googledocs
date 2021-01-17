@@ -38,12 +38,12 @@ $id = required_param('id', PARAM_INT);
 
 $action = optional_param('action', array(), PARAM_ALPHA);
 $fs = optional_param('fs', '', PARAM_TEXT);
-
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');
 
 $googledocs = $DB->get_record('googledocs', array('id' => $cm->instance), '*', MUST_EXIST);
 
 $coursecontext = context_course::instance($course->id);
+
 $PAGE->set_context($coursecontext); // Every page needs a context.
 
 require_login($course, true, $cm);

@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
@@ -42,21 +40,18 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
  */
 trait create_grouping_file {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function create_grouping_file_parameters(){
+     */
+    public static function create_grouping_file_parameters() {
         return new external_function_parameters(
-            array( 'owneremail' => new external_value(PARAM_RAW, 'Owner of the file email'),
-                  'parentfileid' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
+            array('owneremail' => new external_value(PARAM_RAW, 'Owner of the file email'),
+            'parentfileid' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
             )
         );
     }
-
 
     public static function create_grouping_file($owneremail, $parentfileid) {
         global $COURSE, $DB;
@@ -66,15 +61,15 @@ trait create_grouping_file {
 
         // Parameters validation.
         self::validate_parameters(self::create_grouping_file_parameters(),
-            array('owneremail'=> $owneremail,
-                  'parentfileid' => $parentfileid)
+            array('owneremail' => $owneremail,
+                'parentfileid' => $parentfileid)
         );
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE docid = :parentfile_id ";
-        $data = $DB->get_record_sql($filedata, ['parentfile_id'=> $parentfileid]);
+        $data = $DB->get_record_sql($filedata, ['parentfile_id' => $parentfileid]);
 
         // Generate the grouping file.
-        $gdrive = new \googledrive($context->id, false, false, true, false, $data->course);
+        $gdrive = new \googledrive($context->id, false, false, true, false, $data);
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
         $gids = get_grouping_ids_from_json(json_decode($data->group_grouping_json));
         $groupingurls = [];
@@ -97,7 +92,7 @@ trait create_grouping_file {
             $details->url = $url;
             $groupingurls[] = $details;
         }
-       //Files created and shared. Time to update
+        //Files created and shared. Time to update.
         $data->sharing = 1;
         $DB->update_record('googledocs', $data);
 
@@ -112,11 +107,12 @@ trait create_grouping_file {
      * @return external_single_structure
      *
      */
-    public static function create_grouping_file_returns(){
+    public static function create_grouping_file_returns() {
         return new external_single_structure(
-                array(
-                    'groupingsurl' => new external_value(PARAM_RAW, 'urls created for the groupingss')
-                )
-      );
+            array(
+            'groupingsurl' => new external_value(PARAM_RAW, 'urls created for the groupingss')
+            )
+        );
     }
+
 }

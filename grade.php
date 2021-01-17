@@ -21,13 +21,12 @@
  * @category  grade
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- **/
-
+ * */
 /**
  * Require config.php
  */
 require_once("../../config.php");
-require_once($CFG->dirroot.'/mod/googledocs/locallib.php');
+require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
 $new = optional_param('forceview', 0, PARAM_INT);
 
@@ -38,10 +37,11 @@ $googledocs = $DB->get_record('googledocs', array('id' => $cm->instance), '*', M
 $coursecontext = context_course::instance($course->id);
 $PAGE->set_context($coursecontext); // Every page needs a context.
 
-$PAGE->set_url('/mod/googledocs/grade.php', array('id'=>$cm->id));
+require_login($course, true, $cm);
 
-if(has_capability('mod/googledocs:viewall', $coursecontext)){
-  redirect('view.php?id='.$cm->id.'&action='.get_string('grading', 'googledocs'));
+$PAGE->set_url('/mod/googledocs/grade.php', array('id' => $cm->id));
+if (has_capability('mod/googledocs:viewall', $coursecontext)) {
+    redirect('view.php?id=' . $cm->id . '&action=' . get_string('grading', 'googledocs'));
 } else {
-  redirect('view.php?id='.$cm->id);
+    redirect('view.php?id=' . $cm->id);
 }

@@ -55,64 +55,68 @@
 }}
 
 <div id = "formcontainer" class="container-fluid table-container">
+    {{^nothingtodisplay}}
+        <h1>Nothing to display</h1>
+    {{/nothingtodisplay}}
 
-<table class = "mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover">
+    {{#nothingtodisplay}}
+        <table class = "mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover">
 
-        <thead>
-            <tr>
-                <th class ="table-student-columns">File</th>  
-                <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th> 
-                <th class ="table-student-columns">{{#str}} studenttableaccessheader, mod_googledocs{{/str}}</th>
+                <thead>
+                    <tr>
+                        <th class ="table-student-columns">File</th>
+                        <th class ="table-student-columns">{{#str}} statusheader, mod_googledocs{{/str}}</th>
+                        <th class ="table-student-columns">{{#str}} studenttableaccessheader, mod_googledocs{{/str}}</th>
 
-            </tr>
-        </thead>
-        <tbody  class = "table-striped">
-            {{#files}}
-                <tr data-instance-id = "{{instanceid}}" data-file-id = "{{fileid}}" data-group-id = "{{groupid}}">
-                    <td>
-                        <a href={{{url}}}" target = "_blank"><img class='link_icon' src= {{{img}}}></a>
-                    </td>
-                        <td>
-                            {{^graded}}
-                                {{^submitted}}
-                                    {{#isloggedintogoogle}}
-                                        <div class='submit-doc'>
-                                          <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn">Submit</button>
-                                            {{#js}}
-                                                require(['mod_googledocs/submit_control'], function(mod) {
-                                                    mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
-                                                });
-                                            {{/js}}
+                    </tr>
+                </thead>
+                <tbody  class = "table-striped">
+                    {{#files}}
+                        <tr data-instance-id = "{{instanceid}}" data-file-id = "{{fileid}}" data-group-id = "{{groupid}}">
+                            <td>
+                                <a href={{{url}}}" target = "_blank"><img class='link_icon' src= {{{img}}}></a>
+                            </td>
+                                <td>
+                                    {{^graded}}
+                                        {{^submitted}}
+                                            {{#isloggedintogoogle}}
+                                                <div class='submit-doc'>
+                                                  <button id="submitbtn_{{fileid}}" type="button" class="btn btn-primary btn">Submit</button>
+                                                    {{#js}}
+                                                        require(['mod_googledocs/submit_control'], function(mod) {
+                                                            mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}', '{{{email}}}');
+                                                        });
+                                                    {{/js}}
+                                                </div>
+                                            {{/isloggedintogoogle}}
+                                        {{/submitted}}
+                                        {{^isloggedintogoogle}}
+                                              <button  type= "button" id= "googlebtn" class="btn-primary btn" {{#submitted}}hidden{{/submitted}}>{{#str}}logintosubmit, mod_googledocs{{/str}}</button>
+                                                {{#js}}
+                                                    require(['mod_googledocs/google_login'], function(mod) {
+                                                        mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
+                                                    });
+                                                {{/js}}
+                                        {{/isloggedintogoogle}}
+
+                                        {{#submitted}}
+                                            <div class="col">
+                                              <h4><span class="badge badge-primary">Submitted</span></h4>
+                                            </div>
+                                        {{/submitted}}
+                                    {{/graded}}
+                                    {{#graded}}
+                                        <div class="col">
+                                            <span class="alert alert-success gradedtag" >Graded</span>
                                         </div>
-                                    {{/isloggedintogoogle}}
-                                {{/submitted}}
-                                {{^isloggedintogoogle}}                                   
-                                      <button  type= "button" id= "googlebtn" class="btn-primary btn" {{#submitted}}hidden{{/submitted}}>{{#str}}logintosubmit, mod_googledocs{{/str}}</button>
-                                        {{#js}}
-                                            require(['mod_googledocs/google_login'], function(mod) {
-                                                mod.init('{{fileid}}', '{{instanceid}}', '{{groupid}}');
-                                            });
-                                        {{/js}}
-                                {{/isloggedintogoogle}}
-
-                                {{#submitted}}
-                                    <div class="col">
-                                      <h4><span class="badge badge-primary">Submitted</span></h4>
-                                    </div>
-                                {{/submitted}}
-                            {{/graded}}
-                            {{#graded}}
-                                <div class="col">
-                                    <span class="alert alert-success gradedtag" >Graded</span>
-                                </div>
-                            {{/graded}}
-                        </td>
-                 
-                    {{#viewpermission}}
-                         <td>{{permission}} </td>
-                    {{/viewpermission}}
-                </tr>
-            {{/files}}
-        </tbody>
-</table>
+                                    {{/graded}}
+                                </td>
+                            {{#viewpermission}}
+                                 <td>{{permission}} </td>
+                            {{/viewpermission}}
+                        </tr>
+                    {{/files}}
+                </tbody>
+        </table>
+    {{/nothingtodisplay}}
 </div>

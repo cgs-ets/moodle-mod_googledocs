@@ -29,7 +29,6 @@
  *             2020 Veronica Bermegui
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
 
 /* Moodle core API */
@@ -44,7 +43,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 function googledocs_supports($feature) {
 
-    switch($feature) {
+    switch ($feature) {
         case FEATURE_MOD_INTRO:
             return false;
         case FEATURE_SHOW_DESCRIPTION:
@@ -88,11 +87,10 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
         $teachers = $gdrive->get_enrolled_teachers($googledocs->course);
-        $group_grouping=[];
+        $group_grouping = [];
         $dist = '';
 
-        if (!empty(($mform->get_submitted_data())->groups) &&
-            !everyone(($mform->get_submitted_data())->groups)) {
+        if (!empty(($mform->get_submitted_data())->groups) && !everyone(($mform->get_submitted_data())->groups)) {
             list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
         }
 
@@ -111,23 +109,21 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
             $course_groups = count(groups_get_all_groups($googledocs->course));
             $selected_groups = count(get_groups_details_from_json($jsongroup));
-
         }
 
         if ($students == null) {
-           throw new exception ('No Students provided. The file was not created');
+            throw new exception('No Students provided. The file was not created');
         }
 
         // Use existing doc.
         if (($mform->get_submitted_data())->use_document == 'existing') {
-            // Save new file in a COURSE Folder
+            // Save new file in a COURSE Folder.
             $sharedlink = $gdrive->share_existing_file($mform->get_submitted_data(), $owncopy, $students, $dist);
 
             $folderid = $sharedlink[3];
             $types = google_filetypes();
             $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
-
         } else {
             // Save new file in a new folder.
             $folderid = $gdrive->create_folder($googledocs->name_doc, $author);
@@ -136,23 +132,21 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $googledocs->name = $googledocs->name_doc;
             $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
             /* TODO:
-            if($dist == 'std_copy') {
-                $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
-            } */
+              if($dist == 'std_copy') {
+              $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
+              } */
         }
 
         googledocs_grade_item_update($googledocs);
         return $googledocs->id;
-
     } catch (Exception $ex) {
         echo $ex->getMessage();
-
     }
 }
 
 /**
  * Updates an instance of the googledocs in the database
- * 
+ *
  * Given an object containing all the necessary data,
  * (defined by the form in mod_form.php) this function
  * will update an existing instance with new data.
@@ -168,25 +162,22 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
     $gdrive = new googledrive($context->id, true);
     $currentvalues = $DB->get_record('googledocs', ['id' => $googledocs->instance], '*');
 
-    if($currentvalues->permissions != $googledocs->permissions) {
+    if ($currentvalues->permissions != $googledocs->permissions) {
         $detail = new stdClass();
         $detail->permissions = $googledocs->permissions;
         $currentvalues->permissions = $googledocs->permissions;
 
-        $updateresult = $gdrive->updates($currentvalues, $detail );  // Update the google file permission        
+        $updateresult = $gdrive->updates($currentvalues, $detail);  // Update the google file permission
     }
-    
+
     if (!$updateresult) { // Error on the update.
         $result = false;
     } else {
         $currentvalues->update_status = 'modified';
         // You may have to add extra stuff in here.
         $result = $DB->update_record('googledocs', $currentvalues);
-        //googledocs_grade_item_update($googledocs);
+        // googledocs_grade_item_update($googledocs);
     }
-
-    
-
     return $result;
 }
 
@@ -234,14 +225,14 @@ function googledocs_refresh_events($courseid = 0) {
 function googledocs_delete_instance($id) {
     global $DB;
 
-    if (! $googledocs = $DB->get_record('googledocs', array('id' => $id))) {
+    if (!$googledocs = $DB->get_record('googledocs', array('id' => $id))) {
         return false;
     }
 
-    $DB->delete_records('googledocs_submissions', array('googledoc'  => $googledocs->id));
-    $DB->delete_records('googledocs_files', array('googledocid'  => $googledocs->id));
-    $DB->delete_records('googledocs_work_task', array('googledocid'  => $googledocs->id));
-    $DB->delete_records('googledocs_folders', array('googledocid'  => $googledocs->id));
+    $DB->delete_records('googledocs_submissions', array('googledoc' => $googledocs->id));
+    $DB->delete_records('googledocs_files', array('googledocid' => $googledocs->id));
+    $DB->delete_records('googledocs_work_task', array('googledocid' => $googledocs->id));
+    $DB->delete_records('googledocs_folders', array('googledocid' => $googledocs->id));
     $DB->delete_records('googledocs', array('id' => $googledocs->id));
 
     googledocs_grade_item_delete($googledocs);
@@ -282,6 +273,7 @@ function googledocs_user_outline($course, $user, $mod, $googledocs) {
  * @param stdClass $googledocs the module instance record
  */
 function googledocs_user_complete($course, $user, $mod, $googledocs) {
+
 }
 
 /**
@@ -314,7 +306,8 @@ function googledocs_print_recent_activity($course, $viewfullnames, $timestart) {
  * @param int $userid check for a particular user's activity only, defaults to 0 (all users)
  * @param int $groupid check for a particular group's activity only, defaults to 0 (all groups)
  */
-function googledocs_get_recent_mod_activity(&$activities, &$index, $timestart, $courseid, $cmid, $userid=0, $groupid=0) {
+function googledocs_get_recent_mod_activity(&$activities, &$index, $timestart, $courseid, $cmid, $userid = 0, $groupid = 0) {
+
 }
 
 /**
@@ -327,6 +320,7 @@ function googledocs_get_recent_mod_activity(&$activities, &$index, $timestart, $
  * @param bool $viewfullnames display users' full names
  */
 function googledocs_print_recent_mod_activity($activity, $courseid, $detail, $modnames, $viewfullnames) {
+
 }
 
 /**
@@ -339,7 +333,7 @@ function googledocs_print_recent_mod_activity($activity, $courseid, $detail, $mo
  *
  * @return boolean
  */
-function googledocs_cron () {
+function googledocs_cron() {
     return true;
 }
 
@@ -354,7 +348,6 @@ function googledocs_cron () {
 function googledocs_get_extra_capabilities() {
     return array();
 }
-
 
 /* File API */
 
@@ -408,7 +401,7 @@ function googledocs_get_file_info($browser, $areas, $course, $cm, $context, $fil
  * @param bool $forcedownload whether or not force download
  * @param array $options additional options affecting the file serving
  */
-function googledocs_pluginfile($course, $cm, $context, $filearea, array $args, $forcedownload, array $options=array()) {
+function googledocs_pluginfile($course, $cm, $context, $filearea, array $args, $forcedownload, array $options = array()) {
     global $DB, $CFG;
 
     if ($context->contextlevel != CONTEXT_MODULE) {
@@ -433,10 +426,10 @@ function googledocs_pluginfile($course, $cm, $context, $filearea, array $args, $
  * @param cm_info $cm course module information
  */
 /*
-function googledocs_extend_navigation(navigation_node $navref, stdClass $course, stdClass $module, cm_info $cm) {
-    // TODO Delete this function and its docblock, or implement it.
-}
-*/
+  function googledocs_extend_navigation(navigation_node $navref, stdClass $course, stdClass $module, cm_info $cm) {
+  // TODO Delete this function and its docblock, or implement it.
+  }
+ */
 
 /**
  * Extends the settings navigation with the googledocs settings
@@ -447,13 +440,12 @@ function googledocs_extend_navigation(navigation_node $navref, stdClass $course,
  * @param settings_navigation $settingsnav complete settings navigation tree
  * @param navigation_node $googledocsnode googledocs administration node
  */
-function googledocs_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $googledocsnode=null) {
+function googledocs_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $googledocsnode = null) {
     // TODO Delete this function and its docblock, or implement it.
-
     // TODO: what Google drive documents are allowed SELECT box
 }
 
-/* GRADING API*/
+/* GRADING API */
 
 /**
  * Create grade item for given googledoc instance by calling grade_update().
@@ -464,11 +456,11 @@ function googledocs_extend_settings_navigation(settings_navigation $settingsnav,
  * @param array|object $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
  * @return int 0 if ok, error code otherwise
  */
-function googledocs_grade_item_update($googledoc, $grades=null){
+function googledocs_grade_item_update($googledoc, $grades = null) {
     global $CFG;
 
-    if (!function_exists('grade_update')) { //workaround for buggy PHP versions
-        require_once($CFG->libdir.'/gradelib.php');
+    if (!function_exists('grade_update')) { // Workaround for buggy PHP versions.
+        require_once($CFG->libdir . '/gradelib.php');
     }
     if (array_key_exists('cmidnumber', $googledoc)) { // May not be always present.
         $params = array('itemname' => $googledoc->name, 'idnumber' => $googledoc->cmidnumber);
@@ -484,7 +476,6 @@ function googledocs_grade_item_update($googledoc, $grades=null){
         $params['gradetype'] = GRADE_TYPE_VALUE;
         $params['grademax'] = $googledoc->grade;
         $params['grademin'] = 0;
-
     } else if ($googledoc->grade < 0) {
         $params['gradetype'] = GRADE_TYPE_SCALE;
         $params['scaleid'] = -$googledoc->grade;
@@ -499,13 +490,11 @@ function googledocs_grade_item_update($googledoc, $grades=null){
             }
         }
 
-    // When converting a score to a scale, use scale's grade maximum to calculate it.
+        // When converting a score to a scale, use scale's grade maximum to calculate it.
         if (!empty($currentgrade) && $currentgrade->rawgrade !== null) {
             $grade = grade_get_grades($googledoc->course, 'mod', 'googledoc', $googledoc->id, $currentgrade->userid);
-            $params['grademax']   = reset($grade->items)->grademax;
+            $params['grademax'] = reset($grade->items)->grademax;
         }
-
-
     } else {
         $params['gradetype'] = GRADE_TYPE_TEXT; // Allow text comments only.
     }
@@ -514,7 +503,7 @@ function googledocs_grade_item_update($googledoc, $grades=null){
         $params['reset'] = true;
         $grades = null;
     } else if (!empty($grades)) {
-        // Need to calculate raw grade (Note: $grades has many forms)
+        // Need to calculate raw grade (Note: $grades has many forms).
         if (is_object($grades)) {
             $grades = array($grades->userid => $grades);
         } else if (array_key_exists('userid', $grades)) {
@@ -527,15 +516,15 @@ function googledocs_grade_item_update($googledoc, $grades=null){
             //check raw grade isnt null otherwise we erroneously insert a grade of 0
             if ($grade['rawgrade'] !== null) {
                 $grades[$key]['rawgrade'] = ($grade['rawgrade'] * $params['grademax'] / 100);
-                //Update mdl_googledocs_table
+                // Update mdl_googledocs_table.
             } else {
-                //setting rawgrade to null just in case user is deleting a grade
+                // Setting rawgrade to null just in case user is deleting a grade.
                 $grades[$key]['rawgrade'] = null;
             }
         }
     }
 
-    return grade_update('mod/googledocs', $googledoc->course, 'mod', 'googledocs', $googledoc->id, 0, $grades,      $params);
+    return grade_update('mod/googledocs', $googledoc->course, 'mod', 'googledocs', $googledoc->id, 0, $grades, $params);
 }
 
 /**
@@ -546,11 +535,10 @@ function googledocs_grade_item_update($googledoc, $grades=null){
  */
 function googledocs_update_grades($googledocs, $userid = 0, $nullifnone = true) {
     global $CFG;
-    require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->libdir . '/gradelib.php');
 
     if ($googledocs->grade == 0) {
         googledocs_grade_item_update($googledocs);
-
     } else if ($grades = googledocs_get_user_grades($googledocs, $userid)) {
 
         foreach ($grades as $k => $v) {
@@ -560,13 +548,12 @@ function googledocs_update_grades($googledocs, $userid = 0, $nullifnone = true) 
         }
 
         googledocs_grade_item_update($googledocs, $grades);
-
     } else {
         googledocs_grade_item_update($googledocs);
     }
 }
 
-function googledocs_get_user_grades($googledocinstance, $userid =0) {
+function googledocs_get_user_grades($googledocinstance, $userid = 0) {
     global $CFG;
 
     require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
@@ -575,6 +562,6 @@ function googledocs_get_user_grades($googledocinstance, $userid =0) {
 
 function googledocs_grade_item_delete($googledoc) {
     global $DB;
-    $DB->delete_records('googledocs_grades', array('googledocid'  => $googledoc->id));
-    $DB->delete_records('googledocsfeedback_comments', array('googledoc'  => $googledoc->id));
+    $DB->delete_records('googledocs_grades', array('googledocid' => $googledoc->id));
+    $DB->delete_records('googledocsfeedback_comments', array('googledoc' => $googledoc->id));
 }

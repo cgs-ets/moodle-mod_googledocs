@@ -68,9 +68,11 @@ trait create_group_file {
      * @global type $DB
      * @param type $group_name
      * @param type $group_id
+     * @param type $grouping_id
+     * @param type $instance_id
      * @param type $owner_email
      * @param type $parentfile_id
-     * @return type
+     * @return array
      */
     public static function create_group_file($group_name, $group_id, $grouping_id, $instance_id, $owner_email, $parentfile_id) {
         global $COURSE, $DB;

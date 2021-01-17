@@ -24,7 +24,6 @@
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die;
 
 if ($ADMIN->fulltree) {
@@ -33,7 +32,7 @@ if ($ADMIN->fulltree) {
     $choices = [];
     $issuers = \core\oauth2\api::get_all_issuers();
     foreach ($issuers as $issuer) {
-        if (strpos($issuer->get('baseurl'),'accounts.google.com') !== FALSE) {
+        if (strpos($issuer->get('baseurl'), 'accounts.google.com') !== false) {
             $choices[$issuer->get('id')] = s($issuer->get('name'));
         }
     }
@@ -45,12 +44,12 @@ if ($ADMIN->fulltree) {
     // Output list of OAuth issuers.
     if (!empty($choices)) {
         $settings->add(new admin_setting_configselect('googledocs_oauth', get_string('oauth2services', 'googledocs'),
-                                                      get_string('oauth2servicesdesc', 'googledocs'), NULL, $choices));
+                get_string('oauth2servicesdesc', 'googledocs'), null, $choices));
     }
 
     $settings->add(new admin_setting_configtext('mod_googledocs/googledocs_api_key', get_string('googledocs_api_key', 'googledocs'),
-    get_string('googledocs_api_key_desc', 'googledocs'), ''));
-    
+            get_string('googledocs_api_key_desc', 'googledocs'), ''));
+
     $settings->add(new admin_setting_configtext('mod_googledocs/referrer', get_string('googledocs_referrer', 'googledocs'),
             get_string('googledocs_referrer_key_desc', 'googledocs'), ''));
 
@@ -58,7 +57,7 @@ if ($ADMIN->fulltree) {
     foreach (core_component::get_plugin_list('assignfeedback') as $type => $notused) {
         $visible = !get_config('assignfeedback_' . $type, 'disabled');
         if ($visible) {
-            
+
             if ($type == 'comments') {
                 $menu['assignfeedback_' . $type] = new lang_string('pluginname', 'assignfeedback_' . $type);
             }
@@ -69,9 +68,8 @@ if ($ADMIN->fulltree) {
     $name = new lang_string('feedbackplugin', 'mod_googledocs');
     $description = new lang_string('feedbackpluginforgradebook', 'mod_googledocs');
     $settings->add(new admin_setting_configselect('googledocs/feedback_plugin_for_gradebook',
-                                                  $name,
-                                                  $description,
-                                                  'assignfeedback_comments',
-                                                  $menu));
-
+            $name,
+            $description,
+            'assignfeedback_comments',
+            $menu));
 }

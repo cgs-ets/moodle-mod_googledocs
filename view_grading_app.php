@@ -37,7 +37,7 @@ $new = optional_param('forceview', 0, PARAM_INT);
 $id = required_param('id', PARAM_INT);
 
 $action = optional_param('action', array(), PARAM_ALPHA);
-$fromsummary = optional_param('fromsummary','' , PARAM_ALPHA);
+$fromsummary = optional_param('fromsummary', '', PARAM_ALPHA);
 $userid = required_param('userid', PARAM_INT);
 
 list ($course, $cm) = get_course_and_cm_from_cmid($id, 'googledocs');

@@ -43,11 +43,9 @@
  * @copyright  2019 Michael de Raadt <michaelderaadt@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = array(
-
     'mod/googledocs:addinstance' => array(
         'riskbitmask' => RISK_XSS,
         'captype' => 'write',
@@ -58,7 +56,6 @@ $capabilities = array(
         ),
         'clonepermissionsfrom' => 'moodle/course:manageactivities'
     ),
-
     'mod/googledocs:view' => array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
@@ -70,7 +67,6 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
     'mod/googledocs:viewall' => array(
         'riskbitmask' => RISK_XSS,
         'captype' => 'read',
@@ -81,7 +77,6 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
     'mod/googledocs:grade' => array(
         'riskbitmask' => RISK_SPAM | RISK_XSS,
         'captype' => 'write',
@@ -92,7 +87,6 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-
     'mod/googledocs:viewreports' => array(
         'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
@@ -104,7 +98,6 @@ $capabilities = array(
         )
     ),
     'mod/googledocs:manage' => array(
-
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(
@@ -113,5 +106,4 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
-    
 );
