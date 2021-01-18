@@ -124,10 +124,14 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $doctype->freeze();
             }
 
-            $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size' => '64'));
+            $existingfile = $mform->addElement('text', 'google_doc_url', get_string('google_doc_url', 'googledocs'), array('size' => '64'));
             $mform->setType('google_doc_url', PARAM_RAW_TRIMMED);
             $mform->addRule('google_doc_url', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             $mform->hideif('google_doc_url', 'use_document', 'eq', 'new');
+
+            if ($update) {
+                $existingfile->freeze();
+            }
 
             $permissions = array(
                 'edit' => get_string('edit', 'googledocs'),

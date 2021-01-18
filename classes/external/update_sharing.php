@@ -53,28 +53,30 @@ trait update_sharing {
          return new external_function_parameters(
              array(
                    'file_ids' => new external_value(PARAM_RAW, 'File ID'),
+                   'instance_id' => new external_value(PARAM_RAW, 'Instance id'),
                  )
 
         );
     }
 
 
-    public static function update_sharing($file_ids) {
+    public static function update_sharing($file_ids, $instance_id) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-        //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::update_sharing_parameters(),
-            array('file_ids' => $file_ids)
+            array('file_ids' => $file_ids,
+                'instance_id' => $instance_id)
         );
 
-        $file_ids = json_decode($file_ids);
+        $file_ids = json_decode($file_ids, $instance_id);
         $r = [];
         foreach($file_ids as $i=> $id) {
 
-            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id]);
+            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id, 'id' => $instance_id]);
             $d = new \stdClass();
             $d->id = $id;
             $d->sharing = 1;

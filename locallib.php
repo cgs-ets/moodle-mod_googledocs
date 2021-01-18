@@ -919,7 +919,7 @@ class googledrive {
                 $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
                 $links = $this->make_copy($file, $parent, $students, $studentpermissions, $commenter, $dist);
-                $sharedfile = array($links[0], $links[1], $links[2], $parentdirid);
+                $sharedfile = array($links[0], $links[1], $links[2], $parentdirid, $url);
             }
 
             return $sharedfile;
@@ -1689,10 +1689,15 @@ class googledrive {
      * @param type $owncopy
      * @return type
      */
-    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false, $dist) {
+    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false, $dist, $fromexisting = false, $existingurl = '') {
 
         global $USER, $DB;
-        $googledocs->google_doc_url = (!$owncopy || $googledocs->distribution == 'group_copy') ? $sharedlink[1] : null;
+        if ($fromexisting) {
+            $googledocs->google_doc_url = $existingurl;
+        } else if(!$owncopy || $googledocs->distribution == 'group_copy'){
+            $googledocs->google_doc_url = $sharedlink[1];
+        }
+
         $googledocs->docid = ($sharedlink[0])->id;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
@@ -1704,6 +1709,7 @@ class googledrive {
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
         $googledocs->distribution = $dist;
         $googledocs->introformat = FORMAT_MOODLE;
+
 
         return $DB->insert_record('googledocs', $googledocs);
     }

@@ -177,11 +177,13 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             var file_to_update = $('table.overviewTable').attr('data-googledocs-id');
 
             $('table.overviewTable').removeAttr('data-googledocs-id');
-
+            console.log('TOTAL CALLS', totalCalls);
+            console.log('self.countCalls', self.countCalls);
             if (from_existing == 1 && self.countCalls == totalCalls
                     && file_to_update != undefined) {
                 self.files_to_erase.push(file_to_update);
-                UpdateControl.init(JSON.stringify(self.files_to_erase));
+                console.log("instance_id", self.instance_id);
+                UpdateControl.init(JSON.stringify(self.files_to_erase), self.instance_id);
                 self.countCalls = 0;
             }
 
