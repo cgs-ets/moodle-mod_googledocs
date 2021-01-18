@@ -1847,8 +1847,11 @@ class googledrive {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_REFERER, $this->referrer);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-
+            curl_exec($ch);
+            
             $r = (curl_getinfo($ch))['http_code'] === 200;
+            
+
         } catch (Exception $ex) {
             error_log($ex->getMessage());
         } finally {
