@@ -134,4 +134,4 @@ $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
 $string['logintosubmit'] = 'Log in to submit';
 $string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';
-$string['showdescription'] = 'Show activity description';
+$string['showdescription'] = 'Show/hide activity description';
