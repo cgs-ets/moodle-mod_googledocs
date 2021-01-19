@@ -1826,6 +1826,7 @@ class googledrive {
             curl_exec($ch);
 
             $r = (curl_getinfo($ch))['http_code'] == 200;
+
         } catch (Exception $ex) {
             error_log($ex->getMessage());
         } finally {
