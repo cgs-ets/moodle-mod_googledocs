@@ -31,7 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
@@ -40,20 +40,18 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
  */
 trait submit_student_file {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function submit_student_file_parameters() {
+     */
+    public static function submit_student_file_parameters() {
         return new external_function_parameters(
             array(
-                'fileid' => new external_value(PARAM_RAW, 'File ID given by Google drive'),
-                'instanceid' => new external_value(PARAM_RAW, ' Googledoc instance id'),
-                'groupid' => new external_value(PARAM_RAW, 'Group ID', PARAM_DEFAULT, '0'),
-                'email' => new external_value(PARAM_RAW, 'Email of the user')
+            'fileid' => new external_value(PARAM_RAW, 'File ID given by Google drive'),
+            'instanceid' => new external_value(PARAM_RAW, ' Googledoc instance id'),
+            'groupid' => new external_value(PARAM_RAW, 'Group ID', PARAM_DEFAULT, '0'),
+            'email' => new external_value(PARAM_RAW, 'Email of the user')
             )
         );
     }
@@ -75,13 +73,13 @@ trait submit_student_file {
         // Parameters validation.
         self::validate_parameters(self::submit_student_file_parameters(),
             array('fileid' => $fileid,
-                  'instanceid' => $instanceid,
-                  'groupid' => $groupid,
-                  'email' =>$email)
+                'instanceid' => $instanceid,
+                'groupid' => $groupid,
+                'email' => $email)
         );
 
         // Get the Google Drive object.
-        $gdrive =  new \googledrive($context->id, false, false, true, true);
+        $gdrive = new \googledrive($context->id, false, false, true, true);
         $email = strtolower($email);
         $result = $gdrive->update_permission_when_submitted($fileid, $email);
 
@@ -99,14 +97,13 @@ trait submit_student_file {
             $recordid = $DB->insert_record('googledocs_submissions', $data, true);
 
             $r = "SELECT * FROM mdl_googledocs_files WHERE googledocid = :googledocid AND userid = :userid";
-            $dataobject = $DB->get_record_sql($r, ['googledocid'=> $instanceid, 'userid' =>  $USER->id]);
+            $dataobject = $DB->get_record_sql($r, ['googledocid' => $instanceid, 'userid' => $USER->id]);
             $update = new \stdClass();
             $update->id = $dataobject->id;
             $update->permission = 'view';
             $update->submit_status = 'Submitted';
 
             $DB->update_record('googledocs_files', $update);
-
         }
 
         return array(
@@ -122,9 +119,10 @@ trait submit_student_file {
      */
     public static function submit_student_file_returns() {
         return new external_single_structure(
-                array(
-                    'recordid' => new external_value(PARAM_RAW, 'DB record ID '),
-                )
-      );
+            array(
+            'recordid' => new external_value(PARAM_RAW, 'DB record ID '),
+            )
+        );
     }
+
 }

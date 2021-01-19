@@ -177,7 +177,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             var file_to_update = $('table.overviewTable').attr('data-googledocs-id');
 
             $('table.overviewTable').removeAttr('data-googledocs-id');
-            console.log('TOTAL CALLS', totalCalls);
+            console.log('TOTAL CALLS TO DO', totalCalls);
             console.log('self.countCalls', self.countCalls);
             if (from_existing == 1 && self.countCalls == totalCalls
                     && file_to_update != undefined) {
@@ -722,8 +722,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         });
 
     };
-
-    //
+    
     /**
      * Add the url in the href property. If the student has more than one
      * grouping, append new icons
@@ -756,7 +755,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             self.tagDisplay(rownumber, true);
         });
     };
-
+    
     return {
         init: init
     };

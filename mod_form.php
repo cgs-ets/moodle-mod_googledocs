@@ -101,6 +101,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $name_doc->freeze();
             }
 
+            $this->standard_intro_elements();
+
             $types = google_filetypes();
             $typesarray = array();
 
@@ -250,8 +252,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
     public function set_data($default_values) {
 
-        isset($default_values->name) ? ($default_values->name_doc = $default_values->name ) :
-                $default_values->name_doc = '';
+        isset($default_values->name) ? ($default_values->name_doc = $default_values->name ) : $default_values->name_doc = '';
 
         if (isset($default_values->distribution)) {
             $default_values->groups = $this->get_group_ids($default_values);
@@ -260,7 +261,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         isset($default_values->use_document) ? ($default_values->use_document = $default_values->use_document ) : $default_values->name_doc =
                 '';
-
 
         parent::set_data($default_values);
     }

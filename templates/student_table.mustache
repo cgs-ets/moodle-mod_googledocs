@@ -47,10 +47,11 @@
         ]
     }
 
-
-
 }}
 <div class="container-fluid table-container">
+
+ {{> mod_googledocs/show_activity_description }}
+
     <table class = "mod-googledocs-files-view  table-bordered table-lg overviewTable table table-hover"
         data-googledocs-id = "{{googledocid}}"  data-instance-id = "{{instanceid}}"
         data-from-existing = "{{from_existing}}" data-owner-email = "{{owneremail}}"
@@ -92,4 +93,3 @@
         </tbody>
     </table>
 </div>
-

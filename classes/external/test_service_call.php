@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
@@ -42,22 +40,18 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
  */
 trait test_service_call {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
 
-    */
-
-    public static  function test_service_call_parameters(){
-         return new external_function_parameters(
-             array(
-                 'file_ids' => new external_value(PARAM_RAW, 'File ID'),
-                 )
-
+     */
+    public static function test_service_call_parameters() {
+        return new external_function_parameters(
+            array(
+            'file_ids' => new external_value(PARAM_RAW, 'File ID'),
+            )
         );
     }
-
 
     public static function test_service_call($file_ids) {
         global $COURSE, $DB;
@@ -71,7 +65,6 @@ trait test_service_call {
         );
         return array(
             'results' => 'Service reached '
-
         );
     }
 
@@ -81,11 +74,12 @@ trait test_service_call {
      * @return external_single_structure
      *
      */
-    public static function test_service_call_returns(){
+    public static function test_service_call_returns() {
         return new external_single_structure(
-                array(
-                    'results' => new external_value(PARAM_RAW, 'test msj'),
-                 )
-      );
+            array(
+            'results' => new external_value(PARAM_RAW, 'test msj'),
+            )
+        );
     }
+
 }

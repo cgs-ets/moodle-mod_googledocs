@@ -31,36 +31,31 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->dirroot . "/user/lib.php");
 require_once("$CFG->dirroot/user/externallib.php");
-
 
 /**
  * Trait implementing the external function mod_googledocs_delete_files
  */
 trait list_participants {
 
-
     /**
      * Returns description of method parameters
      *
-    */
-
-    public static  function list_participants_parameters(){
-         return new external_function_parameters(
+     */
+    public static function list_participants_parameters() {
+        return new external_function_parameters(
             array(
-                'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
-                'groupid' =>  new external_value(PARAM_RAW, 'Instance ID', VALUE_OPTIONAL),
+            'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
+            'groupid' => new external_value(PARAM_RAW, 'Instance ID', VALUE_OPTIONAL),
             )
         );
     }
 
-
-    public static function list_participants($googledocid, $groupid ) {
+    public static function list_participants($googledocid, $groupid) {
         global $COURSE, $DB;
 
         $context = \context_user::instance($COURSE->id);
@@ -69,7 +64,7 @@ trait list_participants {
         // Parameters validation.
         self::validate_parameters(self::list_participants_parameters(),
             array('googledocid' => $googledocid,
-                'groupid' => $groupid,)
+                'groupid' => $groupid)
         );
 
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
@@ -81,14 +76,13 @@ trait list_participants {
         foreach ($results as $record) {
             $participant = new \stdClass();
             $participant->userid = $record->userid;
-            $participant->fullname = $record->firstname . ' '.$record->lastname;
+            $participant->fullname = $record->firstname . ' ' . $record->lastname;
             $participant->fileurl = $record->url;
             list($participant->grade, $participant->comment) = get_grade_comments($googledocid, $record->userid);
             $participants[] = $participant;
         }
 
-        return array ('users' => json_encode($participants));
-
+        return array('users' => json_encode($participants));
     }
 
     /**
@@ -97,10 +91,9 @@ trait list_participants {
      */
     public static function list_participants_returns() {
 
-
         return new external_single_structure(array(
             'users' => new external_value(PARAM_RAW, 'ID of the user'),
-
         ));
     }
+
 }

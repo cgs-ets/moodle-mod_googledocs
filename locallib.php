@@ -1410,7 +1410,7 @@ class googledrive {
         global $DB;
         $conditions = ['googledocid' => $instance->id];
         $records = $DB->get_records('googledocs_files', $conditions, '', $fields = '*');
-        $saved = false;
+        $saved = true;
         $savedResults = [];
 
         foreach ($records as $record) {
@@ -1425,30 +1425,6 @@ class googledrive {
         }
 
         return in_array(true, $savedResults);
-    }
-
-    /**
-     *  Helper function that calls the different updates a file can have.
-     * @global type $DB
-     * @param stdClass $instance
-     * @param Object $details
-     */
-    private function update_students_files($instance, $details) {
-        global $DB;
-
-        $gf = "SELECT * FROM mdl_googledocs_files WHERE googledocid = :instance_id";
-        $result = $DB->get_records_sql($gf, ['instance_id' => $instance->id]);
-        $students = $this->get_enrolled_students($instance->course);
-
-        if ($instance->distribution == 'all_share' && (isset($details->distribution) && $details->distribution == 'all_share')) { //Same name for all
-            $this->update_shared_copy($result, $DB, $details, $instance);
-        } else if ($instance->distribution == 'all_share' && (isset($details->distribution) && $details->distribution == 'each_gets_own')) {
-            $sharedlink = $this->share_existing_file($details, true, $students);
-            $this->update_students_links_records($sharedlink[2], $result);
-            $this->update_distribution($DB, $instance);
-        } else if ($instance->distribution == 'each_gets_own') {
-            $this->update_students_copies($result, $DB, $students, $details, $instance);
-        }
     }
 
     /**
@@ -1689,7 +1665,7 @@ class googledrive {
      * @param type $owncopy
      * @return type
      */
-    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false, $dist, $fromexisting = false, $existingurl = '') {
+    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false, $dist, $intro = '', $fromexisting = false, $existingurl = '') {
 
         global $USER, $DB;
         if ($fromexisting) {
@@ -1704,11 +1680,11 @@ class googledrive {
         $googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
         $googledocs->name = ($sharedlink[0])->title;
-        $googledocs->intro = ($sharedlink[0])->title;
+        $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
         $googledocs->distribution = $dist;
-        $googledocs->introformat = FORMAT_MOODLE;
+        $googledocs->introformat = $intro['format'];
 
 
         return $DB->insert_record('googledocs', $googledocs);
@@ -1847,8 +1823,9 @@ class googledrive {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_REFERER, $this->referrer);
             curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+            curl_exec($ch);
 
-            $r = (curl_getinfo($ch))['http_code'] === 200;
+            $r = (curl_getinfo($ch))['http_code'] == 200;
         } catch (Exception $ex) {
             error_log($ex->getMessage());
         } finally {
@@ -1977,6 +1954,7 @@ class googledrive {
      */
     public function update_permissions($fileId, $details, $instance) {
         $saved = true;
+
         try {
 
             $permissionlist = $this->get_permissions($fileId);
@@ -2009,6 +1987,7 @@ class googledrive {
                 }
 
                 $l->setRole($newrole);
+
                 $saved = $this->update_permission_request($fileId, $l);
             }
         } catch (Exception $ex) {

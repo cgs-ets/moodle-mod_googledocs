@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
@@ -42,23 +40,19 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
  */
 trait update_sharing {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
 
-    */
-
-    public static  function update_sharing_parameters(){
-         return new external_function_parameters(
-             array(
-                   'file_ids' => new external_value(PARAM_RAW, 'File ID'),
-                   'instance_id' => new external_value(PARAM_RAW, 'Instance id'),
-                 )
-
+     */
+    public static function update_sharing_parameters() {
+        return new external_function_parameters(
+            array(
+            'file_ids' => new external_value(PARAM_RAW, 'File ID'),
+            'instance_id' => new external_value(PARAM_RAW, 'Instance id'),
+            )
         );
     }
-
 
     public static function update_sharing($file_ids, $instance_id) {
         global $COURSE, $DB;
@@ -74,19 +68,16 @@ trait update_sharing {
 
         $file_ids = json_decode($file_ids, $instance_id);
         $r = [];
-        foreach($file_ids as $i=> $id) {
+        foreach ($file_ids as $i => $id) {
 
-            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id, 'id' => $instance_id]);
+            $id = $DB->get_field('googledocs', 'id', ['docid' => $id, 'id' => $instance_id]);
             $d = new \stdClass();
             $d->id = $id;
             $d->sharing = 1;
             $r [] = $DB->update_record('googledocs', $d);
         }
-
-
         return array(
             'results' => json_encode($r)
-
         );
     }
 
@@ -96,11 +87,12 @@ trait update_sharing {
      * @return external_single_structure
      *
      */
-    public static function update_sharing_returns(){
+    public static function update_sharing_returns() {
         return new external_single_structure(
-                array(
-                    'results' => new external_value(PARAM_RAW,'DB update result'),
-                 )
-      );
+            array(
+            'results' => new external_value(PARAM_RAW, 'DB update result'),
+            )
+        );
     }
+
 }

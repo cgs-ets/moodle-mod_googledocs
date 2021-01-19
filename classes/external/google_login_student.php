@@ -32,30 +32,25 @@ use external_value;
 use external_single_structure;
 
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
  * Trait implementing the external function mod_googledocs_google_login_student
  */
-
-trait google_login_student{
-
+trait google_login_student {
 
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function google_login_student_parameters(){
+     */
+    public static function google_login_student_parameters() {
         return new external_function_parameters(
             array(
-
             )
         );
     }
-
 
     public static function google_login_student() {
         global $COURSE, $DB;
@@ -64,7 +59,7 @@ trait google_login_student{
         self::validate_context($context);
 
         // Get the Google Drive object.
-        $client =  new \googledrive($context->id, false, false, true, true);
+        $client = new \googledrive($context->id, false, false, true, true);
         $login = ['isloggedin' => $client->check_google_login()];
 
         // Check whether the user is logged into their Google account.
@@ -85,11 +80,12 @@ trait google_login_student{
      * @return external_single_structure
      *
      */
-    public static function google_login_student_returns(){
+    public static function google_login_student_returns() {
         return new external_single_structure(
-                array(
-                    'result' => new external_value(PARAM_RAW, 'Google login button and login status'),
-                )
-      );
+            array(
+            'result' => new external_value(PARAM_RAW, 'Google login button and login status'),
+            )
+        );
     }
+
 }

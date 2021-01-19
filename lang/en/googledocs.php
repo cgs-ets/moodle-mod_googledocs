@@ -60,6 +60,7 @@ $string['google_sheet'] = 'Google Sheet';
 $string['google_slides'] = 'Google Slides';
 $string['google_folder'] = 'Google Folder';
 $string['group_select'] = 'Groups  Selection';
+$string['description'] = 'Description';
 $string['group_select_help'] = '<strong>Everyone</strong>: All Students enrolled in the course. <br> <strong>All Groups</strong>: Students belonging to any of the available groups. <br>'
     . '<strong>All Groupings</strong>: Groups belonging to any of the groupings in the course.';
 
@@ -133,3 +134,4 @@ $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
 $string['logintosubmit'] = 'Log in to submit';
 $string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';
+$string['showdescription'] = 'Show activity description';

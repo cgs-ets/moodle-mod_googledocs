@@ -32,7 +32,7 @@ use external_value;
 use external_single_structure;
 use core_user_external;
 
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->dirroot . "/user/lib.php");
@@ -43,21 +43,18 @@ require_once("$CFG->dirroot/user/externallib.php");
  */
 trait get_participant {
 
-
     /**
      * Returns description of method parameters
      *
-    */
-
-    public static  function get_participant_parameters(){
-         return new external_function_parameters(
+     */
+    public static function get_participant_parameters() {
+        return new external_function_parameters(
             array(
-                'userid' => new external_value(PARAM_RAW, 'user ID'),
-                'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
+            'userid' => new external_value(PARAM_RAW, 'user ID'),
+            'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
             )
         );
     }
-
 
     public static function get_participant($userid, $googledocid) {
         global $COURSE, $DB;
@@ -70,7 +67,7 @@ trait get_participant {
             array('userid' => $userid,
                 'googledocid' => $googledocid)
         );
-        // Get the File and grading details
+        // Get the File and grading details.
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
                 WHERE googledocid = :googledocid and gf.userid = :userid
@@ -85,15 +82,14 @@ trait get_participant {
         }
         $participant = $DB->get_record('user', array('id' => $userid));
 
-        $user = (object)user_get_user_details($participant, $COURSE);
+        $user = (object) user_get_user_details($participant, $COURSE);
 
         return ['id' => $user->id,
-                'fullname' => $user->fullname,
-                'fileurl' => $filegradedata->fileurl,
-                'commentgiven' => $filegradedata->comment,
-                'gradegiven' => $filegradedata->grade,
-                'user' => $user];
-
+            'fullname' => $user->fullname,
+            'fileurl' => $filegradedata->fileurl,
+            'commentgiven' => $filegradedata->comment,
+            'gradegiven' => $filegradedata->grade,
+            'user' => $user];
     }
 
     /**
@@ -109,10 +105,11 @@ trait get_participant {
             'id' => new external_value(PARAM_INT, 'ID of the user'),
             'fullname' => new external_value(PARAM_NOTAGS, 'The fullname of the user'),
             'fileurl' => new external_value(PARAM_RAW, 'URL'),
-            'commentgiven' =>  new external_value(PARAM_RAW, 'URL'),
-            'gradegiven' =>  new external_value(PARAM_RAW, 'URL'),
+            'commentgiven' => new external_value(PARAM_RAW, 'URL'),
+            'gradegiven' => new external_value(PARAM_RAW, 'URL'),
             'groupid' => new external_value(PARAM_INT, 'for group assignments this is the group id', VALUE_OPTIONAL),
             'user' => $userdescription
         ));
     }
+
 }

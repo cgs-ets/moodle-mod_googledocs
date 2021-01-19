@@ -95,7 +95,9 @@ class googledocs_rendering {
             $isstudent = ($role->shortname == 'student');
         }
 
-        if (has_capability('mod/googledocs:view', $this->context) && is_enrolled($this->context, $USER->id, '', true) && !is_siteadmin()
+        if (has_capability('mod/googledocs:view', $this->context)
+            && is_enrolled($this->context, $USER->id, '', true)
+            && !is_siteadmin()
             && !has_capability('mod/googledocs:viewall', $this->context)) {
             $isstudent = true;
         }
@@ -245,12 +247,16 @@ class googledocs_rendering {
 
         $a = $usergroups[0]; // Has all the groups this user belongs to.
 
-        list($insql, $inparams) = $DB->get_in_or_equal($a);
+        if (empty($a)) {
+            $result = [];
+        } else {
+            list($insql, $inparams) = $DB->get_in_or_equal($a);
 
-        $sql = "SELECT * FROM mdl_googledocs_files
-                WHERE groupid  $insql  AND googledocid = {$this->instanceid} AND userid = {$USER->id}";
+            $sql = "SELECT * FROM mdl_googledocs_files
+                    WHERE groupid  $insql  AND googledocid = {$this->instanceid} AND userid = {$USER->id}";
 
-        $result = $DB->get_records_sql($sql, $inparams);
+            $result = $DB->get_records_sql($sql, $inparams);
+        }
         $this->get_students_file_view_content($result, $types);
     }
 
@@ -310,8 +316,11 @@ class googledocs_rendering {
         $emailaddress = $DB->get_record('user', array('id' => $USER->id), 'email');
         $data = ['isloggedintogoogle' => $client->check_google_login(),
             'email' => $emailaddress->email,
-            'viewpermission' => $this->googledocs->permissions
+            'viewpermission' => $this->googledocs->permissions,
+            'filename' => $this->googledocs->name,
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
         ];
+
         $params = ['userid' => $USER->id, 'instanceid' => $this->googledocs->id];
 
         foreach ($sqlresult as $r) {
@@ -322,7 +331,7 @@ class googledocs_rendering {
             $submitstatus = false;
             $submitted = false;
             $graded;
-            ;
+
             if ($view = $this->googledocs->permissions != 'view') {
                 $sql = "SELECT status FROM mdl_googledocs_submissions WHERE userid = :userid
                         AND googledoc = :instanceid
@@ -330,7 +339,8 @@ class googledocs_rendering {
 
                 $submitstatus = $DB->get_record_sql($sql, $params);
                 $submitted = $submitstatus;
-                $graded = $DB->get_record('googledocs_grades', array('userid' => $USER->id, 'googledocid' => $this->googledocs->id));
+                $graded = $DB->get_record('googledocs_grades', array('userid' => $USER->id,
+                    'googledocid' => $this->googledocs->id));
             }
 
             $extra = "onclick=\"this.target='_blank';\"";
@@ -349,7 +359,7 @@ class googledocs_rendering {
             ];
         }
 
-        $data['nothingtodisplay'] = array_key_exists ('files', $data);
+        $data['nothingtodisplay'] = array_key_exists('files', $data);
         echo $OUTPUT->render_from_template('mod_googledocs/student_file_view', $data);
     }
 
@@ -384,12 +394,12 @@ class googledocs_rendering {
             'owneremail' => $owneremail->email,
             'all_groups' => $groupids,
             'canbegraded' => $this->canbegraded,
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
         ];
         $i = 0;
 
         foreach ($students as $st) {
             foreach ($st as $student) {
-
                 $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
                     'includefullname' => true, 'class' => 'userpicture'));
                 $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
@@ -535,7 +545,8 @@ class googledocs_rendering {
             'show_group' => false,
             'owneremail' => $owneremail->email,
             'all_groups' => $group_ids,
-            'canbegraded' => $this->canbegraded
+            'canbegraded' => $this->canbegraded,
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
         ];
 
         $i = 0;
@@ -643,7 +654,8 @@ class googledocs_rendering {
             'googledocid' => '',
             'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
             'owneremail' => $owneremail->email,
-            'all_groups' => $groupids // A list of the groups ids. This is use in the Ajax call.
+            'all_groups' => $groupids, // A list of the groups ids. This is use in the Ajax call.
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
         ];
 
         $data['googledocid'] = $this->googledocs->docid;
@@ -704,6 +716,7 @@ class googledocs_rendering {
         $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
         $data['owneremail'] = $owneremail->email;
         $data ['studentaccess'] = ucfirst($this->googledocs->permissions);
+        $data['intro'] = format_module_intro('googledocs', $this->googledocs, $this->cm->id, false);
 
         foreach ($j->c as $c => $condition) {
             if ($condition->type == 'grouping') {
@@ -735,6 +748,7 @@ class googledocs_rendering {
         $data['from_existing'] = ($this->googledocs->use_document == 'existing') ? true : false;
         $data['owneremail'] = $owneremail->email;
         $data['studentaccess'] = ucfirst($this->googledocs->permissions);
+        $data['intro'] = format_module_intro('googledocs', $this->googledocs, $this->cm->id, false);
 
         $groupsandmembers = $this->get_groups_and_members();
         $j = json_decode($this->googledocs->group_grouping_json);
@@ -1115,7 +1129,7 @@ class googledocs_rendering {
                     gf.permission
                     FROM mdl_user as u
                     JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                    WHERE gf.googledocid = ?  ORDER BY u.lastname"; //TODO: VALIDATE IN SQL SERVER.
+                    WHERE gf.googledocid = ?  ORDER BY u.lastname"; // TODO: VALIDATE IN SQL SERVER.
 
         $params = array($this->instanceid);
         return array($rawdata, $params);

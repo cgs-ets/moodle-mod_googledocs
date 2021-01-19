@@ -32,7 +32,7 @@ use external_value;
 use external_single_structure;
 use core_user_external;
 
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 require_once($CFG->dirroot . "/user/lib.php");
@@ -43,21 +43,18 @@ require_once("$CFG->dirroot/user/externallib.php");
  */
 trait get_participant_by_id {
 
-
     /**
      * Returns description of method parameters
      *
-    */
-
-    public static  function get_participant_by_id_parameters(){
-         return new external_function_parameters(
+     */
+    public static function get_participant_by_id_parameters() {
+        return new external_function_parameters(
             array(
-                'userid' => new external_value(PARAM_RAW, 'user ID'),
-                'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
+            'userid' => new external_value(PARAM_RAW, 'user ID'),
+            'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
             )
         );
     }
-
 
     public static function get_participant_by_id($userid, $googledocid) {
         global $COURSE, $DB, $PAGE, $CFG;
@@ -77,12 +74,12 @@ trait get_participant_by_id {
             $d = new \stdClass();
             $d->display = false;
             return array(
-            'html' => $output->render_from_template('mod_googledocs/grading_panel', $d),
-            'data' => json_encode($d),
+                'html' => $output->render_from_template('mod_googledocs/grading_panel', $d),
+                'data' => json_encode($d),
             );
         }
 
-        // Get the File and grading details
+        // Get the File and grading details.
         $sql = "SELECT u.id as userid, u.firstname, u.lastname, g.grade as maxgrade, gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
                 JOIN mdl_googledocs as g on g.id = {$googledocid}
@@ -93,7 +90,7 @@ trait get_participant_by_id {
         $graded = $DB->get_record('googledocs_grades', array('googledocid' => $googledocid, 'userid' => $userid));
 
         $data = new \stdClass();
-         // Get data from gradebook
+        // Get data from gradebook.
         $sql = "SELECT * FROM mdl_grade_grades as gg
                 WHERE itemid = (SELECT id as itemid FROM mdl_grade_items
                                 WHERE iteminstance = {$googledocid}
@@ -108,28 +105,25 @@ trait get_participant_by_id {
         if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
             $gradefromgradebook = $gg->finalgrade;
-            $gradebookurl = new \moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' =>$COURSE->id]);
+            $gradebookurl = new \moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' => $COURSE->id]);
         }
 
         foreach ($results as $record) {
             $data->userid = $userid;
             $data->fileurl = $record->url;
             $data->maxgrade = $record->maxgrade;
-            $data->graded =$graded;
-            $data->finalgrade = number_format($gradefromgradebook,2);
+            $data->graded = $graded;
+            $data->finalgrade = number_format($gradefromgradebook, 2);
             $data->lockedoroverriden = $lockedoroverriden;
             $data->lockedoroverriden = $lockedoroverriden;
             $data->display = true;
             list($data->gradegiven, $data->commentgiven) = get_grade_comments($googledocid, $record->userid);
         }
 
-       // $output = $PAGE->get_renderer('core');
         return array(
             'html' => $output->render_from_template('mod_googledocs/grading_panel', $data),
             'data' => json_encode($data),
         );
-
-
     }
 
     /**
@@ -146,4 +140,5 @@ trait get_participant_by_id {
             'data' => new external_value(PARAM_RAW, 'Template Context'),
         ));
     }
+
 }

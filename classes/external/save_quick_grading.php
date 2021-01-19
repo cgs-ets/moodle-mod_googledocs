@@ -32,7 +32,7 @@ use external_value;
 use external_single_structure;
 
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once($CFG->dirroot . '/grade/grading/lib.php');
@@ -40,24 +40,20 @@ require_once($CFG->dirroot . '/grade/grading/lib.php');
 /**
  * Trait implementing the external function mod_save_quick_grading
  */
-
-trait save_quick_grading{
-
+trait save_quick_grading {
 
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function save_quick_grading_parameters(){
+     */
+    public static function save_quick_grading_parameters() {
         return new external_function_parameters(
             array(
-               'grade' => new external_value(PARAM_RAW, 'A JSON with the user grading'),
+            'grade' => new external_value(PARAM_RAW, 'A JSON with the user grading'),
             )
         );
     }
-
 
     public static function save_quick_grading($grade) {
         global $COURSE, $DB, $USER;
@@ -66,7 +62,7 @@ trait save_quick_grading{
 
         self::validate_context($context);
 
-       //Parameters validation.
+        // Parameters validation.
         self::validate_parameters(self::save_quick_grading_parameters(),
             array('grade' => $grade)
         );
@@ -75,13 +71,13 @@ trait save_quick_grading{
         $sql = "SELECT * FROM mdl_googledocs_grades  WHERE userid = :userid AND googledocid = :googledocid";
 
         $params = ['userid' => $grade->userid, 'googledocid' => $grade->googledocid];
-        $current  =  $DB->get_record_sql($sql,$params);
+        $current = $DB->get_record_sql($sql, $params);
 
         list($gradeval, $comment) = explode('&', $grade->formdata);
-        $gradeval = str_replace('grade=','',$gradeval);
-        $comment = rawurldecode(str_replace('comment=','',$comment));
+        $gradeval = str_replace('grade=', '', $gradeval);
+        $comment = rawurldecode(str_replace('comment=', '', $comment));
 
-        if (!$current) { // new entry.
+        if (!$current) { // New entry.
             $data = new \stdClass();
             $data->googledocid = $grade->googledocid;
             $data->userid = $grade->userid;
@@ -105,37 +101,36 @@ trait save_quick_grading{
             $graderesult->comment = $comment;
 
             $saveresult [] = ['graderecordid' => $recordid,
-                              'commentrecorid' => $commentfeedbackrecord,
-                              'grade' => $graderesult,
-                              'CRUD' => 'Create'];
-        } else  {
+                'commentrecorid' => $commentfeedbackrecord,
+                'grade' => $graderesult,
+                'CRUD' => 'Create'];
+        } else {
 
-            //Update grade
+            // Update grade.
             $current->timemodified = time();
             $current->grade = $gradeval;
             $DB->update_record('googledocs_grades', $current);
 
-            //Update comment
+            // Update comment.
             $sql = "SELECT * FROM mdl_googledocsfeedback_comments
                    WHERE googledoc = :googledocid AND grade = :gradeid";
             $params = ['googledocid' => $grade->googledocid, 'gradeid' => $current->id];
 
-            $currentcomment = $DB->get_record_sql($sql,$params);
+            $currentcomment = $DB->get_record_sql($sql, $params);
             $currentcomment->commenttext = $comment;
 
             $DB->update_record('googledocsfeedback_comments', $currentcomment);
             $saveresult [] = ['grade' => $graderesult,
-                              'CRUD' => 'UPDATE'];
-
+                'CRUD' => 'UPDATE'];
         }
 
         $sql = "SELECT * FROM mdl_googledocs WHERE id = {$grade->googledocid}";
         $googledocinstance = $DB->get_record_sql($sql);
         // Sync with gradebook.
-        googledocs_update_grades($googledocinstance,  $grade->userid, true);
+        googledocs_update_grades($googledocinstance, $grade->userid, true);
 
         return array(
-         'saveresult' => json_encode($saveresult)
+            'saveresult' => json_encode($saveresult)
         );
     }
 
@@ -145,11 +140,12 @@ trait save_quick_grading{
      * @return external_single_structure
      *
      */
-    public static function save_quick_grading_returns(){
+    public static function save_quick_grading_returns() {
         return new external_single_structure(
-                array(
-                   'saveresult' => new external_value(PARAM_RAW, 'Save result'),
-                )
-      );
+            array(
+            'saveresult' => new external_value(PARAM_RAW, 'Save result'),
+            )
+        );
     }
+
 }

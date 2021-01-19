@@ -45,9 +45,9 @@ function googledocs_supports($feature) {
 
     switch ($feature) {
         case FEATURE_MOD_INTRO:
-            return false;
+            return true;
         case FEATURE_SHOW_DESCRIPTION:
-            return false;
+            return true;
         case FEATURE_GRADE_HAS_GRADE:
             return true;
         case FEATURE_BACKUP_MOODLE2:
@@ -74,7 +74,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     try {
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
-
         $gdrive = new googledrive($context->id);
 
         if (!$gdrive->check_google_login()) {
@@ -89,6 +88,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $teachers = $gdrive->get_enrolled_teachers($googledocs->course);
         $group_grouping = [];
         $dist = '';
+
+        $intro = (($mform->get_submitted_data())->introeditor);
 
         if (!empty(($mform->get_submitted_data())->groups) && !everyone(($mform->get_submitted_data())->groups)) {
             list($group_grouping, $dist) = prepare_json(($mform->get_submitted_data())->groups, $googledocs->course);
@@ -122,15 +123,15 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $folderid = $sharedlink[3];
             $types = google_filetypes();
             $googledocs->document_type = $types[get_doc_type_from_string($googledocs->google_doc_url)]['mimetype'];
-            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist, true,
-               ($mform->get_submitted_data())->google_doc_url);
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist,
+                $intro, true,($mform->get_submitted_data())->google_doc_url);
         } else {
             // Save new file in a new folder.
             $folderid = $gdrive->create_folder($googledocs->name_doc, $author);
             $sharedlink = $gdrive->create_file($googledocs->name_doc, $googledocs->document_type,
                 $author, $students, $folderid);
             $googledocs->name = $googledocs->name_doc;
-            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist);
+            $googledocs->id = $gdrive->save_instance($googledocs, $sharedlink, $folderid, $owncopy, $dist, $intro);
             /* TODO:
               if($dist == 'std_copy') {
               $gdrive->save_work_task_scheduled(($sharedlink[0])->id, $students, $googledocs->id);
@@ -162,12 +163,16 @@ function googledocs_update_instance(stdClass $googledocs, mod_googledocs_mod_for
     $gdrive = new googledrive($context->id, true);
     $currentvalues = $DB->get_record('googledocs', ['id' => $googledocs->instance], '*');
 
+    if ($googledocs->intro != $currentvalues->intro || $googledocs->showdescription != $currentvalues->intro) {
+        $currentvalues->intro = $googledocs->intro;
+        $updateresult = true;
+    }
+
     if ($currentvalues->permissions != $googledocs->permissions) {
         $detail = new stdClass();
         $detail->permissions = $googledocs->permissions;
         $currentvalues->permissions = $googledocs->permissions;
-
-        $updateresult = $gdrive->updates($currentvalues, $detail);  // Update the google file permission
+        $updateresult  = $gdrive->updates($currentvalues, $detail);  // Update the google file permission.
     }
 
     if (!$updateresult) { // Error on the update.
@@ -384,6 +389,7 @@ function googledocs_get_file_areas($course, $cm, $context) {
  * @return file_info instance or null if not found
  */
 function googledocs_get_file_info($browser, $areas, $course, $cm, $context, $filearea, $itemid, $filepath, $filename) {
+
     return null;
 }
 

@@ -31,9 +31,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 
-
-
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
 
@@ -42,23 +40,19 @@ require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
  */
 trait delete_files {
 
-
     /**
      * Returns description of method parameters
      * @return external_function_parameters
 
-    */
-
-    public static  function delete_files_parameters(){
-         return new external_function_parameters(
-             array(
-                 'dist_type' => new external_value(PARAM_RAW, 'Distribution type'),
-                 'file_ids' => new external_value(PARAM_RAW, 'File ID'),
-                 )
-
+     */
+    public static function delete_files_parameters() {
+        return new external_function_parameters(
+            array(
+            'dist_type' => new external_value(PARAM_RAW, 'Distribution type'),
+            'file_ids' => new external_value(PARAM_RAW, 'File ID'),
+            )
         );
     }
-
 
     public static function delete_files($dist_type, $file_ids) {
         global $COURSE, $DB;
@@ -66,10 +60,10 @@ trait delete_files {
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-        //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::delete_files_parameters(),
             array('dist_type' => $dist_type,
-                  'file_ids' => $file_ids)
+                'file_ids' => $file_ids)
         );
 
         $file_ids = json_decode($file_ids);
@@ -77,24 +71,22 @@ trait delete_files {
         $gdrive = new \googledrive($context->id, false, false, true);
         $http_result = [];
 
-        foreach($file_ids as $i=> $id) {
+        foreach ($file_ids as $i => $id) {
 
-            if($dist_type != "dist_share_same"){  //Only delete those files that are copies.
+            if ($dist_type != "dist_share_same") {  // Only delete those files that are copies.
                 $http_result[$i] = $gdrive->delete_file_request($id);
             }
 
-            // At this stage the files are being shared. Update the sharing status
-            $id =  $DB->get_field('googledocs', 'id', ['docid' => $id]);
+            // At this stage the files are being shared. Update the sharing status.
+            $id = $DB->get_field('googledocs', 'id', ['docid' => $id]);
             $d = new \stdClass();
             $d->id = $id;
             $d->sharing = 1;
             $DB->update_record('googledocs', $d);
         }
 
-
         return array(
             'results' => json_encode($http_result)
-
         );
     }
 
@@ -104,11 +96,12 @@ trait delete_files {
      * @return external_single_structure
      *
      */
-    public static function delete_files_returns(){
+    public static function delete_files_returns() {
         return new external_single_structure(
-                array(
-                    'results' => new external_value(PARAM_RAW,'http code'),
-                 )
-      );
+            array(
+            'results' => new external_value(PARAM_RAW, 'http code'),
+            )
+        );
     }
+
 }

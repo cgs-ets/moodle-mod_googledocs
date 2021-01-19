@@ -32,33 +32,28 @@ use external_value;
 use external_single_structure;
 
 require_once($CFG->dirroot . '/mod/googledocs/locallib.php');
-require_once($CFG->libdir.'/externallib.php');
+require_once($CFG->libdir . '/externallib.php');
 require_once($CFG->dirroot . '/mod/googledocs/lib.php');
 
 /**
  * Trait implementing the external function mod_googledocs_grade_student_file
  */
-
-trait grade_student_file{
-
+trait grade_student_file {
 
     /**
      * Returns description of method parameters
      * @return external_function_parameters
      *
-    */
-
-    public static  function grade_student_file_parameters(){
+     */
+    public static function grade_student_file_parameters() {
         return new external_function_parameters(
             array(
-               'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
-               'userid' => new external_value(PARAM_RAW, 'user ID'),
-               'grade' =>  new external_value(PARAM_RAW, 'Grade'),
-
+            'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
+            'userid' => new external_value(PARAM_RAW, 'user ID'),
+            'grade' => new external_value(PARAM_RAW, 'Grade'),
             )
         );
     }
-
 
     public static function grade_student_file($googledocid, $userid, $grade) {
         global $COURSE, $DB;
@@ -66,7 +61,7 @@ trait grade_student_file{
         $context = \context_user::instance($COURSE->id);
         self::validate_context($context);
 
-      //Parameters validation
+        // Parameters validation.
         self::validate_parameters(self::grade_student_file_parameters(),
             array('googledocid' => $googledocid,
                 'userid' => $userid,
@@ -82,7 +77,7 @@ trait grade_student_file{
 
         $recordid = $DB->insert_record('googledocs_grades', $data, true);
         return array(
-         'recordid' => $recordid
+            'recordid' => $recordid
         );
     }
 
@@ -92,11 +87,12 @@ trait grade_student_file{
      * @return external_single_structure
      *
      */
-    public static function grade_student_file_returns(){
+    public static function grade_student_file_returns() {
         return new external_single_structure(
-                array(
-                   'recordid' => new external_value(PARAM_RAW, 'DB record ID '),
-                )
-      );
+            array(
+            'recordid' => new external_value(PARAM_RAW, 'DB record ID '),
+            )
+        );
     }
+
 }
