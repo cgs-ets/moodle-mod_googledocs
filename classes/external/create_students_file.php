@@ -54,8 +54,8 @@ trait create_students_file {
     public static function create_students_file_parameters() {
         return new external_function_parameters(
             array(
-            'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID', PARAM_DEFAULT, 0),
-            'group_id' => new external_value(PARAM_RAW, 'Group ID', PARAM_DEFAULT, 0),
+            'folder_group_id' => new external_value(PARAM_RAW, 'Folder Group ID', false, 0),
+            'group_id' => new external_value(PARAM_RAW, 'Group ID', false, 0),
             'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
             'instance_id' => new external_value(PARAM_RAW, 'instance ID'),
             'parentfile_id' => new external_value(PARAM_ALPHANUMEXT, 'ID of the file to copy'),
@@ -97,6 +97,7 @@ trait create_students_file {
 
         $filedata = "SELECT * FROM mdl_googledocs WHERE id = :id ";
         $data = $DB->get_record_sql($filedata, ['id' => $instance_id]);
+        $groupgroupingjson = $data->group_grouping_json;
 
         if ($data->distribution == 'group_copy' || $data->distribution == 'group_grouping_copy') {
             $filedata = "SELECT gf.name as groupfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
@@ -118,52 +119,35 @@ trait create_students_file {
 
         // Generate the student file.
         $gdrive = new \googledrive($context->id, false, false, true, false, $data);
-
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
+
         $student = new \stdClass();
         $student->id = $student_id;
         $student->name = $student_name;
         $student->email = $student_email;
         $student->type = 'user';
         $fromexisting = $data->use_document == 'new' ? false : true;
+
+        // Get all teachers in the course.
         $teachers = $gdrive->get_enrolled_teachers($data->course);
 
-        if ($data->distribution == 'dist_share_same' || $data->distribution == 'group_grouping_copy') {
-            foreach ($teachers as $teacher) {
-                $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
-            }
+        // Filter teachers by group.
+        if ($data->distribution == 'std_copy_group'
+            || $data->distribution == 'group_copy'
+            || $data->distribution == 'dist_share_same_group') {
+              $teachers = get_users_in_group($teachers, $groupgroupingjson, $data->course);
+
         }
 
-        switch ($data->distribution) {
-            case 'std_copy':
-                $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
-                    $commenter, $fromexisting, 0, $teachers);
-                $data->sharing = 1;
-                $DB->update_record('googledocs', $data);
-                break;
-            case 'dist_share_same':
-                $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true, false);
-                break;
-            case 'group_copy' :
-                $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
-                break;
-            case 'std_copy_group' :
-                $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
-                break;
-            case 'std_copy_grouping':
-                $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
-                break;
-            case 'std_copy_group_grouping':
-                $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive);
-                break;
-            case 'group_grouping_copy':
-                $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting);
-                break;
-
-            default:
-                break;
+        // Filter teachers by group.
+        if ($data->distribution == 'grouping_copy'
+            || $data->distribution == 'dist_share_same_grouping'
+            || $data->distribution == 'std_copy_group_grouping'
+            || $data->distribution == 'dist_share_same_group_grouping') {
+            $teachers = get_users_in_grouping($teachers, $groupgroupingjson, $data->course);
         }
-
+        $url = make_file_copy_helper($data, $student, $role, $commenter, $fromexisting, $teachers, $gdrive);
+        
         return array(
             'url' => json_encode($url, JSON_UNESCAPED_UNICODE)
         );
@@ -182,5 +166,6 @@ trait create_students_file {
             )
         );
     }
+
 
 }

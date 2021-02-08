@@ -63,8 +63,8 @@ echo $OUTPUT->header();
 $created = ($googledocs->sharing == 1);
 
 $t = new googledocs_rendering($course->id, false, $coursecontext, $cm, $googledocs, $created);
-
 $t->render_table();
+
 $PAGE->requires->js_call_amd('mod_googledocs/create_controls', 'init', array($created, $googledocs->distribution));
 // Finish the page.
 echo $OUTPUT->footer();

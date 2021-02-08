@@ -37,18 +37,19 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         var parentfile_id = $('table.overviewTable').attr('data-googledocs-id');
         var files_to_erase = []; // Collection of files ids to delete after copies are created
         var instance_id = $('table.overviewTable').attr('data-instance-id');
+        var isfoldertype = $('table.overviewTable').attr('data-isfolder');
         var countCalls = 0;
         var group_folder_ids;
 
         var control = new GoogledocsControl(parentfile_id, create, instance_id,
-                files_to_erase, countCalls, dist_type, group_folder_ids);
+                files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype);
 
         control.main();
     }
 
     // Constructor.
     function GoogledocsControl(parentfile_id, create, instance_id,
-            files_to_erase, countCalls, dist_type, group_folder_ids) {
+            files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype) {
 
         var self = this;
         self.parentfile_id = parentfile_id;
@@ -58,6 +59,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         self.countCalls = countCalls;
         self.dist_type = dist_type;
         self.group_folder_ids = group_folder_ids;
+        self.isfoldertype = isfoldertype;
 
     }
 
@@ -179,6 +181,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             $('table.overviewTable').removeAttr('data-googledocs-id');
             console.log('TOTAL CALLS TO DO', totalCalls);
             console.log('self.countCalls', self.countCalls);
+            
             if (from_existing == 1 && self.countCalls == totalCalls
                     && file_to_update != undefined) {
                 self.files_to_erase.push(file_to_update);
@@ -194,7 +197,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             }
 
             if (self.countCalls == totalCalls && file_to_update != undefined
-                    && from_existing == 0 && self.dist_type != 'grouping_copy') {
+                    && from_existing == 0 ) { //&& self.dist_type != 'grouping_copy'
                 self.files_to_erase.push(file_to_update);
                 DeleteControl.init(JSON.stringify(self.files_to_erase), self.dist_type);
                 self.countCalls = 0;
@@ -209,15 +212,16 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         tag.removeClass('spinner-border color');
         tag.html('Created');
         tag.addClass('status-access');
-    }
+    };
+    
     // Triggers when user tries to leave the page and documents are being created.
     GoogledocsControl.prototype.beforeunloadHandler = function (event, created) {
         event.preventDefault();
         event.returnValue = '';
-    }
+    };
     GoogledocsControl.prototype.popstateHandler = function (event) {
         Log.debug('popstateHandler');
-    }
+    };
 
     GoogledocsControl.prototype.initTags = function () {
         var self = this;
@@ -340,7 +344,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             var student_email = $(this).attr('data-student-email');
             var student_name = $(this).attr('student-name');
             var student_group_id = $(this).attr('student-group-id');
-            if (student_group_id == group_id) {
+            if (student_group_id == group_id ) {
                 self.create_student_file(e, student_id, student_email, student_name, parentfile_id,
                         student_group_id, grouping_id);
 
@@ -508,19 +512,21 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
                     parentfile_id: parentfile_id,
                 },
                 done: function (response) {
-                    Log.debug("mod_googledocs_create_group_file " + response);
+                    Log.debug("mod_googledocs_create_group_file " + JSON.stringify(response));
                     if (self.dist_type == 'dist_share_same_group'
                             || self.dist_type == 'dist_share_same_grouping_copy'
                             || self.dist_type == 'dist_share_same_group_grouping_copy') {
-                        self.append_links_to_icons(response.url); //  Traverse the list of students and add the link accoding to the group they belong to.
+                        self.append_links_to_icons(response.url); //  Traverse the list of students and add the link according to the group they belong to.
                     } else {
                         // Add file's link
                         $(a_element).attr("href", response.url);
                         //Returns the ID of the file created for the group.
-                        Log.debug('Group ID' + group_id)
+                        Log.debug('Group ID ' + group_id);
                         self.callStudentFileServiceForGroup(response.googledocid, group_id);
                     }
-                    self.files_to_erase.push(parentfile_id);
+                    if (response.isfoldertype != true) {
+                        self.files_to_erase.push(parentfile_id);
+                    }
 
                 },
                 fail: function (reason) {
@@ -549,20 +555,13 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
                     parentfileid: self.parentfile_id,
                 },
                 done: function (response) {
-
-                    // if (self.dist_type == 'grouping_copy') {
                     Log.debug(response);
                     $('tbody tr').each(function () {
+                        self.countCalls++;
                         var id = $(this).attr('data-grouping-id');  // Get the grouping id
                         self.get_grouping_url(id, JSON.parse(response.groupingsurl));
                     });
-//                } else {
-//                    // Add file's link
-//                    $('tbody tr').each(function(e){
-//                        var id = $(this).attr('student-grouping-id');  // Get the grouping id(s) the student belongs to
-//                        self.get_grouping_url_for_student(id, JSON.parse(response.groupingsurl), e); 
-//                    });
-                    //            }
+
                 },
                 fail: function (reason) {
                     Log.error(reason);

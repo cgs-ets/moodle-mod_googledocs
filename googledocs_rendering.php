@@ -61,7 +61,15 @@ class googledocs_rendering {
      * @var boolean
      */
     protected $created;
+    /**
+     *
+     * @var course module info
+     */
     protected $cm;
+    /**
+     *
+     * @var boolean
+     */
     protected $canbegraded;
 
     public function __construct($courseid, $selectall, $context, $cm, $googledocs, $created = true) {
@@ -344,7 +352,7 @@ class googledocs_rendering {
             }
 
             $extra = "onclick=\"this.target='_blank';\"";
-            $icon = $types[get_doc_type_from_string($r->url)]['icon'];
+            $icon = $types[get_file_type_from_string($r->url)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             $data ['files'][] = ['extra' => $extra,
                 'icon' => $icon,
@@ -394,7 +402,8 @@ class googledocs_rendering {
             'owneremail' => $owneremail->email,
             'all_groups' => $groupids,
             'canbegraded' => $this->canbegraded,
-            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false),
+            'nointro' => empty($this->googledocs->intro) ? true : false
         ];
         $i = 0;
 
@@ -402,7 +411,7 @@ class googledocs_rendering {
             foreach ($st as $student) {
                 $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
                     'includefullname' => true, 'class' => 'userpicture'));
-                $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+                $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
                 $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
                 $links = html_writer::link('#', $image, array('target' => '_blank',
@@ -422,7 +431,7 @@ class googledocs_rendering {
                     'status' => html_writer::start_div('', ["id" => 'file_' . $i]) . html_writer::end_div(),
                     'access' => ucfirst($this->googledocs->permissions),
                     'creating' => $this->created,
-                    'gradeurl' => $gradeurl
+                    'gradeurl' => $gradeurl,
                 ];
 
                 $i++;
@@ -476,7 +485,7 @@ class googledocs_rendering {
 
             $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
                 'includefullname' => true, 'class' => 'userpicture'));
-            $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+            $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
@@ -546,7 +555,8 @@ class googledocs_rendering {
             'owneremail' => $owneremail->email,
             'all_groups' => $group_ids,
             'canbegraded' => $this->canbegraded,
-            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false),
+            'nointro' => empty($this->googledocs->intro) ? true : false
         ];
 
         $i = 0;
@@ -555,7 +565,7 @@ class googledocs_rendering {
 
             $picture = $OUTPUT->user_picture($student, array('course' => $this->courseid,
                 'includefullname' => true, 'class' => 'userpicture'));
-            $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+            $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
             $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
             $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
             $links = '';
@@ -578,8 +588,8 @@ class googledocs_rendering {
                     'googledocid' => $this->googledocs->id), '');
 
                 foreach ($urls as $url) {
-                    $links .= html_writer::link($url->url, $image, array('target' => '_blank',
-                            'id' => 'link_file_' . $i));
+                    $links .= html_writer::link($url->url, $image,
+                        array('target' => '_blank','id' => 'link_file_' . $i));
                 }
             }
 
@@ -634,13 +644,14 @@ class googledocs_rendering {
         global $OUTPUT, $CFG, $DB;
         $groupsandmembers = $this->get_groups_and_members();
 
-        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+        $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
         $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
         // Get teacher email. Is the owner of the copies that are going to be created for each group.
         $owneremail = $DB->get_record('user', array('id' => $this->googledocs->userid), 'email');
         $groupids = '';
+        $isfoldertype = ($this->googledocs->document_type == GDRIVEFILETYPE_FOLDER) ? true : false;
         if ($this->googledocs->distribution == 'dist_share_same_group') {
             $groups = get_groups_details_from_json(json_decode($this->googledocs->group_grouping_json));
             foreach ($groups as $group) {
@@ -655,7 +666,8 @@ class googledocs_rendering {
             'from_existing' => ($this->googledocs->use_document == 'existing') ? true : false,
             'owneremail' => $owneremail->email,
             'all_groups' => $groupids, // A list of the groups ids. This is use in the Ajax call.
-            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false)
+            'intro' => format_module_intro('googledocs', $this->googledocs, $this->cm->id, false),
+            'isfoldertype' => $isfoldertype,
         ];
 
         $data['googledocid'] = $this->googledocs->docid;
@@ -753,7 +765,7 @@ class googledocs_rendering {
         $groupsandmembers = $this->get_groups_and_members();
         $j = json_decode($this->googledocs->group_grouping_json);
 
-        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+        $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
         $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
@@ -802,7 +814,7 @@ class googledocs_rendering {
     private function grouping_details_helper_function($types, $gropingproperties) {
         global $CFG, $DB, $OUTPUT;
 
-        $icon = $types[get_doc_type_from_string($this->googledocs->document_type)]['icon'];
+        $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
         $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
         $iconimage = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
 
@@ -858,6 +870,7 @@ class googledocs_rendering {
             if ($this->created) {
                 list($rawdata, $params) = $this->queries_get_students_list_created($picturefields);
                 $studentrecords = $DB->get_records_sql($rawdata, $params);
+                
             } else {
 
                 $studentrecords = $this->queries_get_students_list_processing();
@@ -1125,11 +1138,11 @@ class googledocs_rendering {
      */
     private function query_get_students_list_created($picturefields) {
 
-        $rawdata = "SELECT  DISTINCT gf.id, $picturefields,  u.firstname, u.lastname, gf.name, gf.url as url, gf.groupid,
-                    gf.permission
+        $rawdata = "SELECT  DISTINCT gf.id, $picturefields, u.firstname, u.lastname, gf.name, gf.url as url, gf.groupid,
+                    gf.permission, u.id
                     FROM mdl_user as u
                     JOIN mdl_googledocs_files  as gf on u.id  = gf.userid
-                    WHERE gf.googledocid = ?  ORDER BY u.lastname"; // TODO: VALIDATE IN SQL SERVER.
+                    WHERE gf.googledocid = ?  ORDER BY u.lastname "; // TODO: VALIDATE IN SQL SERVER.
 
         $params = array($this->instanceid);
         return array($rawdata, $params);
@@ -1182,7 +1195,7 @@ class googledocs_rendering {
         return $students;
     }
 
-    /*     * Returns the students in a group.
+    /* Returns the students in a group.
      *
      * @param type $coursestudents
      * @param type $conditionjson
@@ -1350,6 +1363,7 @@ class googledocs_rendering {
         $sql = " SELECT url FROM mdl_googledocs_files
                  WHERE userid = {$userid} and googledocid = {$this->googledocs->id};";
         $url = $DB->get_record_sql($sql);
+        $isfolder =  $this->googledocs->document_type == GDRIVEFILETYPE_FOLDER;
 
         list($gradegiven, $commentgiven) = get_grade_comments($this->googledocs->id, $userid);
 
@@ -1382,7 +1396,7 @@ class googledocs_rendering {
             'googledocid' => $this->googledocs->id,
             'usersummary' => $OUTPUT->user_picture($user, array('course' => $this->courseid, 'includefullname' => true, 'class' => 'userpicture')),
             'useremail' => $user->email,
-            'fileurl' => $url->url,
+            'fileurl' =>  $isfolder ? $this->get_formated_folder_url($url->url) : $url->url,
             'maxgrade' => $this->googledocs->grade,
             'gradegiven' => $gradegiven,
             'graded' => ($gradegiven == '') ? false : true,
@@ -1439,6 +1453,14 @@ class googledocs_rendering {
         }
 
         return $users;
+    }
+
+    private function get_formated_folder_url($url) {
+        $urltemplate = url_templates();
+        $fileid = get_file_id_from_url($url);
+        $folderurl = sprintf($urltemplate[GDRIVEFILETYPE_FOLDER]['linkdisplay'], $fileid);
+
+        return $folderurl;
     }
 
 }

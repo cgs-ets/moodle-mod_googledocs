@@ -92,10 +92,11 @@ trait create_group_file {
         );
 
         if ($grouping_id > 0) {
-            $filedata = "SELECT gf.name as groupingfilename, gf.url, gf.groupid, gf.groupingid, gd.*  FROM mdl_googledocs AS gd
-                        INNER JOIN mdl_googledocs_files AS gf
-                        ON gd.id = gf.googledocid
-                        WHERE gd.id = :instance_id AND gf.groupingid = :grouping_id";
+            $filedata = "SELECT gf.name as groupingfilename, gf.url, gf.groupid, gf.groupingid, gd.*
+                         FROM mdl_googledocs AS gd
+                         INNER JOIN mdl_googledocs_files AS gf
+                         ON gd.id = gf.googledocid
+                         WHERE gd.id = :instance_id AND gf.groupingid = :grouping_id";
             $data = $DB->get_record_sql($filedata, ['instance_id' => $instance_id,
                                                     'grouping_id' => $grouping_id]);
         } else {
@@ -123,37 +124,30 @@ trait create_group_file {
 
                 $result = new \stdClass();
                 $result->gid = $id;
-
-                $sql = "SELECT folder_id FROM mdl_googledocs_folders
-                         WHERE group_id  = :id AND googledocid = :instanceid";
-
-                $folder = $DB->get_record_sql($sql, ['id' => $id, 'instanceid' => $data->id]);
-
                 $result->url = $gdrive->make_file_copy($data, $data->parentfolderid, $group,
                                         $role, $commenter, $fromexisting, $id, $teachers);
                 $urls [] = $result;
-
             }
 
             $url = json_encode($urls, JSON_UNESCAPED_UNICODE);
 
         } else {
-
             $group->id = $group_id;
             $group->name = $group_name;
             $group->email = $owner_email;
             $group->type = 'user';
             $group->isgroup = true;
             $fromexisting = $data->use_document == 'new' ? false : true;
-            $url = $gdrive->make_file_copy($data, $data->parentfolderid,
-                $group, $role, $commenter, $fromexisting, $group_id, $teachers);
+            $url = $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $group_id, $teachers);
             $googledocid = get_file_id_from_url($url);
-
         }
+        
+        $isfolder = $data->document_type == GDRIVEFILETYPE_FOLDER;
 
         return array(
             'googledocid' => $googledocid,
-            'url' => $url
+            'url' => $url,
+            'isfoldertype' => $isfolder
         );
     }
 
@@ -168,6 +162,7 @@ trait create_group_file {
                 array(
                     'googledocid' => new external_value(PARAM_RAW, 'file id'),
                     'url' => new external_value(PARAM_RAW, 'File URL '),
+                    'isfoldertype' => new external_value(PARAM_RAW, 'Is the file created of type folder ')
                 )
             );
     }

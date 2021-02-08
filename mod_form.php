@@ -228,8 +228,11 @@ class mod_googledocs_mod_form extends moodleform_mod {
             if ($data['use_document'] != 'new') {
                 if (empty($data['google_doc_url'])) {
                     $errors['google_doc_url'] = get_string('urlempty', 'googledocs');
-                } else if (!googledocs_appears_valid_url($data['google_doc_url']) || get_file_id_from_url($data['google_doc_url']) == null) {
+                } else if (!googledocs_appears_valid_url($data['google_doc_url'])
+                    || get_file_id_from_url($data['google_doc_url']) == null) {
                     $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
+                } else if(get_file_type_from_string($data['google_doc_url']) == 'folder'){
+                    $errors['google_doc_url'] = get_string('foldernotpermitted', 'googledocs');
                 }
             } else {
                 if (empty($data['name_doc'])) {

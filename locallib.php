@@ -34,6 +34,8 @@ define('GDRIVEFILEPERMISSION_COMMENTER', 'comment'); // Student can Read and Com
 define('GDRIVEFILEPERMISSION_EDITOR', 'edit'); // Students can Read and Write.
 define('GDRIVEFILEPERMISSION_READER', 'view'); // Students can read.
 define('GDRIVEFILETYPE_DOCUMENT', 'application/vnd.google-apps.document');
+define('GDRIVEFILETYPE_PRESENTATION', 'application/vnd.google-apps.presentation');
+define('GDRIVEFILETYPE_SPREADSHEET', 'application/vnd.google-apps.spreadsheet');
 define('GDRIVEFILETYPE_FOLDER', 'application/vnd.google-apps.folder');
 
 // Grading states.
@@ -63,26 +65,31 @@ function google_filetypes() {
             'mimetype' => 'application/vnd.google-apps.presentation',
             'icon' => 'presentation.svg',
         ),
-        /*
-          'folder' => array(
+        'folder' => array(
           'name' => get_string('google_folder', 'mod_googledocs'),
           'mimetype' =>'application/vnd.google-apps.folder',
           'icon' =>'folder.svg',
-          ) */
+          ),
     );
 
     return $types;
 }
 
-function get_doc_type_from_string($str) {
+function get_file_type_from_string($str) {
 
     if (strpos($str, 'document')) {
         return 'document';
-    } else if (strpos($str, 'spreadsheets') || strpos($str, 'spreadsheet')) {
+    }
+    if (strpos($str, 'spreadsheets') || strpos($str, 'spreadsheet')) {
         return 'spreadsheets';
-    } else {
+    }
+    if (strpos($str, 'presentation')) {
         return 'presentation';
     }
+    if (strpos($str, 'folder')) {
+        return 'folder';
+    }
+
 }
 
 /**
@@ -92,23 +99,22 @@ function get_doc_type_from_string($str) {
 function url_templates() {
     $sharedlink = array();
 
-    $sharedlink['application/vnd.google-apps.document'] = array('linktemplate' => 'https://docs.google.com/document/d/%s/edit?usp=sharing',
+    $sharedlink[GDRIVEFILETYPE_DOCUMENT] = array('linktemplate' => 'https://docs.google.com/document/d/%s/edit?usp=sharing',
         'linkbegin' => 'https://docs.google.com/document/d/',
         'linkend' => '/edit?usp=sharing'
     );
-
-    $sharedlink['application/vnd.google-apps.presentation'] = array('linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing',
+    $sharedlink[GDRIVEFILETYPE_PRESENTATION] = array('linktemplate' => 'https://docs.google.com/presentation/d/%s/edit?usp=sharing',
         'linkbegin' => 'https://docs.google.com/presentation/d/',
         'linkend' => '/edit?usp=sharing'
     );
-    $sharedlink['application/vnd.google-apps.spreadsheet'] = array(
+    $sharedlink[GDRIVEFILETYPE_SPREADSHEET] = array(
         'linktemplate' => 'https://docs.google.com/spreadsheets/d/%s/edit?usp=sharing',
         'linlbegin' => 'https://docs.google.com/spreadsheets/d/',
         'linkend' => '/edit?usp=sharing'
     );
-
-    $sharedlink['application/vnd.google-apps.folder'] = array(
-        'linktemplate' => 'https://drive.google.com/drive/folders/%susp=sharing');
+    $sharedlink[GDRIVEFILETYPE_FOLDER] = array(
+        'linktemplate' => 'https://drive.google.com/drive/folders/%s/?usp=sharing',
+        'linkdisplay' => 'https://drive.google.com/embeddedfolderview?id=%s#grid');
 
     return $sharedlink;
 }
@@ -138,8 +144,8 @@ function googledocs_appears_valid_url($url) {
  */
 function get_file_id_from_url($url) {
 
-    if (preg_match('#\/d\/([a-zA-Z0-9-_]+)#', $url, $match) == 1) {
-        $fileid = $match[1];
+    if (preg_match('#\/(d|folders)\/([a-zA-Z0-9-_]+)#', $url, $match) == 1) {
+        $fileid = $match[2];
     }
     return $fileid;
 }
@@ -148,44 +154,81 @@ function oauth_ready() {
 
 }
 
+// Helper function to call the appropiate function depending on the distribution s
+function make_file_copy_helper($data, $student, $role, $commenter, $fromexisting, $teachers, $gdrive) {
+    global $DB;
+    switch ($data->distribution) {
+        case 'std_copy':
+            $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
+                $commenter, $fromexisting, 0, $teachers);
+            $data->sharing = 1;
+            $DB->update_record('googledocs', $data);
+            break;
+        case 'dist_share_same':
+            $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true, false);
+            break;
+        case 'group_copy' :
+            $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting, $teachers);
+            break;
+        case 'std_copy_group' :
+            $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive, $teachers);
+            break;
+        case 'std_copy_grouping':
+            $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive, $teachers);
+            break;
+        case 'std_copy_group_grouping':
+            $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive, $teachers);
+            break;
+        case 'group_grouping_copy':
+            $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting, $teachers);
+            break;
+
+        default:
+            break;
+    }
+
+    return $url;
+}
+
 // ----------------------------------- Group-Grouping helper functions---------------------- //
 
 /**
  *
- * @param type $coursestudents
+ * @param type $courseusers
  * @param type $conditionsjson
  * @return array of students with the format needed to create docs.
  */
-function get_students_by_group($coursestudents, $conditionsjson, $courseid) {
+function get_users_in_group($courseusers, $conditionsjson, $courseid) {
 
     $groupmembers = get_group_members_ids($conditionsjson, $courseid);
-    $students = null;
+    $users = null;
 
-    foreach ($coursestudents as $student) {
+    foreach ($courseusers as $user) {
 
-        if (in_array($student->id, $groupmembers)) {
-            $students[] = $student;
+        if (in_array($user->id, $groupmembers)) {
+            $users[] = $user;
         }
     }
 
-    return $students;
+    return $users;
 }
 
 /**
- * Get students that belongs to the groupings selected in the form.
- * @param type $coursestudents
+ * Get users that belongs to the groupings selected in the form.
+ * users can be teachers or students
+ * @param type $courseusers
  * @param type $conditionsjson
  * @return string
  */
-function get_students_in_grouping($coursestudents, $conditionsjson) {
+function get_users_in_grouping($courseusers, $conditionsjson) {
 
     $groupingmembers = get_grouping_members_ids($conditionsjson);
-    foreach ($coursestudents as $student) {
-        if (in_array($student->id, $groupingmembers)) {
-            $students[] = $student;
+    foreach ($courseusers as $user) {
+        if (in_array($user->id, $groupingmembers)) {
+            $users[] = $user;
         }
     }
-    return $students;
+    return $users;
 }
 
 /**
@@ -897,7 +940,7 @@ class googledrive {
             $urlTemplate = url_templates();
 
             // Set the parent folder.
-            $parentdirid = $this->create_folder($file->title);
+            list($parentdirid, $createddate) = $this->create_folder($file->title);
             $parent = new Google_Service_Drive_ParentReference();
             $parent->setId($parentdirid);
 
@@ -918,16 +961,14 @@ class googledrive {
                 $sharedlink = sprintf($urlTemplate[$document_type]['linktemplate'], $file->id);
                 $sharedfile = array($file, $sharedlink, $links, $parentdirid);
             } else {
-                $links = $this->make_copy($file, $parent, $students, $studentpermissions, $commenter, $dist);
-                $sharedfile = array($links[0], $links[1], $links[2], $parentdirid, $url);
+                list($filecopy,$alternateLink, $studentlinks) = $this->make_copy($file, $parent, $students, $studentpermissions, $commenter, $dist);
+                $sharedfile = array($filecopy, $alternateLink, $studentlinks, $parentdirid, $url);
             }
 
             return $sharedfile;
         } catch (Exception $ex) {
-            print "An error occurred: " . $ex->getMessage();
+            throw $ex->getMessage();
         }
-
-        return null;
     }
 
     /**
@@ -981,9 +1022,9 @@ class googledrive {
             'parents' => array($courseparent),
             'uploadType' => 'multipart'));
 
-        $customdir = $this->service->files->insert($filemetadata, array('fields' => 'id'));
+        $customdir = $this->service->files->insert($filemetadata, array('fields' => 'id, createdDate'));
 
-        return $customdir->id;
+        return array($customdir->id, $customdir->createdDate);
     }
 
     /**
@@ -1004,6 +1045,97 @@ class googledrive {
         $customdir = $this->service->files->insert($fileMetadata, array('fields' => 'id'));
 
         return $customdir->id;
+    }
+
+    /**
+     * Helper function to create folder for students
+     * as folders can't be copied (API restriction)
+     * Generate a new folder for each student from 'scratch'
+     * @param type $data
+     */
+    public function create_folder_for_student($data, $student, $role, $commenter, $teachers = null) {
+        global $DB;
+
+        $parentRef = new Google_Service_Drive_ParentReference();
+        $parentRef->setId($data->parentfolderid);
+        $foldername = "$data->name _ $student->name";
+
+        $permission = new Google_Service_Drive_Permission();
+        $permission->setValue($student->email);
+        $permission->setRole($role);
+        $permission->setType($student->type);
+
+        if ($commenter) {
+            $permission->setAdditionalRoles(array('commenter'));
+        }
+
+        // Create the folder with the given name.
+        $fileMetadata = new \Google_Service_Drive_DriveFile(array(
+            'title' => $foldername,
+            'mimeType' => GDRIVEFILETYPE_FOLDER,
+            'parents' => array($parentRef),
+            'uploadType' => 'multipart',
+        ));
+
+        $customdir = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title, alternateLink'));
+        $this->insert_permission($this->service, $customdir->id, $student->email, $student->type, $role);
+
+        foreach ($teachers as $teacher) {
+            $this->insert_permission($this->service, $customdir->id, $teacher->email, 'user', 'writer', false, true);
+        }
+
+        // Save in DB.
+        $record = new \stdClass();
+        $record->userid = $student->id;
+        $record->googledocid = $data->id;
+        $record->name = $foldername;
+        $record->url = $customdir->alternateLink;
+        $record->permission = $data->permissions;
+
+        $DB->insert_record('googledocs_files', $record);
+
+        return $customdir->alternateLink;
+    }
+
+    /**
+     * Helper function to create files of type folder for groups/groupings.
+     * @param Google_Service_Drive_ParentReference $parentfolderidref is the nested folder id when distribution is for students
+     * who belong to X group. The folder structure is:
+     *  COURSEFOLDER
+     *      |
+     *      |__NameOfTheMainFolder
+     *              |
+     *              |__NameOfTheGroup/grouping
+     *                        |
+     *                        |__FolderStudentName
+     */
+    public function create_folder_for_group_grouping($data, $gdata, $parentfolderidref = null) {
+        global $DB;
+
+        $parentRef = new Google_Service_Drive_ParentReference();
+        $foldername = "$data->name _ $gdata->name";
+
+
+        if ($parentfolderidref != null
+            && ($data->distribution == 'std_copy_grouping'
+                || $data->distribution == 'std_copy_group_grouping')
+                || $data->distribution == 'std_copy_group') {
+            $parentRef->setId($parentfolderidref);
+        } else {
+            $parentRef->setId($data->parentfolderid);
+        }
+        $parentreferences = array($parentRef);
+
+        // Create the folder with the given name.
+        $fileMetadata = new \Google_Service_Drive_DriveFile(array(
+            'title' => $foldername,
+            'mimeType' => GDRIVEFILETYPE_FOLDER,
+            'parents' => $parentreferences,
+            'uploadType' => 'multipart'));
+
+        $customdir = $this->service->files->insert($fileMetadata, array('fields' => 'id, createdDate, shared, title, alternateLink'));
+
+        return $customdir;
     }
 
     /**
@@ -1052,19 +1184,20 @@ class googledrive {
             }
             $url = url_templates();
             $sharedlink = sprintf($url[$gfiletype]['linktemplate'], $file->id);
-            $sharedfile = array($file, $sharedlink, array());
+            //$sharedfile = array($file, $sharedlink, array());
 
-            return $sharedfile;
+            return array($file, $sharedlink, array());
         } catch (Exception $ex) {
-            print "An error occurred: " . $ex->getMessage();
+          throw  new exception ('There was an error when creating the file');
         }
-        return null;
+
     }
 
     /*
      * Create a copy of the master file when distribution is one for all.
      * Make a copy in the the course folder with the name of the file
      * provide access (permission) to the students.
+     * alternateLink = A link for opening the file in a relevant Google editor or viewer
      */
 
     private function make_copy($file, $parent, $students, $studentpermissions, $commenter = false, $dist = '') {
@@ -1075,7 +1208,7 @@ class googledrive {
         $copiedfile->setParents(array($parent));
         $copy = $this->service->files->copy($file->id, $copiedfile);
 
-        $links = array();
+        $studentlinks = array();
 
         if ($dist != "dist_share_same_group_copy"
             && $dist != 'dist_share_same_group'
@@ -1086,13 +1219,12 @@ class googledrive {
             foreach ($students as $student) {
                 $this->insert_permission($this->service, $copy->id,
                     $student['emailAddress'], 'user', $studentpermissions, $commenter);
-                $links[$student['id']] = array($copy->alternateLink, 'filename' => $file->title);
+                $studentlinks[$student['id']] = array($copy->alternateLink, 'filename' => $file->title);
             }
         }
 
-        $copy_details = array($copy, $copy->alternateLink, $links);
+        return array($copy, $copy->alternateLink, $studentlinks);
 
-        return $copy_details;
     }
 
     /**
@@ -1129,7 +1261,7 @@ class googledrive {
     }
 
     /**
-     * Called by the WS
+     * Called by the WS.
      */
     public function share_single_copy($user, $data, $role, $commenter, $makerecord = false, $teacher = false) {
         global $DB;
@@ -1154,7 +1286,6 @@ class googledrive {
     /* Create a copy for the student called by the ws entity  can be student, group, groping.
        Gid can be either group id or grouping.
      */
-
     public function make_file_copy($data, $parentdirid, $entity, $permission, $commenter = false,
         $fromexisting = false, $gid = 0, $teachers = null) {
         global $DB;
@@ -1178,12 +1309,18 @@ class googledrive {
             $copiedfile->setParents(array($parent));
         }
 
-        $copyid = $this->service->files->copy($data->docid, $copiedfile);
-        $link = sprintf($url[$copyid->mimeType]['linktemplate'], $copyid->id);
-        $this->insert_permission($this->service, $copyid->id, $entity->email, $entity->type, $permission, $commenter);
+        if ($data->document_type != GDRIVEFILETYPE_FOLDER) {
+            $file = $this->service->files->copy($data->docid, $copiedfile);
+            $link = sprintf($url[$file->mimeType]['linktemplate'], $file->id);
+        } else {
+            $file = $this->create_folder_for_group_grouping($data, $entity, $parentdirid);
+            $link = $file->alternateLink;
+        }
+
+        $this->insert_permission($this->service, $file->id, $entity->email, $entity->type, $permission, $commenter);
 
         foreach ($teachers as $teacher) {
-            $this->insert_permission($this->service, $copyid->id, $teacher->email, $entity->type, 'writer', false, true);
+            $this->insert_permission($this->service, $file->id, $teacher->email, $entity->type, 'writer', false, true);
         }
 
         $entityfiledata = new stdClass();
@@ -1199,7 +1336,7 @@ class googledrive {
             case 'grouping_copy':
                 $entityfiledata->groupingid = $entity->id;
                 $this->permission_for_members_in_grouping($entity->id,
-                    $copyid->id, $permission, $commenter);
+                    $file->id, $permission, $commenter);
                 break;
             case 'std_copy_group' :
                 $entityfiledata->userid = $entity->id;
@@ -1210,11 +1347,11 @@ class googledrive {
                 break;
             case 'dist_share_same_group' :
                 $entityfiledata->groupid = $gid;
-                $this->permission_for_members_in_groups($gid, $copyid->id, $permission, $commenter);
+                $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter);
                 break;
             case 'dist_share_same_grouping':
                 $entityfiledata->groupingid = $gid;
-                $this->permission_for_members_in_grouping($gid, $copyid->id, $permission, $commenter);
+                $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter);
                 break;
             case 'std_copy_grouping':
                 $entityfiledata->userid = $entity->id;
@@ -1227,19 +1364,19 @@ class googledrive {
             case 'group_grouping_copy':
                 if ($entity->gtype == 'group') {
                     $entityfiledata->groupid = $entity->gid;
-                    $this->permission_for_members_in_groups($entity->gid, $copyid->id, $permission, $commenter);
+                    $this->permission_for_members_in_groups($entity->gid, $file->id, $permission, $commenter);
                 } else {
                     $entityfiledata->groupingid = $entity->gid;
-                    $this->permission_for_members_in_grouping($entity->gid, $copyid->id, $permission, $commenter);
+                    $this->permission_for_members_in_grouping($entity->gid, $file->id, $permission, $commenter);
                 }
                 break;
             case 'dist_share_same_group_grouping' :
                 if ($entity->gtype == 'group') {
                     $entityfiledata->groupid = $gid;
-                    $this->permission_for_members_in_groups($gid, $copyid->id, $permission, $commenter);
+                    $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter);
                 } else {
                     $entityfiledata->groupingid = $gid;
-                    $this->permission_for_members_in_grouping($gid, $copyid->id, $permission, $commenter);
+                    $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter);
                 }
                 break;
 
@@ -1261,7 +1398,7 @@ class googledrive {
     }
 
     //Distribution = std_copy_grouping_copy or std_copy_group. Called by WS
-    public function std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive) {
+    public function std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive, $teachers = null) {
 
         $grouping = false;
         $group_ids = [];
@@ -1285,19 +1422,23 @@ class googledrive {
                 continue;
             }
             $url [] = $gdrive->make_file_copy($data, $folder->folder_id, $student, $role,
-                $commenter, $fromexisting, $folder->group_id);
+                $commenter, $fromexisting, $folder->group_id, $teachers);
         }
         return $url;
     }
 
     // Each group gets a copy. function called by the WS.
-    public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false) {
+    public function make_file_copy_for_group($data, $student, $role, $commenter = false, $fromexisting = false, $teachers = null) {
 
         $groupmembers = groups_get_members($data->groupid, $fields = 'u.id');
         $groupmembersids = array_column($groupmembers, 'id');
 
         if (in_array($student->id, $groupmembersids)) {
             return $this->share_single_copy($student, $data, $role, $commenter);
+        }
+
+        foreach ($teachers as $teacher) {
+            $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
         }
     }
 
@@ -1324,24 +1465,17 @@ class googledrive {
     }
 
     /**
-     * Create the folder structure in Google dive
-     * Example: homework is the file name for groups 1 and 2
+     * Create the folder structure in Google drive
+     * Example: homework is the file name for groups 1 and 2 in course Math year 7
      * In Drive: (Capital names represent folders)
      *
-     *  ------------
-     *  | SITE NAME |
-     *  -------------
-     *      |_ ----------
-      | HOMEWORK |
-      -----------
-     *              |
-     *              |_  ---------
-      |   | GROUP 1 |
-      |    ----------
-     *              |
-     *              |_  ----------
-      | GROUP 2 |
-      -----------
+     *      CGS CONNECT
+     *          |
+     *      MATH YEAR 7
+     *          |
+     *       HOMEWORK
+     *          |_ GROUP 1
+     *          |_ GROUP 2
      *
      * returns an array with the  google drive ids of the folders
      *
@@ -1558,7 +1692,7 @@ class googledrive {
 
         $context = \context_course::instance($courseid);
 
-        $coursestudents = get_role_users(5, $context, false, 'u.*', 'u.lastname');
+        $coursestudents = get_role_users(5, $context, false, 'u.*', 'u.lastname', 'u.id ASC');
         foreach ($coursestudents as $student) {
             $students[] = array('id' => $student->id, 'emailAddress' => $student->email,
                 'displayName' => $student->firstname . ' ' . $student->lastname);
@@ -1578,16 +1712,17 @@ class googledrive {
 
         $context = \context_course::instance($courseid);
         $teachers = [];
-        $courseteachers = get_role_users([3, 4], $context, false, 'ra.id, u.email, u.lastname, u.firstname, u.id ',
-            null, true, '', '', '');
+        $roles = ['3','4'];
+        $courseteachers = get_role_users('', $context, false, 'ra.id ,  u.email, u.lastname, u.firstname',
+            'ra.id ASC');
 
         foreach ($courseteachers as $teacher) {
 
-            if ($teacher->id != $USER->id) {
-
+            if ($teacher->id != $USER->id && in_array($teacher->roleid, $roles)) {
                 $teachers [] = $teacher;
             }
         }
+
         return $teachers;
     }
 
@@ -1665,21 +1800,25 @@ class googledrive {
      * @param type $owncopy
      * @return type
      */
-    public function save_instance($googledocs, $sharedlink, $folderid, $owncopy = false, $dist, $intro = '', $fromexisting = false, $existingurl = '') {
+    public function save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy = false, $dist, $intro = '', $fromexisting = false, $existingurl = '') {
 
         global $USER, $DB;
         if ($fromexisting) {
             $googledocs->google_doc_url = $existingurl;
         } else if(!$owncopy || $googledocs->distribution == 'group_copy'){
-            $googledocs->google_doc_url = $sharedlink[1];
+            //$googledocs->google_doc_url = $sharedlink[1];
+            $googledocs->google_doc_url = $sharedlink;
         }
 
-        $googledocs->docid = ($sharedlink[0])->id;
+        //$googledocs->docid = ($sharedlink[0])->id;
+        $googledocs->docid = $file->id;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
-        $googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
+        //$googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
+        $googledocs->timeshared = (strtotime($file->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
-        $googledocs->name = ($sharedlink[0])->title;
+        //$googledocs->name = ($sharedlink[0])->title;
+        $googledocs->name = $file->title;
         $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
@@ -1992,8 +2131,8 @@ class googledrive {
                 $saved = $this->update_permission_request($fileId, $l);
             }
         } catch (Exception $ex) {
-            error_log($ex->getMessage());
             $saved = false;
+            error_log($ex->getMessage());
         }
         return $saved;
     }

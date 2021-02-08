@@ -84,6 +84,7 @@ $string['urlempty'] = 'If sharing an existing doc, you must enter a documents UR
 $string['dirurlempty'] = 'If sharing an existing folder, you must enter a folders URL';
 $string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
 $string['dirurlinvalid'] = 'The folder URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
+$string['foldernotpermitted'] = "Use existing <strong>folders</strong> is not supported";
 $string['groupsinvalidselection'] = 'Please select group value(s)';
 $string['groupingsinvalid'] = 'You have chosen All Groupings and a particular grouping. Either select All Groupings or the grouping you want to share a file with.';
 $string['groupingsinvalidselection'] = 'Please Select Grouping value(s)';
