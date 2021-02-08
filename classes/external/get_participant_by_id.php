@@ -80,7 +80,7 @@ trait get_participant_by_id {
         }
 
         // Get the File and grading details.
-        $sql = "SELECT u.id as userid, u.firstname, u.lastname, g.grade as maxgrade, gf.* FROM mdl_googledocs_files as gf
+        $sql = "SELECT u.id as userid, u.firstname, u.lastname, g.grade as maxgrade, g.document_type,  gf.* FROM mdl_googledocs_files as gf
                 INNER JOIN mdl_user as u ON gf.userid = u.id
                 JOIN mdl_googledocs as g on g.id = {$googledocid}
                 WHERE googledocid = {$googledocid} and gf.userid = {$userid};";
@@ -101,6 +101,7 @@ trait get_participant_by_id {
         $lockedoroverriden = false;
         $gradefromgradebook = 0;
         $gradebookurl = '';
+        $isfolder =  $this->googledocs->document_type == GDRIVEFILETYPE_FOLDER;
 
         if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
@@ -109,8 +110,10 @@ trait get_participant_by_id {
         }
 
         foreach ($results as $record) {
+
+            $isfolder =  $record->document_type == GDRIVEFILETYPE_FOLDER;
             $data->userid = $userid;
-            $data->fileurl = $record->url;
+            $data->fileurl =  $isfolder ? $this->get_formated_folder_url($record->url) : $record->url;
             $data->maxgrade = $record->maxgrade;
             $data->graded = $graded;
             $data->finalgrade = number_format($gradefromgradebook, 2);

@@ -483,7 +483,8 @@ function googledocs_grade_item_update($googledoc, $grades = null) {
     if (!function_exists('grade_update')) { // Workaround for buggy PHP versions.
         require_once($CFG->libdir . '/gradelib.php');
     }
-    if (array_key_exists('cmidnumber', $googledoc)) { // May not be always present.
+
+    if (property_exists($googledoc, 'cmidnumber')) { // May not be always present.
         $params = array('itemname' => $googledoc->name, 'idnumber' => $googledoc->cmidnumber);
     } else {
         $params = array('itemname' => $googledoc->name);
