@@ -101,7 +101,6 @@ trait get_participant_by_id {
         $lockedoroverriden = false;
         $gradefromgradebook = 0;
         $gradebookurl = '';
-        $isfolder =  $this->googledocs->document_type == GDRIVEFILETYPE_FOLDER;
 
         if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
