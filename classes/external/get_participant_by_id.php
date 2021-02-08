@@ -113,7 +113,7 @@ trait get_participant_by_id {
 
             $isfolder =  $record->document_type == GDRIVEFILETYPE_FOLDER;
             $data->userid = $userid;
-            $data->fileurl =  $isfolder ? $this->get_formated_folder_url($record->url) : $record->url;
+            $data->fileurl =  $isfolder ? get_formated_folder_url($record->url) : $record->url;
             $data->maxgrade = $record->maxgrade;
             $data->graded = $graded;
             $data->finalgrade = number_format($gradefromgradebook, 2);

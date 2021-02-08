@@ -190,6 +190,15 @@ function make_file_copy_helper($data, $student, $role, $commenter, $fromexisting
     return $url;
 }
 
+// ----------------------------------- format folder url---------------------- //
+function get_formated_folder_url($url) {
+    $urltemplate = url_templates();
+    $fileid = get_file_id_from_url($url);
+    $folderurl = sprintf($urltemplate[GDRIVEFILETYPE_FOLDER]['linkdisplay'], $fileid);
+
+    return $folderurl;
+}
+
 // ----------------------------------- Group-Grouping helper functions---------------------- //
 
 /**

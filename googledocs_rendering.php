@@ -870,7 +870,7 @@ class googledocs_rendering {
             if ($this->created) {
                 list($rawdata, $params) = $this->queries_get_students_list_created($picturefields);
                 $studentrecords = $DB->get_records_sql($rawdata, $params);
-                
+
             } else {
 
                 $studentrecords = $this->queries_get_students_list_processing();
@@ -1396,7 +1396,7 @@ class googledocs_rendering {
             'googledocid' => $this->googledocs->id,
             'usersummary' => $OUTPUT->user_picture($user, array('course' => $this->courseid, 'includefullname' => true, 'class' => 'userpicture')),
             'useremail' => $user->email,
-            'fileurl' =>  $isfolder ? $this->get_formated_folder_url($url->url) : $url->url,
+            'fileurl' =>  $isfolder ? get_formated_folder_url($url->url) : $url->url,
             'maxgrade' => $this->googledocs->grade,
             'gradegiven' => $gradegiven,
             'graded' => ($gradegiven == '') ? false : true,
@@ -1454,13 +1454,4 @@ class googledocs_rendering {
 
         return $users;
     }
-
-    private function get_formated_folder_url($url) {
-        $urltemplate = url_templates();
-        $fileid = get_file_id_from_url($url);
-        $folderurl = sprintf($urltemplate[GDRIVEFILETYPE_FOLDER]['linkdisplay'], $fileid);
-
-        return $folderurl;
-    }
-
 }
