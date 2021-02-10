@@ -151,6 +151,8 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
             $googledocs->name = $googledocs->name_doc;
             $googledocs->id = $gdrive->save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy, $dist, $intro);
+            $gdrive->save_work_task_scheduled($file->id, $students, $googledocs->id);
+
         }
 
         googledocs_grade_item_update($googledocs);

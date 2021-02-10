@@ -161,8 +161,6 @@ function make_file_copy_helper($data, $student, $role, $commenter, $fromexisting
         case 'std_copy':
             $url [] = $gdrive->make_file_copy($data, $data->parentfolderid, $student, $role,
                 $commenter, $fromexisting, 0, $teachers);
-            $data->sharing = 1;
-            $DB->update_record('googledocs', $data);
             break;
         case 'dist_share_same':
             $url [] = $gdrive->share_single_copy($student, $data, $role, $commenter, true, false);
@@ -170,7 +168,7 @@ function make_file_copy_helper($data, $student, $role, $commenter, $fromexisting
         case 'group_copy' :
             $url [] = $gdrive->make_file_copy_for_group($data, $student, $role, $commenter, $fromexisting, $teachers);
             break;
-        case 'std_copy_group' :
+        case 'std_copy_group':
             $url = $gdrive->std_copy_group_grouping_copy($data, $student, $role, $commenter, $fromexisting, $gdrive, $teachers);
             break;
         case 'std_copy_grouping':
@@ -186,7 +184,8 @@ function make_file_copy_helper($data, $student, $role, $commenter, $fromexisting
         default:
             break;
     }
-
+    $data->sharing = 1; // It got here means that at least is being shared with one.
+    $DB->update_record('googledocs', $data);
     return $url;
 }
 
@@ -1287,7 +1286,7 @@ class googledrive {
         if ($makerecord) {
             $DB->insert_record('googledocs_files', $d);
         }
-        $this->update_creation_and_sharing_status($data, $user);
+        $this->update_creation_and_sharing_status($data, $d);
 
         return $data->google_doc_url;
     }
@@ -1329,7 +1328,9 @@ class googledrive {
         $this->insert_permission($this->service, $file->id, $entity->email, $entity->type, $permission, $commenter);
 
         foreach ($teachers as $teacher) {
-            $this->insert_permission($this->service, $file->id, $teacher->email, $entity->type, 'writer', false, true);
+            if ($data->userid != $teacher->id) { // Skip teacher who created the file.
+                $this->insert_permission($this->service, $file->id, $teacher->email, $entity->type, 'writer', false, true);
+            }
         }
 
         $entityfiledata = new stdClass();
@@ -1399,7 +1400,8 @@ class googledrive {
         //If the copy is for a student and not a group or grouping. Because at this point
         //the copies are not being shared with the member yet.
         if ((!isset($entity->groupid) || !isset($entityfiledata->groupingid))
-            && $data->distribution != 'group_grouping_copy') {
+            && $data->distribution != 'group_grouping_copy'
+            &&  $data->distribution != 'group_copy') {
             $this->update_creation_and_sharing_status($data, $entityfiledata);
         }
 
@@ -1447,6 +1449,7 @@ class googledrive {
         }
 
         foreach ($teachers as $teacher) {
+
             $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
         }
     }
@@ -1529,7 +1532,7 @@ class googledrive {
         $d = new StdClass();
         $d->creation_status = 1;
 
-        if (!$id) {
+        if ($id) {
             $d->id = $id;
             $DB->update_record('googledocs_work_task', $d);
         } else { // It comes from dist. by group/grouping. It has to be added.
@@ -1819,14 +1822,11 @@ class googledrive {
             $googledocs->google_doc_url = $sharedlink;
         }
 
-        //$googledocs->docid = ($sharedlink[0])->id;
         $googledocs->docid = $file->id;
         $googledocs->parentfolderid = $folderid;
         $googledocs->userid = $USER->id;
-        //$googledocs->timeshared = (strtotime(($sharedlink[0])->createdDate));
         $googledocs->timeshared = (strtotime($file->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
-        //$googledocs->name = ($sharedlink[0])->title;
         $googledocs->name = $file->title;
         $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
@@ -1869,7 +1869,7 @@ class googledrive {
             $data = new \stdClass();
             $data->docid = $fileid;
             $data->googledocid = $googledocid;
-            $data->userid = $s['id'];
+            $data->userid = !is_object($s)? $s['id'] : $s->id;
 
             $DB->insert_record('googledocs_work_task', $data);
         }
