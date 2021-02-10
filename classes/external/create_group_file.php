@@ -52,7 +52,7 @@ trait create_group_file {
     public static function create_group_file_parameters() {
         return new external_function_parameters(
             array(
-                  'group_name' => new external_value(PARAM_RAW, 'Group Name', PARAM_DEFAULT, ''),
+                  'group_name' => new external_value(PARAM_RAW, 'Group Name', '', ''),
                   'group_id' => new external_value(PARAM_RAW, 'Group ID'),
                   'grouping_id' => new external_value(PARAM_RAW, 'Grouping ID'),
                   'instance_id' => new external_value(PARAM_RAW, 'Instance ID'),
@@ -141,7 +141,7 @@ trait create_group_file {
             $url = $gdrive->make_file_copy($data, $data->parentfolderid, $group, $role, $commenter, $fromexisting, $group_id, $teachers);
             $googledocid = get_file_id_from_url($url);
         }
-        
+
         $isfolder = $data->document_type == GDRIVEFILETYPE_FOLDER;
 
         return array(

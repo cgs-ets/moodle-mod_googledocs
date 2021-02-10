@@ -1539,7 +1539,7 @@ class googledrive {
             $d->docid = $data->docid;
             $d->googledocid = $data->id;
             $d->userid = $user->userid;
-            $DB->insert_record(googledocs_work_task, $d);
+            $DB->insert_record('googledocs_work_task', $d);
         }
 
         // Update sharing status.
