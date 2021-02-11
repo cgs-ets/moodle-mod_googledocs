@@ -1855,7 +1855,7 @@ class googledrive {
         $googledocs->userid = $USER->id;
         $googledocs->timeshared = (strtotime($file->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
-        $googledocs->name = $googledocs->name_doc;//$file->title;
+        $googledocs->name = $googledocs->name_doc;
         $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
