@@ -76,6 +76,8 @@ trait update_sharing {
             $d->sharing = 1;
             $r [] = $DB->update_record('googledocs', $d);
         }
+
+     
         return array(
             'results' => json_encode($r)
         );

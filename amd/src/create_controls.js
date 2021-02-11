@@ -530,7 +530,8 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
 
                 },
                 fail: function (reason) {
-                    Log.error(reason);
+                    Log.error(reason); 
+                    // TODO: ADD FAIL TAG
                 }
             }]);
 

@@ -1298,7 +1298,6 @@ class googledrive {
         $fromexisting = false, $gid = 0, $teachers = null) {
         global $DB;
         $url = url_templates();
-
         $docname = $fromexisting ? ($this->getFile($data->docid))->getTitle() : $data->name;
 
         $copyname = $docname . '_' . $entity->name;
@@ -1346,7 +1345,7 @@ class googledrive {
             case 'grouping_copy':
                 $entityfiledata->groupingid = $entity->id;
                 $this->permission_for_members_in_grouping($entity->id,
-                    $file->id, $permission, $commenter);
+                    $file->id, $permission, $commenter, $data);
                 break;
             case 'std_copy_group' :
                 $entityfiledata->userid = $entity->id;
@@ -1357,11 +1356,11 @@ class googledrive {
                 break;
             case 'dist_share_same_group' :
                 $entityfiledata->groupid = $gid;
-                $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter);
+                $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter, $data);
                 break;
             case 'dist_share_same_grouping':
                 $entityfiledata->groupingid = $gid;
-                $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter);
+                $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter, $data);
                 break;
             case 'std_copy_grouping':
                 $entityfiledata->userid = $entity->id;
@@ -1374,19 +1373,19 @@ class googledrive {
             case 'group_grouping_copy':
                 if ($entity->gtype == 'group') {
                     $entityfiledata->groupid = $entity->gid;
-                    $this->permission_for_members_in_groups($entity->gid, $file->id, $permission, $commenter);
+                    $this->permission_for_members_in_groups($entity->gid, $file->id, $permission, $commenter, $data);
                 } else {
                     $entityfiledata->groupingid = $entity->gid;
-                    $this->permission_for_members_in_grouping($entity->gid, $file->id, $permission, $commenter);
+                    $this->permission_for_members_in_grouping($entity->gid, $file->id, $permission, $commenter, $data);
                 }
                 break;
             case 'dist_share_same_group_grouping' :
                 if ($entity->gtype == 'group') {
                     $entityfiledata->groupid = $gid;
-                    $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter);
+                    $this->permission_for_members_in_groups($gid, $file->id, $permission, $commenter, $data);
                 } else {
                     $entityfiledata->groupingid = $gid;
-                    $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter);
+                    $this->permission_for_members_in_grouping($gid, $file->id, $permission, $commenter, $data);
                 }
                 break;
 
@@ -1401,7 +1400,11 @@ class googledrive {
         //the copies are not being shared with the member yet.
         if ((!isset($entity->groupid) || !isset($entityfiledata->groupingid))
             && $data->distribution != 'group_grouping_copy'
-            &&  $data->distribution != 'group_copy') {
+            &&  $data->distribution != 'group_copy'
+            && $data->distribution != 'dist_share_same_group'
+            && $data->distribution != 'dist_share_same_group_grouping'
+            && $data->distribution != 'grouping_copy'
+            && $data->distribution != 'dist_share_same_grouping') {
             $this->update_creation_and_sharing_status($data, $entityfiledata);
         }
 
@@ -1449,30 +1452,55 @@ class googledrive {
         }
 
         foreach ($teachers as $teacher) {
-
             $gdrive->share_single_copy($teacher, $data, 'writer', false, false, true);
         }
     }
 
-    /**
-     * Give permission to group members to access (aka permission) file.
-     * @param type $group_members
-     * @param type $docid
-     * @param type $role
-     * @param type $commenter
-     * @param type $fromexisting
-     */
-    public function permission_for_members_in_groups($groupid, $docid, $role, $commenter = false) {
+  /**
+   * Give permission to group members to access file.
+   * @param type $baseddocid The original file id.
+   * @param type $groupid
+   * @param type $docid
+   * @param type $role
+   * @param type $commenter
+   */
+    public function permission_for_members_in_groups($groupid, $docid, $role, $commenter = false, $instance) {
         $members = groups_get_members($groupid, "u.id, u.email");
+       # var_dump($instance); exit;
         foreach ($members as $member) {
             $this->insert_permission($this->service, $docid, $member->email, 'user', $role, $commenter);
+           $this->update_creation_sharing_group_grouping_helper($instance, $member);
         }
     }
 
-    public function permission_for_members_in_grouping($groupingid, $docid, $role, $commenter = false) {
+    public function permission_for_members_in_grouping($groupingid, $docid, $role, $commenter = false, $instance) {
         $members = groups_get_grouping_members($groupingid);
         foreach ($members as $member) {
             $this->insert_permission($this->service, $docid, $member->email, 'user', $role, $commenter);
+           $this->update_creation_sharing_group_grouping_helper($instance, $member);
+        }
+    }
+
+    private function update_creation_sharing_group_grouping_helper($instance, $member) {
+        $data = new \stdClass();
+        $data->id = $instance->id;
+        $data->docid = $instance->docid;
+        $user = new \stdClass();
+        $user->userid = $member->id;
+        $this->update_creation_and_sharing_status($data, $user);
+    }
+
+    private function update_work_task_when_group_grouping($docid) {
+        global $DB;
+           // Update the task table
+        $sql = "SELECT id FROM mdl_googledocs_work_task WHERE docid = $docid;";
+        $tasks = $DB->get_record_sql($sql);
+
+        foreach($tasks as $task) {
+            $d = new StdClass();
+            $d->creation_status = 1;
+            $d->id = $tasks->id;
+            $DB->update_record('googledocs_work_task', $d);
         }
     }
 
@@ -1827,7 +1855,7 @@ class googledrive {
         $googledocs->userid = $USER->id;
         $googledocs->timeshared = (strtotime($file->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
-        $googledocs->name = $file->title;
+        $googledocs->name = $googledocs->name_doc;//$file->title;
         $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
