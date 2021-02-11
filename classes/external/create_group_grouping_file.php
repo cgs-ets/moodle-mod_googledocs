@@ -99,7 +99,7 @@ trait create_group_grouping_file {
         $owner->type = 'user';
         $owner->name = $gname; // Adds the group/grouping name to the file.
         $fromexisting = $data->use_document == 'new' ? false : true;
-        $teachers = $gdrive->get_enrolled_teachers($data->course);
+        $teachers = get_users_in_grouping($teachers, $data->group_grouping_json, $data->course);
         $url = $gdrive->make_file_copy($data, $data->parentfolderid, $owner, $role, $commenter, $fromexisting, $gid, $teachers);
         return array(
             'url' => $url

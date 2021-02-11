@@ -87,7 +87,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
         $author = array('emailAddress' => $USER->email, 'displayName' => fullname($USER));
         $coursestudents = get_role_users(5, $context);
         $students = $gdrive->get_enrolled_students($googledocs->course);
-        $teachers = $gdrive->get_enrolled_teachers($googledocs->course);
         $group_grouping = [];
         $dist = '';
 

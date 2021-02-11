@@ -106,10 +106,12 @@ trait create_group_file {
 
         // Generate the group file.
         $gdrive = new \googledrive($context->id, false, false, true);
-        $teachers = $gdrive->get_enrolled_teachers($data->course);
+        // Filter teachers by group.
+        $teachers =  get_users_in_group($teachers, $data->group_grouping_json, $data->course); 
         list($role, $commenter) = $gdrive->format_permission($data->permissions);
 
         $group = new \stdClass();
+        $googledocid;
 
         if ($data->distribution == 'dist_share_same_group') {
             $group_ids = explode("-", $group_id); // Get the  group ids to iterate.
