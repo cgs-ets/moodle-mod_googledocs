@@ -114,7 +114,7 @@ function url_templates() {
     );
     $sharedlink[GDRIVEFILETYPE_FOLDER] = array(
         'linktemplate' => 'https://drive.google.com/drive/folders/%s/?usp=sharing',
-        'linkdisplay' => 'https://drive.google.com/embeddedfolderview?id=%s#grid');
+        'linkdisplay' => 'https://drive.google.com/embeddedfolderview?id=%s#list');
 
     return $sharedlink;
 }
