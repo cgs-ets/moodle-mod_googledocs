@@ -114,7 +114,7 @@ function url_templates() {
     );
     $sharedlink[GDRIVEFILETYPE_FOLDER] = array(
         'linktemplate' => 'https://drive.google.com/drive/folders/%s/?usp=sharing',
-        'linkdisplay' => 'https://drive.google.com/embeddedfolderview?id=%s#grid');
+        'linkdisplay' => 'https://drive.google.com/embeddedfolderview?id=%s#list');
 
     return $sharedlink;
 }
@@ -864,7 +864,8 @@ class googledrive {
      *
      * @return string HTML link to Google authentication service.
      */
-    public function display_login_button($fromUI = false) {
+    public function display_login_button($fromUI = false, $context = null) {
+        global $USER;
         // Create a URL that leads back to the callback() above function on successful authentication.
         $returnurl = new moodle_url('/mod/googledocs/oauth2_callback.php');
         $returnurl->param('callback', 'yes');
@@ -876,7 +877,15 @@ class googledrive {
         $url->param('state', $returnurl->out_as_local_url(false));
 
         // Create the button HTML.
-        $title = $fromUI ? get_string('logintosubmit', 'googledocs') : get_string('login', 'repository');
+        if ($fromUI) {
+            if (has_capability('mod/googledocs:viewall',$context)) {
+                $title = get_string('logintoviewfolder', 'googledocs');
+            } else {
+                $title = get_string('logintosubmit', 'googledocs');
+            }
+        } else {
+            $title = get_string('login', 'repository');
+        }
 
         $link = '<button id ="googleloginbtn" class="btn-primary btn">' . $title . '</button>';
         $jslink = 'window.open(\'' . $url . '\', \'' . $title . '\', \'width=600,height=800\'); return false;';
@@ -1723,6 +1732,24 @@ class googledrive {
     }
 
     /**
+     * Count the number of files a student folder has.
+     */
+    public function count_total_files_in_folder($folderId) {
+
+        try {
+            $this->refresh_token(); // If we dont refresh token, we get error 401.
+            $parameters = ['q' => 'trashed = false', 'fields' => 'items'];
+            $children = $this->service->children->listChildren($folderId, $parameters);
+
+            return count($children->getItems());
+        } catch (Exception $ex) {
+            return 0;
+        }
+
+
+    }
+
+    /**
      * Helper function to get the students enrolled
      *
      * @param int $courseid
@@ -2253,13 +2280,6 @@ class googledrive {
         $gd->id = $id;
 
         $DB->update_record('googledocs_files', $gd);
-    }
-
-    public function create_dummy_folders() {
-        for ($i = 0; $i < 20; $i++) {
-            $dirname = 'Folder_' . $i;
-            $this->create_folder($dirname);
-        }
     }
 
 }

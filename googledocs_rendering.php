@@ -1360,12 +1360,23 @@ class googledocs_rendering {
         global $OUTPUT, $DB, $CFG, $COURSE;
 
         $user = $DB->get_record('user', array('id' => $userid));
+
         $sql = " SELECT url FROM mdl_googledocs_files
                  WHERE userid = {$userid} and googledocid = {$this->googledocs->id};";
+
         $url = $DB->get_record_sql($sql);
         $isfolder =  $this->googledocs->document_type == GDRIVEFILETYPE_FOLDER;
 
+
         list($gradegiven, $commentgiven) = get_grade_comments($this->googledocs->id, $userid);
+
+        $client = new \googledrive($this->context->id, false, false, true, true);
+        $countfilesinfolder = 0;
+
+        if ($isfolder) {
+            $fid = get_file_id_from_url($url->url);
+            $countfilesinfolder = $client->count_total_files_in_folder($fid);
+        }
 
         // Get data from gradebook.
         $sql = "SELECT * FROM mdl_grade_grades as gg
@@ -1383,6 +1394,7 @@ class googledocs_rendering {
             $gradefromgradebook = $gg->finalgrade;
             $gradebookurl = new moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' => $COURSE->id]);
         }
+
 
         $data = ['userid' => $userid,
             'courseid' => $this->courseid,
@@ -1407,8 +1419,11 @@ class googledocs_rendering {
             'gradebookurl' => $gradebookurl,
             'display' => true,
             'contextid' => $this->context->id,
+            'isloggedintogoogle' => $client->check_google_login(),
+            'isfolder' => $isfolder ,
+            'isempty' => $countfilesinfolder == 0,
         ];
-
+ 
         echo $OUTPUT->render_from_template('mod_googledocs/grading_app', $data);
     }
 

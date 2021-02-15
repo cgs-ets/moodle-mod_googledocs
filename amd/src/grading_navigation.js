@@ -23,8 +23,8 @@
  * @since      3.1
  */
 define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'mod_googledocs/save_grading',
-    'mod_googledocs/grading_form_change_check', 'core/templates'],
-        function ($, notification, ajax, str, GoogledocSaveGrading, Checker, ) {
+    'mod_googledocs/grading_form_change_check', 'mod_googledocs/google_login'],
+        function ($, notification, ajax, str, GoogledocSaveGrading, Checker, GoogleLogin) {
 
             /**
              * GradingNavigation class.
@@ -220,10 +220,20 @@ define(['jquery', 'core/notification', 'core/ajax', 'core/str', 'mod_googledocs/
                                 region.show();
                                 $("#gradeform").on('submit', GoogledocSaveGrading.init()); //Re-attach the events                       
                                 Checker.saveFormState('#gradeform'); //get the current data from the form
+                                
+                                var login = $("#page-mod-googledocs-view_grading_app").find("#viewfolder").children()[0];
+                                // File type folder. Change user but user is not logged in.
+                                // Re-attach the login event.
+                                console.log("LOGIN VAR");
+                                console.log(login);
+                                if (login !=undefined) {
+                                    $(login).on('click', GoogleLogin.init());
+                                }
                             });
                         },
                         fail: function (reason) {
                             console.log('mod_googledocs_get_participant_by_id. Unable to get elements');
+                            console.log(reason)
 
                         }
                     }]);

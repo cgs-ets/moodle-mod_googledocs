@@ -102,15 +102,24 @@ trait get_participant_by_id {
         $gradefromgradebook = 0;
         $gradebookurl = '';
 
+        $client = new \googledrive($context, false, false, true, true);
+        $data->isloggedintogoogle = $client->check_google_login();
+
         if ($gg && ($gg->locked != "0" || $gg->overridden != "0")) {
             $lockedoroverriden = true;
             $gradefromgradebook = $gg->finalgrade;
             $gradebookurl = new \moodle_url($CFG->wwwroot . '/grade/report/grader/index.php?', ['id' => $COURSE->id]);
         }
 
-        foreach ($results as $record) {
 
+        foreach ($results as $record) {
             $isfolder =  $record->document_type == GDRIVEFILETYPE_FOLDER;
+            $countfilesinfolder = 0;
+            if ($isfolder) {
+                $fid = get_file_id_from_url($record->url);
+                $countfilesinfolder = $client->count_total_files_in_folder($fid);
+            }
+
             $data->userid = $userid;
             $data->fileurl =  $isfolder ? get_formated_folder_url($record->url) : $record->url;
             $data->maxgrade = $record->maxgrade;
@@ -119,6 +128,9 @@ trait get_participant_by_id {
             $data->lockedoroverriden = $lockedoroverriden;
             $data->lockedoroverriden = $lockedoroverriden;
             $data->display = true;
+            $data->isfolder = $record->document_type == GDRIVEFILETYPE_FOLDER;
+            $data->isempty = $countfilesinfolder == 0;
+
             list($data->gradegiven, $data->commentgiven) = get_grade_comments($googledocid, $record->userid);
         }
 

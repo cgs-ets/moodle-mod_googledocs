@@ -4,7 +4,7 @@
 */
 
 body#page-mod-googledocs-view_grading_app {
-        overflow: hidden !important;
+    overflow: hidden !important;
 }
 /*Group and Grouping  elements*/
 select#id_groups  {
@@ -137,6 +137,9 @@ table.mod-googledocs-files-view.table-bordered.table-lg.overviewTable {
     padding-top: 5%
 }
 
+div#viewfolder {
+    margin: auto;
+}
 /*Grading Style*/
 .path-mod-googledocs [data-region="grading-navigation"] {
     position: absolute;
@@ -254,7 +257,7 @@ button.btn.btn-primary.ml-1.submit-comment {
 
 [data-region="user-selector"] .alignment {
     float: right;
-  /*  width: 245px;*/
+    /*  width: 245px;*/
     text-align: center;
     margin-top: 1px;
 }
@@ -300,16 +303,16 @@ button.btn.btn-primary.ml-1.submit-comment {
     text-align: center;
 }
 
- form#gradeform {
-        margin-left: 2%;
-    }
+form#gradeform {
+    margin-left: 2%;
+}
 @media (max-width: 767px) {
     .pagelayout-embedded #page{
         margin-top: 0;
     }
     #page {
-     background-color: #F2F2F2 !important; 
-     padding: 0 !important; 
+        background-color: #F2F2F2 !important; 
+        padding: 0 !important; 
     }
     .path-mod-googledocs.pagelayout-embedded {
         overflow: auto;
@@ -329,7 +332,7 @@ button.btn.btn-primary.ml-1.submit-comment {
     }
 
     .grading-panel.col-lg-9.col-sm-12 {
-    height: 50%;
+        height: 50%;
     }
 
     .path-mod-googledocs [data-region="grading-navigation"],
@@ -341,7 +344,7 @@ button.btn.btn-primary.ml-1.submit-comment {
         right: auto;
         overflow: hidden;
         height: auto;
-       /* margin-bottom: 1em;*/
+        /* margin-bottom: 1em;*/
     }
 
     .path-mod-googledocs [data-region="grade"].collapsed {
@@ -387,5 +390,5 @@ button.btn.btn-primary.ml-1.submit-comment {
         overflow: auto !important;
     }
 
-   
+
 }

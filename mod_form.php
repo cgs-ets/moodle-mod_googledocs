@@ -244,7 +244,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 $errors['groups'] = get_string('std_invalid_selection', 'googledocs');
             }
 
-            if ($this->validatesharelimitation($data['distribution'])) {
+            if ($this->validatesharelimitation($data['distribution'], $data['groups'])) {
                 $errors['distribution'] = get_string('sharelimitation', 'googledocs');
             }
         }
@@ -323,13 +323,26 @@ class mod_googledocs_mod_form extends moodleform_mod {
     // Google Drive API allows up to 100 users to edit  the same file
     // If the course has more students and the sharing distribution is Share same
     // Then trigger error.
-    private function validatesharelimitation($distrib) {
+    private function validatesharelimitation($distrib, $groups) {
         global $PAGE;
 
         $context = \context_course::instance($PAGE->course->id);
+        $coursestudents = get_role_users(5, $context, false, 'u.id');
+        if (isset($groups)) {
+            list($group_grouping, $dist) = prepare_json($groups, $PAGE->course->id);
+            $jsongroup = new stdClass();
+            $jsongroup->c = $group_grouping;
 
-        $totalstudents = count(get_role_users(5, $context, false, 'u.id'));
+            if ($dist == 'grouping') {
+                $students = get_users_in_grouping($coursestudents, json_encode($jsongroup));
+            } else {
+                $students = get_users_in_group($coursestudents, json_encode($jsongroup), $PAGE->course->id);
+            }
 
+
+        }
+        $totalstudents = count($students);
+        #var_dump($totalstudents); exit;
         return ($distrib == 'dist_share_same' && $totalstudents >= 100);
     }
 

@@ -65,7 +65,7 @@ trait google_login_student {
         // Check whether the user is logged into their Google account.
 
         if (!$client->check_google_login()) {
-            $output = $client->display_login_button(true);
+            $output = $client->display_login_button(true, $context);
             $login ['loginbutton'] = $output;
         }
 
