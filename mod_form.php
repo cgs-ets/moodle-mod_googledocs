@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -45,7 +46,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
      * Defines forms elements.
      */
     public function definition() {
-        global $CFG, $PAGE;
+        global $CFG, $PAGE, $USER;
 
         // Add the javascript required to enhance this mform.
         $PAGE->requires->js_call_amd('mod_googledocs/processing_control', 'init');
@@ -64,6 +65,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
         // Hiden parameters.
         $mform->addElement('hidden', 'group_grouping_json', '');
         $mform->setType('group_grouping_json', PARAM_RAW);
+        $mform->addElement('hidden', 'docid', '');
+        $mform->setType('docid', PARAM_RAW);
 
         // Check whether the user is logged into their Google account.
         if (!$client->check_google_login()) {
@@ -77,6 +80,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('hidden', 'completionunlocked', 0);
             $mform->setType('completionunlocked', PARAM_INT);
             $this->add_action_buttons(true, false, false);
+
         } else {
 
             $radioarray = array();
@@ -102,7 +106,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
             }
 
             $this->standard_intro_elements();
-
             $types = google_filetypes();
             $typesarray = array();
 
@@ -222,8 +225,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
 
-        // Validating doc URL if sharing an existing doc.
+        // Validating doc URL
         $errors = parent::validation($data, $files);
+
         if ($data['update'] == 0) {
             if ($data['use_document'] != 'new') {
                 if (empty($data['google_doc_url'])) {
@@ -231,7 +235,7 @@ class mod_googledocs_mod_form extends moodleform_mod {
                 } else if (!googledocs_appears_valid_url($data['google_doc_url'])
                     || get_file_id_from_url($data['google_doc_url']) == null) {
                     $errors['google_doc_url'] = get_string('urlinvalid', 'googledocs');
-                } else if(get_file_type_from_string($data['google_doc_url']) == 'folder'){
+                } else if (get_file_type_from_string($data['google_doc_url']) == 'folder') {
                     $errors['google_doc_url'] = get_string('foldernotpermitted', 'googledocs');
                 }
             } else {
@@ -338,11 +342,9 @@ class mod_googledocs_mod_form extends moodleform_mod {
             } else {
                 $students = get_users_in_group($coursestudents, json_encode($jsongroup), $PAGE->course->id);
             }
-
-
         }
+
         $totalstudents = count($students);
-        #var_dump($totalstudents); exit;
         return ($distrib == 'dist_share_same' && $totalstudents >= 100);
     }
 

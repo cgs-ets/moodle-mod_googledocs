@@ -984,7 +984,7 @@ class googledrive {
 
             return $sharedfile;
         } catch (Exception $ex) {
-            throw $ex->getMessage();
+            throw $ex;
         }
     }
 
@@ -1857,6 +1857,21 @@ class googledrive {
         return null;
     }
 
+    public function get_permission_id_for_email($fileid) {
+        global $USER;
+
+        try {
+            $this->refresh_token();
+            $permissionid = $this->service->permissions->getIdForEmail($USER->email);
+            $permission = $this->service->permissions->get($fileid, $permissionid->getId());
+            return $permission->kind == 'drive#permission';
+
+        } catch (Exception $e) {
+            error_log ("An error occurred: " . $e->getMessage());
+            return false;
+        }
+    }
+
 // --------------------------------------------- DATA ACCESS FUNCTIONS -------------------------- //
 
     /**
@@ -1867,13 +1882,13 @@ class googledrive {
      * @param type $owncopy
      * @return type
      */
-    public function save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy = false, $dist, $intro = '', $fromexisting = false, $existingurl = '') {
-
+    public function save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy = false, $dist, $intro = '', $fromexisting = false,
+        $existingurl = '') {
         global $USER, $DB;
+
         if ($fromexisting) {
             $googledocs->google_doc_url = $existingurl;
         } else if(!$owncopy || $googledocs->distribution == 'group_copy'){
-            //$googledocs->google_doc_url = $sharedlink[1];
             $googledocs->google_doc_url = $sharedlink;
         }
 
@@ -1882,13 +1897,12 @@ class googledrive {
         $googledocs->userid = $USER->id;
         $googledocs->timeshared = (strtotime($file->createdDate));
         $googledocs->timemodified = $googledocs->timecreated;
-        $googledocs->name = $googledocs->name_doc;
+        $googledocs->name = empty($googledocs->name_doc) ? $file->title : $googledocs->name_doc;
         $googledocs->intro = $intro['text'];
         $googledocs->use_document = $googledocs->use_document;
         $googledocs->sharing = 0;  // Up to this point the copies are not created yet.
         $googledocs->distribution = $dist;
         $googledocs->introformat = $intro['format'];
-
 
         return $DB->insert_record('googledocs', $googledocs);
     }

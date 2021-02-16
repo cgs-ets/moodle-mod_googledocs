@@ -139,7 +139,7 @@ trait create_students_file {
 
         }
 
-        // Filter teachers by group.
+        // Filter teachers by grouping.
         if ($data->distribution == 'grouping_copy'
             || $data->distribution == 'dist_share_same_grouping'
             || $data->distribution == 'std_copy_group_grouping'
@@ -147,7 +147,7 @@ trait create_students_file {
             $teachers = get_users_in_grouping($teachers, $groupgroupingjson, $data->course);
         }
         $url = make_file_copy_helper($data, $student, $role, $commenter, $fromexisting, $teachers, $gdrive);
-        
+
         return array(
             'url' => json_encode($url, JSON_UNESCAPED_UNICODE)
         );

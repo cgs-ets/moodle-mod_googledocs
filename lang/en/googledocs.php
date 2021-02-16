@@ -86,6 +86,7 @@ $string['urlinvalid'] = 'The doc URL you provided doesn\'t seem to be valid. Be 
 $string['dirurlinvalid'] = 'The folder URL you provided doesn\'t seem to be valid. Be sure to copy the whole URL, including https://';
 $string['foldernotpermitted'] = "Use existing <strong>folders</strong> is not supported";
 $string['sharelimitation' ] = "Some users will not be able to edit this file. Please consider another distribution.";
+$string['notsharedwithuser'] = 'You do not have editing permissions on this file.';
 $string['groupsinvalidselection'] = 'Please select group value(s)';
 $string['groupingsinvalid'] = 'You have chosen All Groupings and a particular grouping. Either select All Groupings or the grouping you want to share a file with.';
 $string['groupingsinvalidselection'] = 'Please Select Grouping value(s)';

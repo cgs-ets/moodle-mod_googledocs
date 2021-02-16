@@ -72,7 +72,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
     global $USER;
 
     try {
-
         $googledocs->timecreated = time();
         $context = context_course::instance($googledocs->course);
         $gdrive = new googledrive($context->id);
@@ -126,10 +125,13 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             $file->id = ($sharedlink[0])->id;
             $file->title = ($sharedlink[0])->title;
             $file->createdDate = ($sharedlink[0])->createdDate;
-
+            $sharedlink = $sharedlink[4];
             $googledocs->document_type = $types[get_file_type_from_string($googledocs->google_doc_url)]['mimetype'];
+
             $googledocs->id = $gdrive->save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy, $dist,
                 $intro, true,($mform->get_submitted_data())->google_doc_url);
+
+           // $gdrive->save_work_task_scheduled($file->id, $students, $googledocs->id);
         } else {
             // Save new file in a new folder.
             list($folderid, $createddate) = $gdrive->create_folder($googledocs->name_doc, $author);
@@ -145,16 +147,17 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
                 $file->title = $googledocs->name_doc;
                 $file->createdDate = $createddate;
            } else {
-               list ($file, $sharedlink, $a) =  $gdrive->create_file($googledocs->name_doc, $googledocs->document_type, $author, $students, $folderid);
+               list ($file, $sharedlink, $a) =  $gdrive->create_file($googledocs->name_doc, $googledocs->document_type,
+                   $author, $students, $folderid);
            }
 
             $googledocs->name = $googledocs->name_doc;
             $googledocs->id = $gdrive->save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy, $dist, $intro);
-            $gdrive->save_work_task_scheduled($file->id, $students, $googledocs->id);
-
         }
 
+        $gdrive->save_work_task_scheduled($file->id, $students, $googledocs->id);
         googledocs_grade_item_update($googledocs);
+
         return $googledocs->id;
     } catch (Exception $ex) {
         throw $ex;
