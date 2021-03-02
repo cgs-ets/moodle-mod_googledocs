@@ -33,6 +33,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
     function init(create, dist_type) {
         Log.debug('mod_googledocs/update_control: initializing of the mod_googledocs control');
         Log.debug(dist_type);
+        Log.debug(create);
 
         var parentfile_id = $('table.overviewTable').attr('data-googledocs-id');
         var files_to_erase = []; // Collection of files ids to delete after copies are created
@@ -68,6 +69,8 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         window.addEventListener('popstate', self.popstateHandler);
         if (!self.create) {
             window.addEventListener('beforeunload', self.beforeunloadHandler);
+        } else {
+            return;
         }
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
