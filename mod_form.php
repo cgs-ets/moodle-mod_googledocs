@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -80,7 +79,6 @@ class mod_googledocs_mod_form extends moodleform_mod {
             $mform->addElement('hidden', 'completionunlocked', 0);
             $mform->setType('completionunlocked', PARAM_INT);
             $this->add_action_buttons(true, false, false);
-
         } else {
 
             $radioarray = array();
@@ -332,7 +330,8 @@ class mod_googledocs_mod_form extends moodleform_mod {
 
         $context = \context_course::instance($PAGE->course->id);
         $coursestudents = get_role_users(5, $context, false, 'u.id');
-        if (isset($groups)) {
+
+        if (isset($groups) && $groups[0] != '00_everyone') {
             list($group_grouping, $dist) = prepare_json($groups, $PAGE->course->id);
             $jsongroup = new stdClass();
             $jsongroup->c = $group_grouping;
@@ -342,9 +341,12 @@ class mod_googledocs_mod_form extends moodleform_mod {
             } else {
                 $students = get_users_in_group($coursestudents, json_encode($jsongroup), $PAGE->course->id);
             }
+        } else {
+            $students = $coursestudents;
         }
 
         $totalstudents = count($students);
+
         return ($distrib == 'dist_share_same' && $totalstudents >= 100);
     }
 

@@ -44,6 +44,7 @@ $PAGE->set_url(
         'oauth2code' => $code,
     )
 );
+
 $PAGE->set_context(null);
 $strauthorised = get_string('authorised', 'googledocs');
 $PAGE->set_title($strauthorised);

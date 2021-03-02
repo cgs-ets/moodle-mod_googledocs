@@ -50,7 +50,7 @@ trait list_participants {
         return new external_function_parameters(
             array(
             'googledocid' => new external_value(PARAM_RAW, 'Instance ID'),
-            'groupid' => new external_value(PARAM_RAW, 'Instance ID', VALUE_OPTIONAL),
+            'groupid' => new external_value(PARAM_RAW, 'Instance ID'),
             )
         );
     }

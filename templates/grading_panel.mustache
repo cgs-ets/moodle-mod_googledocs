@@ -35,7 +35,9 @@
     {{#isfolder}}
         {{^isloggedintogoogle}}
             <div id = 'viewfolder'>
-                <button  type= "button" id= "googlebtn" class="btn-primary btn" >{{#str}}logintoviewfolder, mod_googledocs{{/str}}</button>
+                <button  type= "button" id= "googlebtn" class="btn-primary btn disabled" >{{#str}}logintoviewfolder, mod_googledocs{{/str}}</button>
+                <button  type= "button" id= "googlebtnlogout" class="btn-primary btn" >{{#str}}signout, mod_googledocs{{/str}}</button>
+               
                 {{#js}}
                     require(['mod_googledocs/google_login'], function(mod) {
                       mod.init();
@@ -61,13 +63,12 @@
     {{/isfolder}}
     
     {{^isfolder}}
-        <div class="grading-panel col-lg-9 col-sm-12 ">
+        <div class="grading-panel col-lg-9 col-sm-12 ">           
             <iframe id='ifile' src="{{fileurl}}"></iframe>
         </div>
     {{> mod_googledocs/grader }}
     {{/isfolder}}   
 
-   
 {{/display}}
 
 

@@ -137,6 +137,7 @@ $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
 $string['logintosubmit'] = 'Log in to submit';
 $string['logintoviewfolder'] = 'Log in to view folder';
+$string['signout'] = 'Sign out from other Google accounts';
 $string['emptyfoldermessage'] = 'The folder is empty. ';
 $string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';
 $string['showdescription'] = 'Show/hide activity description';

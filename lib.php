@@ -130,8 +130,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
 
             $googledocs->id = $gdrive->save_instance($googledocs, $file, $sharedlink, $folderid, $owncopy, $dist,
                 $intro, true,($mform->get_submitted_data())->google_doc_url);
-
-           // $gdrive->save_work_task_scheduled($file->id, $students, $googledocs->id);
         } else {
             // Save new file in a new folder.
             list($folderid, $createddate) = $gdrive->create_folder($googledocs->name_doc, $author);
