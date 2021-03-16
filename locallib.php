@@ -773,7 +773,7 @@ class googledrive {
         $this->client->setAccessType('offline');
         $this->client->setApprovalPrompt('force');
         //$this->client->setHostedDomain('cgs.act.edu.au');
-
+          
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
 

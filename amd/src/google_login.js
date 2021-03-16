@@ -47,25 +47,6 @@
                     }
                 }]);
         });
-
-        $("button#googlebtnlogout").on('click', function(){      
-            let btn = document.getElementById("googlebtn");
-            btn.disabled = true;
-            window.open("https://accounts.google.com/logout", 'Logout', 'width=600,height=800');
-            
-            $("button#googlebtnlogout").addClass('disabled');
-            $("[data-toggle='tooltip']").tooltip('hide');
-            // Disable the button
-            var input = this;           
-            input.disabled = true; 
-            setTimeout(function() {
-              
-                let btn = document.getElementById("googlebtn");
-                btn.classList.remove("disabled");
-                btn.disabled = false;
-            }, 6000);
-           
-        });
     };
 
     return {

@@ -107,9 +107,6 @@ function googledocs_add_instance(stdClass $googledocs, mod_googledocs_mod_form $
             } else {
                 $students = get_users_in_group($coursestudents, json_encode($jsongroup), $googledocs->course);
             }
-
-            $course_groups = count(groups_get_all_groups($googledocs->course));
-            $selected_groups = count(get_groups_details_from_json($jsongroup));
         }
 
         if ($students == null) {

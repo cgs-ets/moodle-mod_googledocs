@@ -64,8 +64,8 @@ $string['description'] = 'Description';
 $string['group_select_help'] = '<strong>Everyone</strong>: All Students enrolled in the course. <br> <strong>All Groups</strong>: Students belonging to any of the available groups. <br>'
     . '<strong>All Groupings</strong>: Groups belonging to any of the groupings in the course.';
 
-$string['modulename'] = 'Google Doc';
-$string['modulename_help'] = 'The Google Doc activity module enables a teacher to share G Suite documents (docs, sheets, slides) with students, provide grades and feedback.<br><br>'
+$string['modulename'] = 'Google activity';
+$string['modulename_help'] = 'The Google activity module enables a teacher to share G Suite documents (docs, sheets, slides) with students, provide grades and feedback.<br><br>'
     . 'Students can submit their work provided the permission of the file is either edit or comment. <br>'
     . 'When reviewing G suite documents, teachers can leave feedback comments. <br><br>'
     . 'Google docs can be graded using a numerical scale. Final grades are recorded in the gradebook.';
@@ -136,7 +136,7 @@ $string['fullnameheader'] = 'Full name';
 $string['groupsgroupingsheader'] = 'Groups - Groupings';
 $string['gradeheader'] = 'Grade';
 $string['logintosubmit'] = 'Log in to submit';
-$string['logintoviewfolder'] = 'Log in to view folder';
+$string['viewfolderindrive'] = 'View Folder in Google Drive';
 $string['signout'] = 'Sign out from other Google accounts';
 $string['emptyfoldermessage'] = 'The folder is empty. ';
 $string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';
