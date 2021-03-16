@@ -53,8 +53,7 @@ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
             $("button#googlebtnlogout").addClass('disabled');
             $("[data-toggle='tooltip']").tooltip('hide');
             // Disable the button
-            var input = this;
-            Log.debug(input);
+            var input = this;           
             input.disabled = true;
         });
     };
