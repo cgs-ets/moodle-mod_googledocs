@@ -141,3 +141,4 @@ $string['signout'] = 'Sign out from other Google accounts';
 $string['emptyfoldermessage'] = 'The folder is empty. ';
 $string['emailmessageGoogleNotification'] = 'Link to the course:  {$a->url}';
 $string['showdescription'] = 'Show/hide activity description';
+$string['whylogout'] = 'If you are logged in with an account you did not create the folder with, Connect cannot display its content.';

@@ -36,13 +36,17 @@
         {{^isloggedintogoogle}}
             <div id = 'viewfolder'>
                 <button  type= "button" id= "googlebtn" class="btn-primary btn disabled" >{{#str}}logintoviewfolder, mod_googledocs{{/str}}</button>
-                <button  type= "button" id= "googlebtnlogout" class="btn-primary btn" >{{#str}}signout, mod_googledocs{{/str}}</button>
-               
+                <button  type= "button" id= "googlebtnlogout" class="btn-primary btn" data-toggle="tooltip" data-placement="top"
+                data-original-title="{{#str}}whylogout, mod_googledocs{{/str}}">{{#str}}signout, mod_googledocs{{/str}}</button>
+                
                 {{#js}}
                     require(['mod_googledocs/google_login'], function(mod) {
                       mod.init();
                     });
+                    require(['jquery','theme_boost/tooltip'], function($){$('[data-toggle="tooltip"]').tooltip()});
                 {{/js}}
+                
+
             </div>
         {{/isloggedintogoogle}}
         

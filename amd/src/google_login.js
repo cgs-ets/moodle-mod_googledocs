@@ -48,8 +48,14 @@ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
                 }]);
         });
         $("button#googlebtnlogout").on('click', function(){          
-            window.open("https://accounts.google.com/logout", 'Logout', 'width=600,height=800', false);
+            window.open("https://accounts.google.com/logout", 'Logout', 'width=600,height=800');
             $("button#googlebtn").removeClass('disabled');
+            $("button#googlebtnlogout").addClass('disabled');
+            $("[data-toggle='tooltip']").tooltip('hide');
+            // Disable the button
+            var input = this;
+            Log.debug(input);
+            input.disabled = true;
         });
     };
 
