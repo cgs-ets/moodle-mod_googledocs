@@ -53,6 +53,9 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configtext('mod_googledocs/referrer', get_string('googledocs_referrer', 'googledocs'),
             get_string('googledocs_referrer_key_desc', 'googledocs'), ''));
 
+    $settings->add(new admin_setting_configtext('mod_googledocs/domain', get_string('googledocs_domain', 'googledocs'),
+            get_string('googledocs_domain_desc', 'googledocs'), 'gmail.com'));
+
     $menu = array();
     foreach (core_component::get_plugin_list('assignfeedback') as $type => $notused) {
         $visible = !get_config('assignfeedback_' . $type, 'disabled');

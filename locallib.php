@@ -772,7 +772,7 @@ class googledrive {
         $this->client->setClientSecret($this->issuer->get('clientsecret'));
         $this->client->setAccessType('offline');
         $this->client->setApprovalPrompt('force');
-        //$this->client->setHostedDomain('cgs.act.edu.au');
+        $this->client->setHostedDomain((get_config('mod_googledocs'))->domain);
           
         $returnurl = new moodle_url(self::CALLBACKURL);
         $this->client->setRedirectUri($returnurl->out(false));
