@@ -26,7 +26,7 @@
  * @module mod_googledocs/submit_controls
  */
 
-define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
+ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
     var init = function () {
 
         $("button#googlebtn").on('click', function () {
@@ -47,14 +47,24 @@ define(['jquery', 'core/ajax', 'core/log'], function ($, Ajax, Log) {
                     }
                 }]);
         });
-        $("button#googlebtnlogout").on('click', function(){          
+
+        $("button#googlebtnlogout").on('click', function(){      
+            let btn = document.getElementById("googlebtn");
+            btn.disabled = true;
             window.open("https://accounts.google.com/logout", 'Logout', 'width=600,height=800');
-            $("button#googlebtn").removeClass('disabled');
+            
             $("button#googlebtnlogout").addClass('disabled');
             $("[data-toggle='tooltip']").tooltip('hide');
             // Disable the button
             var input = this;           
-            input.disabled = true;
+            input.disabled = true; 
+            setTimeout(function() {
+              
+                let btn = document.getElementById("googlebtn");
+                btn.classList.remove("disabled");
+                btn.disabled = false;
+            }, 6000);
+           
         });
     };
 
