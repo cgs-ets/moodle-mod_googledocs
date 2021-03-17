@@ -434,7 +434,7 @@ class googledocs_rendering
                 $icon = $types[get_file_type_from_string($this->googledocs->document_type)]['icon'];
                 $imgurl = new moodle_url($CFG->wwwroot . '/mod/googledocs/pix/' . $icon);
                 $image = html_writer::empty_tag('img', array('src' => $imgurl, 'class' => 'link_icon'));
-                $links = html_writer::link('#', $image, array(
+                $links = html_writer::link('#0', $image, array(
                     'target' => '_blank',
                     'id' => 'link_file_' . $i
                 ));
