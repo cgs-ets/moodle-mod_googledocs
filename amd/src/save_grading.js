@@ -17,6 +17,7 @@ define(['jquery', 'core/ajax', 'core/log', 'core/str', 'core/notification', 'mod
     function init() {
         Log.debug('mod_googledocs/SaveGrading: initializing SaveGrading of the mod_googledocs');
         var control = new GoogledocSaveGrading();
+      
         control.main();
     }
 

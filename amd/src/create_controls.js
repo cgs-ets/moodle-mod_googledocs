@@ -65,13 +65,13 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
     }
 
     GoogledocsControl.prototype.main = function () {
-        var self = this;
-        window.addEventListener('popstate', self.popstateHandler);
+        var self = this;        
         if (!self.create) {
             window.addEventListener('beforeunload', self.beforeunloadHandler);
-        } else {
-            return;
         }
+      
+
+        
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
@@ -219,12 +219,9 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
     
     // Triggers when user tries to leave the page and documents are being created.
     GoogledocsControl.prototype.beforeunloadHandler = function (event, created) {
-        event.preventDefault();
-        event.returnValue = '';
-    };
-    GoogledocsControl.prototype.popstateHandler = function (event) {
-        Log.debug('popstateHandler');
-    };
+        event.preventDefault();      
+        event.returnValue = '';        
+    };    
 
     GoogledocsControl.prototype.initTags = function () {
         var self = this;

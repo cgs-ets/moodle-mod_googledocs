@@ -56,7 +56,7 @@ $PAGE->set_title(format_string($googledocs->name));
 $PAGE->set_pagetype('course-view-' . $course->format);  // To get the blocks exactly like the course.
 $PAGE->add_body_class('path-user');
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
-
+$PAGE->requires->js_call_amd('mod_googledocs/prevent_backward_navigation', 'init');
 // Output starts here.
 echo $OUTPUT->header();
 
