@@ -43,14 +43,14 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         var group_folder_ids;
 
         var control = new GoogledocsControl(parentfile_id, create, instance_id,
-                files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype);
+            files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype);
 
         control.main();
     }
 
     // Constructor.
     function GoogledocsControl(parentfile_id, create, instance_id,
-            files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype) {
+        files_to_erase, countCalls, dist_type, group_folder_ids, isfoldertype) {
 
         var self = this;
         self.parentfile_id = parentfile_id;
@@ -65,78 +65,147 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
     }
 
     GoogledocsControl.prototype.main = function () {
-        var self = this;        
+        var self = this;
         if (!self.create) {
             window.addEventListener('beforeunload', self.beforeunloadHandler);
         }
-      
 
-        
+
         // Only call the create service if the files are not created.
         // This JS is called in the view.php page, which calls the function
         // that renders the table. It is the same table for created and processing
         //when sharing by group or by bygrouping other WS is called
 
+        let instancestat = JSON.parse(localStorage.getItem('instance'));
+
+        if (instancestat == null) {
+            //Store the instance creation in session storage. This will live as long as the browser is open. 
+            // Used to control duplicates. 
+            localStorage.setItem('instance', JSON.stringify({
+                instanceid: self.instance_id,
+                created: 0
+            }));
+        } else {
+
+            // check if the instance id
+            instancestat = JSON.parse(localStorage.getItem('instance'));
+
+            if (instancestat.instanceid != self.instance_id) { // its another one
+
+                localStorage.setItem('instance', JSON.stringify({
+                    instanceid: self.instance_id,
+                    created: 0
+                }));
+            }
+        }
+
+        instancestat = JSON.parse(localStorage.getItem('instance'));
+        Log.debug(instancestat);
+
         switch (self.dist_type) {
 
-            case 'std_copy' :
-                if (!self.create) {
+            case 'std_copy':
+                if (!self.create && instancestat.created == 0) {
                     self.callStudentFileService(self.parentfile_id);
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#file_' + e);
+                        self.createdTagHandler(tag);
+                    });
+
                 }
                 break;
-            case 'group_copy' :
-                if (!self.create) {
+            case 'group_copy':
+                if (!self.create && instancestat.created == 0) {
                     self.callGroupFileService();
+                } else {
+                    $('tbody').children().each(function () {
+                        var tag = $(this).find('#status_col');
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
-            case 'grouping_copy' :
+            case 'grouping_copy':
                 self.initGroupingTags();
-                if (!self.create) {
+                if (!self.create && instancestat.created == 0) {
                     self.callGroupingFileService();
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#status_col_' + e);
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
             case 'std_copy_group':
-                if (!self.create) {
+                if (!self.create && instancestat.created == 0) {
                     self.create_group_folder();
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#file_' + e);
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
-            case 'dist_share_same' :
-                if (!self.create) {
+            case 'dist_share_same':
+                if (!self.create && instancestat.created == 0) {
                     self.callStudentFileService(self.parentfile_id);
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#file_' + e);
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
 
-            case 'dist_share_same_group' :
-                if (!self.create) {
+            case 'dist_share_same_group':
+                if (!self.create && instancestat.created == 0) {
                     self.initGroupTags();
                     self.shareSameGroupGroupingService();
                 }
                 break;
-            case 'dist_share_same_grouping' :
+            case 'dist_share_same_grouping':
                 self.initGroupingTags();
-                if (!self.create) {
+                if (!self.create && instancestat.created == 0) {
                     self.callGroupingFileService(self.parentfile_id);
+                } else {
+                    $('tbody').find('[data-grouping-name]').each(function () {
+                        var gid = $(this).attr('data-grouping-id');
+                        var statuscol = ($(this).find('div#status_col_' + gid));
+                        $('div#status_col_' + gid).removeClass('spinner-border color');
+                        $(statuscol).html('Created');
+                        $(statuscol).addClass('status-access');
+                    });
                 }
                 break;
-            case 'std_copy_grouping' :
-                if (!self.create) {
+            case 'std_copy_grouping':
+                if (!self.create && instancestat.created == 0) {
                     self.create_group_folder();
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#file_' + e);
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
             case 'std_copy_group_grouping':
-                if (!self.create) {
+                if (!self.create && instancestat.created == 0) {
                     self.create_group_folder();
+                } else {
+                    $('tbody').children().each(function (e) {
+                        var tag = $(this).find('#file_' + e);
+                        self.createdTagHandler(tag);
+                    });
                 }
                 break;
-            case 'group_grouping_copy' :
-                if (!self.create) {
+            case 'group_grouping_copy':
+                if (!self.create && instancestat.created == 0) {
                     self.callGroupGroupingFileService();
                 } else {
                     self.initGGTags();
                 }
                 break;
-            case 'dist_share_same_group_grouping' :
-                if (!self.create) {
+            case 'dist_share_same_group_grouping':
+                if (!self.create && instancestat.created == 0) {
                     self.callGroupGroupingFileService();
                 } else {
                     self.initGGTags();
@@ -150,6 +219,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         // a permission can take some time. In order for the entire sharing is done
         // The progress bar is only removed when all the ajax calls finish.
         $(document).ajaxStop(function () {
+
 
             $('tbody').children().each(function () {
                 var tag = $(this).find('#status_col');
@@ -184,9 +254,9 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             $('table.overviewTable').removeAttr('data-googledocs-id');
             console.log('TOTAL CALLS TO DO', totalCalls);
             console.log('self.countCalls', self.countCalls);
-            
+
             if (from_existing == 1 && self.countCalls == totalCalls
-                    && file_to_update != undefined) {
+                && file_to_update != undefined) {
                 self.files_to_erase.push(file_to_update);
                 console.log("instance_id", self.instance_id);
                 UpdateControl.init(JSON.stringify(self.files_to_erase), self.instance_id);
@@ -200,13 +270,15 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             }
 
             if (self.countCalls == totalCalls && file_to_update != undefined
-                    && from_existing == 0 ) { //&& self.dist_type != 'grouping_copy'
+                && from_existing == 0) { //&& self.dist_type != 'grouping_copy'
                 self.files_to_erase.push(file_to_update);
                 DeleteControl.init(JSON.stringify(self.files_to_erase), self.dist_type);
                 self.countCalls = 0;
             }
             //Remove alert when trying to leave the page, after all files were created
             window.removeEventListener('beforeunload', self.beforeunloadHandler, false);
+
+
         });
 
     };
@@ -216,12 +288,12 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         tag.html('Created');
         tag.addClass('status-access');
     };
-    
+
     // Triggers when user tries to leave the page and documents are being created.
     GoogledocsControl.prototype.beforeunloadHandler = function (event, created) {
-        event.preventDefault();      
-        event.returnValue = '';        
-    };    
+        event.preventDefault();
+        event.returnValue = '';
+    };
 
     GoogledocsControl.prototype.initTags = function () {
         var self = this;
@@ -344,9 +416,9 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             var student_email = $(this).attr('data-student-email');
             var student_name = $(this).attr('student-name');
             var student_group_id = $(this).attr('student-group-id');
-            if (student_group_id == group_id ) {
+            if (student_group_id == group_id) {
                 self.create_student_file(e, student_id, student_email, student_name, parentfile_id,
-                        student_group_id, grouping_id);
+                    student_group_id, grouping_id);
 
             }
         });
@@ -355,9 +427,9 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
 
 
     GoogledocsControl.prototype.create_student_file = function (rownumber, student_id, student_email,
-            student_name, parentfile_id,
-            student_group_id = 0,
-            student_grouping_id = 0) {
+        student_name, parentfile_id,
+        student_group_id = 0,
+        student_grouping_id = 0) {
         var self = this;
         var folder_id = 0;
 
@@ -366,8 +438,8 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         }
 
         if (self.dist_type == 'std_copy_group'
-                || self.dist_type == 'std_copy_grouping'
-                || self.dist_type == 'std_copy_group_grouping') {
+            || self.dist_type == 'std_copy_grouping'
+            || self.dist_type == 'std_copy_group_grouping') {
 
             folder_id = self.get_group_folder_id(student_group_id, self.group_folder_ids);
             Log.debug("create_student_file student_name = " + student_name);
@@ -376,50 +448,52 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
 
         Ajax.call([{
 
-                methodname: 'mod_googledocs_create_students_file',
+            methodname: 'mod_googledocs_create_students_file',
 
-                args: {
-                    folder_group_id: folder_id,
-                    group_id: student_group_id,
-                    grouping_id: student_grouping_id,
-                    instance_id: self.instance_id,
-                    parentfile_id: parentfile_id,
-                    student_email: student_email,
-                    student_id: student_id,
-                    student_name: student_name
-                },
+            args: {
+                folder_group_id: folder_id,
+                group_id: student_group_id,
+                grouping_id: student_grouping_id,
+                instance_id: self.instance_id,
+                parentfile_id: parentfile_id,
+                student_email: student_email,
+                student_id: student_id,
+                student_name: student_name
+            },
 
-                done: function (response) {
-                    Log.debug(response.url);
-                    self.countCalls++;
-                    // Add file's link
+            done: function (response) {
+                Log.debug(response.url);
+                self.countCalls++;
+                // Add file's link
 
-                    var urls = JSON.parse(response.url);
+                var urls = JSON.parse(response.url);
 
-                    if (self.dist_type == 'std_copy_group'
-                            || self.dist_type == 'std_copy_grouping'
-                            || self.dist_type == 'std_copy_group_grouping') {
+                if (self.dist_type == 'std_copy_group'
+                    || self.dist_type == 'std_copy_grouping'
+                    || self.dist_type == 'std_copy_group_grouping') {
 
-                        self.renderStudentLinks(urls, rownumber);
+                    self.renderStudentLinks(urls, rownumber);
 
-                    } else {
-                        var ref = $('#' + 'link_file_' + rownumber);
-                        $(ref).attr("href", urls[0]);
-                    }
-
-                    // Remove progress bar and display status
-                    if (self.dist_type != 'group_copy') {
-                        self.createdTagHandler($('#file_' + rownumber));
-                    }
-
-                },
-
-                fail: function (reason) {
-                    Log.error(reason);
-                    $('#file_' + rownumber).removeClass('spinner-border color');
-                    self.failedTag(rownumber);
+                } else {
+                    var ref = $('#' + 'link_file_' + rownumber);
+                    $(ref).attr("href", urls[0]);
                 }
-            }]);
+
+                // Remove progress bar and display status
+                if (self.dist_type != 'group_copy') {
+                    self.createdTagHandler($('#file_' + rownumber));
+                }
+
+                self.update_local_storage(); // at least one file is created. then avoid duplicate.
+
+            },
+
+            fail: function (reason) {
+                Log.error(reason);
+                $('#file_' + rownumber).removeClass('spinner-border color');
+                self.failedTag(rownumber);
+            }
+        }]);
 
 
     };
@@ -493,7 +567,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
      *
      */
     GoogledocsControl.prototype.create_group_file = function (a_element = '',
-            owner_email, group_name = '', group_id, parentfile_id = 0, grouping_id = 0) {
+        owner_email, group_name = '', group_id, parentfile_id = 0, grouping_id = 0) {
 
         var self = this;
 
@@ -502,38 +576,40 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         }
 
         Ajax.call([{
-                methodname: 'mod_googledocs_create_group_file',
-                args: {
-                    group_name: group_name,
-                    group_id: group_id,
-                    grouping_id: grouping_id,
-                    instance_id: self.instance_id,
-                    owner_email: owner_email,
-                    parentfile_id: parentfile_id,
-                },
-                done: function (response) {
-                    Log.debug("mod_googledocs_create_group_file " + JSON.stringify(response));
-                    if (self.dist_type == 'dist_share_same_group'
-                            || self.dist_type == 'dist_share_same_grouping_copy'
-                            || self.dist_type == 'dist_share_same_group_grouping_copy') {
-                        self.append_links_to_icons(response.url); //  Traverse the list of students and add the link according to the group they belong to.
-                    } else {
-                        // Add file's link
-                        $(a_element).attr("href", response.url);
-                        //Returns the ID of the file created for the group.
-                        Log.debug('Group ID ' + group_id);
-                        self.callStudentFileServiceForGroup(response.googledocid, group_id);
-                    }
-                    if (response.isfoldertype != true) {
-                        self.files_to_erase.push(parentfile_id);
-                    }
-
-                },
-                fail: function (reason) {
-                    Log.error(reason); 
-                    // TODO: ADD FAIL TAG
+            methodname: 'mod_googledocs_create_group_file',
+            args: {
+                group_name: group_name,
+                group_id: group_id,
+                grouping_id: grouping_id,
+                instance_id: self.instance_id,
+                owner_email: owner_email,
+                parentfile_id: parentfile_id,
+            },
+            done: function (response) {
+                Log.debug("mod_googledocs_create_group_file " + JSON.stringify(response));
+                if (self.dist_type == 'dist_share_same_group'
+                    || self.dist_type == 'dist_share_same_grouping_copy'
+                    || self.dist_type == 'dist_share_same_group_grouping_copy') {
+                    self.append_links_to_icons(response.url); //  Traverse the list of students and add the link according to the group they belong to.
+                } else {
+                    // Add file's link
+                    $(a_element).attr("href", response.url);
+                    //Returns the ID of the file created for the group.
+                    Log.debug('Group ID ' + group_id);
+                    self.callStudentFileServiceForGroup(response.googledocid, group_id);
                 }
-            }]);
+                if (response.isfoldertype != true) {
+                    self.files_to_erase.push(parentfile_id);
+                }
+
+                self.update_local_storage(); // at least one file is created. then avoid duplicate.
+
+            },
+            fail: function (reason) {
+                Log.error(reason);
+                // TODO: ADD FAIL TAG
+            }
+        }]);
 
 
     };
@@ -550,49 +626,51 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         Log.debug("create_grouping_file llamada");
 
         Ajax.call([{
-                methodname: 'mod_googledocs_create_grouping_file',
-                args: {
-                    owneremail: owner_email,
-                    parentfileid: self.parentfile_id,
-                },
-                done: function (response) {
-                    Log.debug(response);
-                    $('tbody tr').each(function () {
-                        self.countCalls++;
-                        var id = $(this).attr('data-grouping-id');  // Get the grouping id
-                        self.get_grouping_url(id, JSON.parse(response.groupingsurl));
-                    });
+            methodname: 'mod_googledocs_create_grouping_file',
+            args: {
+                owneremail: owner_email,
+                parentfileid: self.parentfile_id,
+            },
+            done: function (response) {
+                Log.debug(response);
+                $('tbody tr').each(function () {
+                    self.countCalls++;
+                    var id = $(this).attr('data-grouping-id');  // Get the grouping id
+                    self.get_grouping_url(id, JSON.parse(response.groupingsurl));
+                });
 
-                },
-                fail: function (reason) {
-                    Log.error(reason);
-                }
-            }]);
+                self.update_local_storage();
+            },
+            fail: function (reason) {
+                Log.error(reason);
+            }
+        }]);
     };
 
     GoogledocsControl.prototype.create_group_grouping_file = function (aelement = '', statuscol = '', owneremail,
-            instanceid, gname, gid, gtype) {
+        instanceid, gname, gid, gtype) {
         var self = this;
         Ajax.call([{
-                methodname: 'mod_googledocs_create_group_grouping_file',
-                args: {
-                    gid: gid,
-                    gname: gname,
-                    gtype: gtype,
-                    instanceid: instanceid,
-                    owneremail: owneremail,
-                    parentfileid: self.parentfile_id,
-                },
-                done: function (response) {
-                    // Add file's link.
-                    $(aelement).attr("href", response.url);
-                    // Change status.
-                    self.createdTagHandler(statuscol);
-                },
-                fail: function (reason) {
-                    Log.error(reason);
-                }
-            }]);
+            methodname: 'mod_googledocs_create_group_grouping_file',
+            args: {
+                gid: gid,
+                gname: gname,
+                gtype: gtype,
+                instanceid: instanceid,
+                owneremail: owneremail,
+                parentfileid: self.parentfile_id,
+            },
+            done: function (response) {
+                // Add file's link.
+                $(aelement).attr("href", response.url);
+                // Change status.
+                self.createdTagHandler(statuscol);
+                self.update_local_storage(); // at least one file is created. then avoid duplicate.
+            },
+            fail: function (reason) {
+                Log.error(reason);
+            }
+        }]);
     };
 
 
@@ -601,36 +679,36 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         var self = this;
         Log.debug("create_group_folder " + self.instance_id);
         Ajax.call([{
-                methodname: 'mod_googledocs_create_group_folder_struct',
-                args: {
-                    instanceid: self.instance_id,
-                },
-                done: function (response) {
-                    Log.debug('mod_googledocs_create_group_folder_struct');
-                    self.group_folder_ids = JSON.parse(response.group_folder_ids);
-                    // Each student will get a copy.
-                    if (self.dist_type == 'std_copy_group'
-                            || self.dist_type == 'std_copy_grouping'
-                            || self.dist_type == 'std_copy_group_grouping') {
+            methodname: 'mod_googledocs_create_group_folder_struct',
+            args: {
+                instanceid: self.instance_id,
+            },
+            done: function (response) {
+                Log.debug('mod_googledocs_create_group_folder_struct');
+                self.group_folder_ids = JSON.parse(response.group_folder_ids);
+                // Each student will get a copy.
+                if (self.dist_type == 'std_copy_group'
+                    || self.dist_type == 'std_copy_grouping'
+                    || self.dist_type == 'std_copy_group_grouping') {
 
-                        self.callStudentFileService(self.parentfile_id);
-                    }
-
-                    // Create the copy and the owner is the teacher.
-                    if (self.dist_type == 'dist_share_same_group'
-                            || self.dist_type == 'dist_share_same_grouping_copy'
-                            || self.dist_type == 'dist_share_same_group_grouping_copy') {
-
-                        var g_ids = $('table.overviewTable').attr('data-all-groups');
-                        var owner_email = $('table.overviewTable').attr('data-owner-email');
-                        self.create_group_file('', owner_email, '', g_ids, self.parentfile_id);
-                    }
-
-                },
-                fail: function (reason) {
-                    Log.error(reason);
+                    self.callStudentFileService(self.parentfile_id);
                 }
-            }]);
+
+                // Create the copy and the owner is the teacher.
+                if (self.dist_type == 'dist_share_same_group'
+                    || self.dist_type == 'dist_share_same_grouping_copy'
+                    || self.dist_type == 'dist_share_same_group_grouping_copy') {
+
+                    var g_ids = $('table.overviewTable').attr('data-all-groups');
+                    var owner_email = $('table.overviewTable').attr('data-owner-email');
+                    self.create_group_file('', owner_email, '', g_ids, self.parentfile_id);
+                }
+
+            },
+            fail: function (reason) {
+                Log.error(reason);
+            }
+        }]);
     };
 
     GoogledocsControl.prototype.shareSameGroupGroupingService = function () {
@@ -722,7 +800,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
         });
 
     };
-    
+
     /**
      * Add the url in the href property. If the student has more than one
      * grouping, append new icons
@@ -747,7 +825,7 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
                 $(ref).attr("href", url); // Set link the existing icon
             } else {
                 $(ref).append('<a target="_blank" id="link_file_' + rownumber +
-                        '"href="' + url + '" class="link_icon">\n\ \n\
+                    '"href="' + url + '" class="link_icon">\n\ \n\
                 <img src="' + src + '" class="link_icon"</a>');
             }
 
@@ -755,7 +833,16 @@ define(['jquery', 'core/log', 'core/ajax', 'mod_googledocs/delete_controls', 'mo
             self.tagDisplay(rownumber, true);
         });
     };
-    
+
+    GoogledocsControl.prototype.update_local_storage = function () {
+        var self = this;
+        const instancecreated = {
+            instanceid: self.instance_id,
+            created: 1
+        }
+        localStorage.setItem('instance', JSON.stringify(instancecreated));
+    }
+
     return {
         init: init
     };
