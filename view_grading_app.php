@@ -62,7 +62,7 @@ $PAGE->set_title(format_string($googledocs->name));
 $PAGE->add_body_class('path-mod-googledocs');
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 $PAGE->set_pagelayout('embedded');
-$PAGE->requires->js_call_amd('mod_googledocs/prevent_backward_navigation', 'init');
+//$PAGE->requires->js_call_amd('mod_googledocs/prevent_backward_navigation', 'init');
 
 // Output starts here.
 echo $OUTPUT->header();
